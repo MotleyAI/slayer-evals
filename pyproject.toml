@@ -1,0 +1,59 @@
+[project]
+name = "slayer-evals"
+version = "0.1.0"
+description = "Capability benchmark: do agents actually reach for SLayer's DSL?"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "MotleyAI"}]
+
+[tool.poetry]
+packages = [{include = "slayer_evals", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+motley-slayer = "1.0.2"
+claude-agent-sdk = "0.2.163"
+duckdb = ">=1.0"
+pydantic = ">=2.0"
+pyyaml = ">=6.0"
+pandas = ">=2.0"
+numpy = ">=1.24"
+
+[project.scripts]
+slayer-evals = "slayer_evals.cli:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-asyncio = "^1.3.0"
+pytest-timeout = ">=2.3"
+ruff = ">=0.4"
+basedpyright = "^1.39.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: live agent runs (need Claude credentials and network)",
+]
+asyncio_mode = "auto"
+
+[tool.basedpyright]
+typeCheckingMode = "basic"
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["src", "tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint.isort]
+known-first-party = ["slayer_evals", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E402"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

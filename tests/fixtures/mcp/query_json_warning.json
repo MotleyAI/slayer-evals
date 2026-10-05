@@ -1,0 +1,20 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "customers",
+   "dimensions": [
+    "orders.status"
+   ],
+   "measures": [
+    {
+     "formula": "sum(credit)",
+     "name": "total_credit"
+    }
+   ]
+  },
+  "format": "json"
+ },
+ "is_error": false,
+ "text": "{\"data\": [{\"customers.orders.status\": null, \"customers.total_credit\": 2800.0}, {\"customers.orders.status\": \"ok\", \"customers.total_credit\": 2800.0}, {\"customers.orders.status\": \"bad\", \"customers.total_credit\": 2800.0}], \"warnings\": [{\"kind\": \"broadcast\", \"measure\": \"total_credit\", \"location\": \"stages[0]\", \"dimensions\": [{\"dimension\": \"orders.status\", \"reason\": \"crosses a fanning or unproven join hop to orders\"}], \"hint\": \"filtering on this dimension restricts the metric by association while slicing only repeats the value; set to_many_handling='associate' to reconcile the two.\"}]}"
+}

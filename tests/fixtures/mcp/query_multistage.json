@@ -1,0 +1,31 @@
+{
+ "tool": "query",
+ "args": {
+  "query": [
+   {
+    "name": "per_customer",
+    "source_model": "orders",
+    "dimensions": [
+     "customer_id"
+    ],
+    "measures": [
+     {
+      "formula": "sum(amount)",
+      "name": "rev"
+     }
+    ]
+   },
+   {
+    "source_model": "per_customer",
+    "measures": [
+     {
+      "formula": "avg(rev)",
+      "name": "avg_rev"
+     }
+    ]
+   }
+  ]
+ },
+ "is_error": false,
+ "text": "| per_customer.avg_rev |\n| --- |\n| 272 |\n\nMeasure attributes:\n  per_customer.avg_rev: format=(type=float)"
+}

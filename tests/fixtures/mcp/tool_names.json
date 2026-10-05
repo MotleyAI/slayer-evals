@@ -1,0 +1,22 @@
+[
+ "create_datasource",
+ "create_model",
+ "delete_datasource",
+ "delete_model",
+ "describe_datasource",
+ "edit_datasource",
+ "edit_model",
+ "forget_memory",
+ "get_datasource_priority",
+ "ingest_datasource_models",
+ "inspect",
+ "inspect_model",
+ "list_datasources",
+ "models_summary",
+ "query",
+ "recommend_root_model",
+ "save_memory",
+ "search",
+ "set_datasource_priority",
+ "validate_models"
+]

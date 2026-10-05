@@ -1,0 +1,22 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "monthly_rev",
+   "time_dimensions": [
+    {
+     "dimension": "order_date",
+     "granularity": "day"
+    }
+   ],
+   "measures": [
+    {
+     "formula": "sum(rev)",
+     "name": "total_v"
+    }
+   ]
+  }
+ },
+ "is_error": true,
+ "text": "Error executing tool query: TimeDimensionColumnError: Cannot re-bucket to 'day': the column is already bucketed at 'month', which does not nest into 'day'.\n  at time dimension 'order_date'\n  suggestion: Request the same or a nesting-coarser granularity, or bucket the raw column instead."
+}

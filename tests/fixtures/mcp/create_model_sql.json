@@ -1,0 +1,20 @@
+{
+ "tool": "create_model",
+ "args": {
+  "name": "agg_sql",
+  "sql": "select customer_id, sum(amount) as rev from orders group by 1",
+  "data_source": "probe",
+  "columns": [
+   {
+    "name": "customer_id",
+    "type": "number"
+   },
+   {
+    "name": "rev",
+    "type": "number"
+   }
+  ]
+ },
+ "is_error": false,
+ "text": "Model 'agg_sql' created."
+}

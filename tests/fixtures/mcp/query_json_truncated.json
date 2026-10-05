@@ -1,0 +1,20 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "nums",
+   "dimensions": [
+    "id"
+   ],
+   "measures": [
+    {
+     "formula": "sum(v)",
+     "name": "total_v"
+    }
+   ]
+  },
+  "format": "json"
+ },
+ "is_error": false,
+ "text": "{\"data\": [{\"nums.id\": 0, \"nums.total_v\": 0.0}, {\"nums.id\": 1, \"nums.total_v\": 1.5}, {\"nums.id\": 2, \"nums.total_v\": 3.0}, {\"nums.id\": 3, \"nums.total_v\": 4.5}, {\"nums.id\": 4, \"nums.total_v\": 6.0}, {\"nums.id\": 5, \"nums.total_v\": 7.5}, {\"nums.id\": 6, \"nums.total_v\": 9.0}, {\"nums.id\": 7, \"nums.total_v\": 10.5}, {\"nums.id\": 8, \"nums.total_v\": 12.0}, {\"nums.id\": 9, \"nums.total_v\": 13.5}, {\"nums.id\": 10, \"nums.total_v\": 15.0}, {\"nums.id\": 11, \"nums.total_v\": 16.5}, {\"nums.id\": 12, \"nums.total_v\": 18.0}, {\"nums.id\": 13, \"nums.total_v\": 19.5}, {\"nums.id\": 14, \"nums.total_v\": 21.0}, {\"nums.id\": 15, \"nums.total_v\": 22.5}, {\"nums.id\": 16, \"nums.total_v\": 24.0}, {\"nums.id\": 17, \"nums.total_v\": 25.5}, {\"nums.id\": 18, \"nums.total_v\": 27.0}, {\"nums.id\": 19, \"nums.total_v\": 28.5}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}"
+}

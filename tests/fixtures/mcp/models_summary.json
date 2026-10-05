@@ -1,0 +1,8 @@
+{
+ "tool": "models_summary",
+ "args": {
+  "datasource_name": "probe"
+ },
+ "is_error": false,
+ "text": "# Datasource: `probe` \u2014 12 model(s)\n\n## `agg_sql`\nColumns: 2\nMeasures: \nJoins to: _(none)_\n\n## `avg_customer_rev`\nColumns: 1\nMeasures: \nJoins to: _(none)_\n\n## `customers`\nColumns: 7\nMeasures: \nJoins to: `orders`, `regions`, `returns`\n\n## `events`\nColumns: 3\nMeasures: \nJoins to: _(none)_\n\n## `monthly_rev`\nColumns: 3\nMeasures: \nJoins to: _(none)_\n\n## `nums`\nColumns: 2\nMeasures: \nJoins to: _(none)_\n\n## `orders`\nColumns: 5\nMeasures: aov, aov_chg\nJoins to: `customers`\n\n## `orders_flat`\nColumns: 10\nMeasures: \nJoins to: _(none)_\n\n## `per_cust`\nColumns: 2\nMeasures: \nJoins to: _(none)_\n\n## `regions`\nColumns: 2\nMeasures: \nJoins to: `customers`\n\n## `returns`\nColumns: 4\nMeasures: \nJoins to: `customers`\n\n## `time_spine`\nBuilt-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='probe.time_spine', entity_type='model').\nColumns: 1\nMeasures: \nJoins to: _(none)_"
+}
