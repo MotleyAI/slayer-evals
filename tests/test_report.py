@@ -132,7 +132,8 @@ def test_failures_listed_with_reasons_and_calls(repeat_report: str):
         if x.startswith("#") and "fail" in x.lower() and "xfail" not in x.lower()
     )
     failures = "\n".join(repeat_report.splitlines()[fail_idx:])
-    assert "q4-a" in failures and "sum(amount)" in failures
+    assert "q4-a" in failures
+    assert "sum(amount)" in failures
     assert failures.count("create_model call #2 supplies raw SQL in sql") == 1
     assert failures.count("unmet predicate: call sum with partition_by") >= 6
 
@@ -154,11 +155,13 @@ def test_single_trial_label(tmp_path: Path):
 
 def test_until_pass_report():
     report = render_report(FIXTURES / "run_until_pass")
-    assert "pass^" not in report and "Pass rate" not in report
+    assert "pass^" not in report
+    assert "Pass rate" not in report
     tasks = table_with(section(report, "slayer"), "Task", "First try", "Eventual", "Attempts")
     q1 = next(r for r in tasks if "q1-a" in r["Task"])
     q4 = next(r for r in tasks if "q4-a" in r["Task"])
-    assert q1["Attempts"] == "2" and q4["Attempts"] == "3"
+    assert q1["Attempts"] == "2"
+    assert q4["Attempts"] == "3"
     assert q1["First try"] != q1["Eventual"]
     assert q4["First try"] == q4["Eventual"]
 

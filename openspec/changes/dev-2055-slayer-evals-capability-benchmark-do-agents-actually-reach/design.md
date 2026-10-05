@@ -32,7 +32,7 @@ check, telemetry env, pinned prompt caching, explicit auth mode, one spawned pro
 | `tasks` | task YAML loading and validation, truth computation, truth snapshots | core |
 | `grading` | table comparison, result parsing, capability predicates, hack rules, verdict | core |
 | `agents` | adapter protocol, Claude SDK adapter, `submit_answer`, Python sandbox, trace normalization | core |
-| `runner` | trial isolation, run modes, concurrency, auth, result files | core, dataset, tasks, agents, grading |
+| `runner` | trial isolation, run modes, concurrency, auth, result files | core, dataset, tasks, agents, grading, report |
 | `report` | markdown report from a run directory | core |
 | `cli` | entry point | runner, report, dataset, tasks |
 

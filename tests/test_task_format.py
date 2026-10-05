@@ -27,9 +27,11 @@ def test_valid_task_loads_with_defaults(tmp_path: Path):
     assert task.row == "Q4"
     assert task.prompt == "Monthly revenue in 2025 with a running total."
     assert task.truth_sql == "select 1 as month, 2 as rev"
-    assert task.compare.keys == [] and task.compare.values == []
+    assert task.compare.keys == []
+    assert task.compare.values == []
     assert task.compare.tolerance == 1e-6
-    assert task.compare.ordered is False and task.compare.columns_exact is False
+    assert task.compare.ordered is False
+    assert task.compare.columns_exact is False
     assert task.allow == []
     assert task.expect == "match"
     assert task.xfail is None
@@ -44,17 +46,22 @@ def test_all_fields_load(tmp_path: Path):
         xfail={"issue": "DEV-2058", "reason": "no pinned clock"},
     )
     task = load_task(write_task(tmp_path, doc))
-    assert task.compare.keys == ["month"] and task.compare.tolerance == 0.01 and task.compare.ordered
-    assert task.allow[0].construct == "inline_column_sql" and task.allow[0].scope == "row_scalar"
+    assert task.compare.keys == ["month"]
+    assert task.compare.tolerance == 0.01
+    assert task.compare.ordered
+    assert task.allow[0].construct == "inline_column_sql"
+    assert task.allow[0].scope == "row_scalar"
     assert task.expect != "match"
     assert task.expect.error == "TimeDimensionColumnError"
     assert task.expect.message_any == ["already bucketed", "month"]
-    assert task.xfail is not None and task.xfail.issue == "DEV-2058"
+    assert task.xfail is not None
+    assert task.xfail.issue == "DEV-2058"
 
 
 def test_warning_expectation(tmp_path: Path):
     task = load_task(write_task(tmp_path, _doc(expect={"warning": "broadcast", "message_any": ["repeat"]})))
-    assert task.expect != "match" and task.expect.warning == "broadcast"
+    assert task.expect != "match"
+    assert task.expect.warning == "broadcast"
 
 
 @pytest.mark.parametrize(

@@ -49,12 +49,14 @@ def test_ambiguous_column_fails():
     result = res(["orders.customers.name", "orders.customers.regions.name", "orders.n"], [["Alice", "North", 1]])
     m = match_tables(truth, result, Compare(keys=["name"], values=["n"]))
     assert not m.ok
-    assert "name" in m.reason and "ambiguous" in m.reason
+    assert "name" in m.reason
+    assert "ambiguous" in m.reason
 
 
 def test_missing_column_fails():
     m = match_tables(TRUTH, res(["region", "city"], [r[:2] for r in TRUTH.rows]), CMP)
-    assert not m.ok and "region_total" in m.reason
+    assert not m.ok
+    assert "region_total" in m.reason
 
 
 def test_extra_columns_ignored_unless_exact():
@@ -69,7 +71,8 @@ def test_truncated_result_fails_with_counts():
     truth = Table(columns=["k", "v"], rows=[[i, float(i)] for i in range(25)])
     m = match_tables(truth, res(["k", "v"], truth.rows[:20]), Compare(keys=["k"], values=["v"]))
     assert not m.ok
-    assert "20" in m.reason and "25" in m.reason
+    assert "20" in m.reason
+    assert "25" in m.reason
 
 
 def test_ordered_task_rejects_wrong_order():

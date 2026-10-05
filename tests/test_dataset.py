@@ -58,7 +58,9 @@ def table_hash(db: Path, table: str) -> str:
 def scalar(db: Path, sql: str):
     con = duckdb.connect(str(db), read_only=True)
     try:
-        return con.execute(sql).fetchone()[0]
+        row = con.execute(sql).fetchone()
+        assert row is not None
+        return row[0]
     finally:
         con.close()
 

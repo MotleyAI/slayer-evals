@@ -15,8 +15,8 @@ from claude_agent_sdk import (
     UserMessage,
 )
 
-from slayer_evals.core import AgentInput, TrialEnv
-from tests.helpers import call_sdk_tool
+from slayer_evals.core import AgentInput, Profile, TrialEnv
+from tests.helpers import call_sdk_tool, servers_of
 
 MODEL = "claude-opus-5-5"
 
@@ -107,7 +107,7 @@ class FakeClient:
         self.connected = False
 
     async def get_mcp_status(self) -> dict[str, Any]:
-        names = self.servers if self.servers is not None else list(dict(self.options.mcp_servers))
+        names = self.servers if self.servers is not None else list(servers_of(self.options))
         return {"mcpServers": [{"name": n, "status": "connected"} for n in names]}
 
     async def query(self, prompt: str, session_id: str = "default") -> None:
@@ -119,7 +119,7 @@ class FakeClient:
     async def receive_response(self) -> AsyncIterator[Any]:
         for step in self.script:
             if isinstance(step, CallLocal):
-                servers = dict(self.options.mcp_servers)
+                servers = servers_of(self.options)
                 is_error, text = await call_sdk_tool(servers["bench"], step.name, step.args)
                 yield tool_result(step.tid, text, is_error=is_error)
             elif isinstance(step, Hang):
@@ -130,7 +130,7 @@ class FakeClient:
                 yield step
 
 
-def make_input(tmp: Path, profile: str = "slayer", timeout_s: float = 60.0, max_turns: int = 60) -> AgentInput:
+def make_input(tmp: Path, profile: Profile = "slayer", timeout_s: float = 60.0, max_turns: int = 60) -> AgentInput:
     trial = tmp / "trial"
     (trial / "store").mkdir(parents=True, exist_ok=True)
     return AgentInput(

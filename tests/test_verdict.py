@@ -26,13 +26,18 @@ def good_trace() -> Trace:
 
 def test_right_answer_passes():
     v = grade(make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), good_trace())
-    assert v.correct and v.capability and v.no_hack and v.passed
+    assert v.correct
+    assert v.capability
+    assert v.no_hack
+    assert v.passed
 
 
 def test_wrong_answer():
     sub = Submission(columns=TRUTH.columns, rows=[["North", "Oslo", 1.0], ["South", "Rome", 890.0]])
     v = grade(make_task(), TRUTH, empty_manifest(), sub, good_trace())
-    assert not v.correct and v.correct_reasons and not v.passed
+    assert not v.correct
+    assert v.correct_reasons
+    assert not v.passed
 
 
 def test_missing_submission():

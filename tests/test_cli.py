@@ -70,7 +70,8 @@ def test_run_without_auth_mode(tmp_path: Path, built: BuiltDataset, capsys: pyte
     )
     assert code != 0
     err = capsys.readouterr().err
-    assert "--subscription-auth" in err and "--api-key-auth" in err
+    assert "--subscription-auth" in err
+    assert "--api-key-auth" in err
     assert not (tmp_path / "runs").exists() or not any((tmp_path / "runs").iterdir())
 
 

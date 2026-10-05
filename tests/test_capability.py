@@ -56,7 +56,8 @@ def test_capability_used_but_result_wrong():
     rows = [list(r) for r in Q1_TRUTH.rows]
     rows[0][2] = 1.0
     ok, reasons = capability(q1_task(), trace_of(query_call(Q1_QUERY, Q1_COLS, rows)))
-    assert not ok and reasons
+    assert not ok
+    assert reasons
 
 
 def test_right_answer_without_the_capability():
@@ -422,7 +423,8 @@ def test_all_predicates_on_one_call():
 def test_unparseable_formula_does_not_crash():
     q = {"source_model": "orders", "measures": [{"formula": "sum(amount", "name": "v"}]}
     ok, reasons = capability(single_task([{"kind": "call", "fn": "sum"}]), trace_of(single_call(q)), SINGLE)
-    assert not ok and reasons
+    assert not ok
+    assert reasons
 
 
 # Refusal and warning tasks.
@@ -447,7 +449,8 @@ def test_refusal_surfaced():
     trace = trace_of(error_call("query", Q18_ARGS, GRAN_ERR))
     sub = submission_of(Table(columns=[], rows=[]), message="That column is already bucketed by month; no daily data.")
     v = grade(refusal_task(), Table(columns=[], rows=[]), empty_manifest(), sub, trace)
-    assert v.correct and v.capability
+    assert v.correct
+    assert v.capability
 
 
 def test_refusal_not_mentioned():
@@ -477,7 +480,8 @@ def test_wrong_error_kind_does_not_count():
     trace = trace_of(error_call("query", Q18_ARGS, other))
     sub = submission_of(Table(columns=[], rows=[]), message="Already bucketed monthly.")
     v = grade(refusal_task(), Table(columns=[], rows=[]), empty_manifest(), sub, trace)
-    assert not v.correct and not v.capability
+    assert not v.correct
+    assert not v.capability
 
 
 def test_warning_surfaced():
@@ -498,7 +502,10 @@ def test_warning_surfaced():
     )
     sub = submission_of(Table(columns=[], rows=[]), message="Credit is broadcast: every status shows the same value.")
     v = grade(task, Table(columns=[], rows=[]), empty_manifest(), sub, trace_of(call))
-    assert v.correct and v.capability
+    assert v.correct
+    assert v.capability
+    assert call.parsed is not None
     silent = call.model_copy(update={"parsed": call.parsed.model_copy(update={"warnings": []})})
     v2 = grade(task, Table(columns=[], rows=[]), empty_manifest(), sub, trace_of(silent))
-    assert not v2.correct and not v2.capability
+    assert not v2.correct
+    assert not v2.capability

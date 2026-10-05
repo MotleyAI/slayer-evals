@@ -1,0 +1,6 @@
+name: events
+sql_table: events
+columns:
+  - {name: id, type: number, primary_key: true}
+  - {name: amount, type: number}
+  - {name: event_ts, type: time}

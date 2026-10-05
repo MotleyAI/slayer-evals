@@ -49,7 +49,8 @@ def test_leaky_prompt_detected():
     leaky = make_task(id="leaky", prompt="Use partition_by to get the region total per city.")
     problems = check_prompts([leaky, make_task(id="clean")])
     assert len(problems) == 1
-    assert "leaky" in problems[0] and "partition_by" in problems[0]
+    assert "leaky" in problems[0]
+    assert "partition_by" in problems[0]
 
 
 def test_truth_size_limit():
@@ -57,7 +58,8 @@ def test_truth_size_limit():
     big = Table(columns=["x"], rows=[[i] for i in range(21)])
     assert check_truth_sizes({"small": small}) == []
     problems = check_truth_sizes({"small": small, "big": big})
-    assert len(problems) == 1 and "big" in problems[0]
+    assert len(problems) == 1
+    assert "big" in problems[0]
 
 
 # The committed task set.

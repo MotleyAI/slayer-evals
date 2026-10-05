@@ -6,15 +6,17 @@ one-line transcript.
 """
 
 import asyncio
+import fcntl
 import hashlib
 import json
 import os
 import time
 from pathlib import Path
+from typing import cast
 
 import duckdb
 
-from slayer_evals.core import AgentInput, AgentOutcome, ParsedResult, Submission, ToolCall, Trace
+from slayer_evals.core import AgentInput, AgentOutcome, EndReason, ParsedResult, Submission, ToolCall, Trace
 
 STATE_ENV = "FAKE_AGENT_STATE"
 MARKER = "leak_marker.yaml"
@@ -39,8 +41,13 @@ def _state_dir() -> Path:
 def _attempt(inp: AgentInput, model: str) -> int:
     key = hashlib.sha256(f"{inp.prompt}|{inp.profile}|{model}".encode()).hexdigest()[:16]
     counter = _state_dir() / f"attempts-{key}"
-    n = int(counter.read_text()) + 1 if counter.exists() else 1
-    counter.write_text(str(n))
+    with counter.open("a+") as f:  # concurrent trials of one task must not read the same count
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.seek(0)
+        n = int(f.read() or "0") + 1
+        f.seek(0)
+        f.truncate()
+        f.write(str(n))
     return n
 
 
@@ -78,7 +85,9 @@ class ScriptedAgent:
             (inp.env.store_dir / MARKER).write_text("name: leak\n")
         con = duckdb.connect(str(inp.env.db_path))
         try:
-            record["orders"] = con.execute("select count(*) from orders").fetchone()[0]
+            row = con.execute("select count(*) from orders").fetchone()
+            assert row is not None
+            record["orders"] = row[0]
             if "WRITE_DB" in d:
                 con.execute("delete from returns")
                 con.execute("delete from orders where customer_id is not null")
@@ -90,7 +99,7 @@ class ScriptedAgent:
         tag = hashlib.sha256(f"{inp.prompt}|{inp.profile}|{self.model}|{attempt}".encode()).hexdigest()[:16]
         (_state_dir() / f"run-{tag}.json").write_text(json.dumps(record))
         if "END" in d:
-            return AgentOutcome(submission=None, trace=Trace(calls=[], end_reason=d["END"]))
+            return AgentOutcome(submission=None, trace=Trace(calls=[], end_reason=cast(EndReason, d["END"])))
         value = float(d.get("ANSWER", "0"))
         if "CHECK_MARKER" in d:
             value = 1.0 if saw_marker else 0.0

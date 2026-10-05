@@ -67,12 +67,15 @@ def test_truncation_reported():
 
 def test_json_object_without_warnings():
     p = ParsedResult.from_text(json.dumps({"data": [{"a": 1, "b": "x"}]}))
-    assert p is not None and p.columns == ["a", "b"] and p.rows == [[1, "x"]]
+    assert p is not None
+    assert p.columns == ["a", "b"]
+    assert p.rows == [[1, "x"]]
 
 
 def test_empty_json_result():
     p = ParsedResult.from_text(json.dumps({"data": [], "warnings": []}))
-    assert p is not None and p.rows == []
+    assert p is not None
+    assert p.rows == []
 
 
 @pytest.mark.parametrize("name", ["create_model_from_query", "list_datasources", "models_summary"])

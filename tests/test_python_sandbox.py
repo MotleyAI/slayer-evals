@@ -11,13 +11,15 @@ from slayer_evals.agents.sandbox import run_python
 async def test_runs_in_sandbox_cwd(tmp_path: Path):
     sb = tmp_path / "sb"
     r = await run_python("import os; print(os.getcwd())", sandbox_dir=sb)
-    assert r.ok and not r.timed_out
+    assert r.ok
+    assert not r.timed_out
     assert Path(r.stdout.strip()).resolve() == sb.resolve()
 
 
 async def test_libraries_available(tmp_path: Path):
     r = await run_python("import pandas, numpy, duckdb; print('ok')", sandbox_dir=tmp_path / "sb")
-    assert r.ok and r.stdout.strip() == "ok", r.stderr
+    assert r.ok, r.stderr
+    assert r.stdout.strip() == "ok", r.stderr
 
 
 async def test_env_is_sanitized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -36,7 +38,7 @@ async def test_audit_records_outside_open(tmp_path: Path):
     sb = tmp_path / "sb"
     r = await run_python(f"open({str(outside)!r}).read(); open('mine.txt', 'w').write('y')", sandbox_dir=sb)
     assert r.ok, r.stderr
-    paths = [e.path for e in r.audit.events if e.event == "open"]
+    paths = [e.path for e in r.audit.events if e.event == "open" and e.path is not None]
     assert str(outside) in paths
     assert any(Path(p).name == "mine.txt" for p in paths)
     assert Path(r.audit.sandbox_dir).resolve() == sb.resolve()
@@ -51,9 +53,11 @@ async def test_audit_records_subprocess(tmp_path: Path):
 async def test_timeout_returns_error_and_next_call_works(tmp_path: Path):
     sb = tmp_path / "sb"
     r = await run_python("while True: pass", sandbox_dir=sb, timeout_s=1.0)
-    assert r.timed_out and not r.ok
+    assert r.timed_out
+    assert not r.ok
     again = await run_python("print(2)", sandbox_dir=sb)
-    assert again.ok and again.stdout.strip() == "2"
+    assert again.ok
+    assert again.stdout.strip() == "2"
 
 
 async def test_memory_limit(tmp_path: Path):
@@ -63,4 +67,5 @@ async def test_memory_limit(tmp_path: Path):
 
 async def test_exception_is_reported(tmp_path: Path):
     r = await run_python("raise ValueError('nope')", sandbox_dir=tmp_path / "sb")
-    assert not r.ok and "nope" in r.stderr
+    assert not r.ok
+    assert "nope" in r.stderr

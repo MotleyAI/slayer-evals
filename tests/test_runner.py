@@ -72,10 +72,14 @@ def test_defaults():
     c = RunConfig()
     assert c.profiles == ["slayer", "slayer+python"]
     assert c.models == ["claude-opus-5-5"]
-    assert c.n == 1 and c.mode == "repeat" and c.concurrency == 3
-    assert c.max_turns == 60 and c.timeout_s == 900
+    assert c.n == 1
+    assert c.mode == "repeat"
+    assert c.concurrency == 3
+    assert c.max_turns == 60
+    assert c.timeout_s == 900
     assert c.auth_mode is None
-    assert c.task_ids == [] and c.rows == []
+    assert c.task_ids == []
+    assert c.rows == []
 
 
 def test_select_by_rows_and_ids():
@@ -117,14 +121,16 @@ def test_until_pass_exhausts(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 8"))
     run_dir = run_benchmark(config(tmp_path, built, td, n=3, mode="until-pass"), environ=ENV)
     rs = results(run_dir)
-    assert len(rs) == 3 and not any(r.verdict and r.verdict.passed for r in rs)
+    assert len(rs) == 3
+    assert not any(r.verdict and r.verdict.passed for r in rs)
 
 
 def test_until_pass_retries_abnormal_endings(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "END timeout"))
     run_dir = run_benchmark(config(tmp_path, built, td, n=2, mode="until-pass"), environ=ENV)
     rs = results(run_dir)
-    assert len(rs) == 2 and {r.end_reason for r in rs} == {"timeout"}
+    assert len(rs) == 2
+    assert {r.end_reason for r in rs} == {"timeout"}
 
 
 def test_agent_changes_do_not_leak(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -135,7 +141,8 @@ def test_agent_changes_do_not_leak(tmp_path: Path, built: BuiltDataset, env: Pat
     )
     run_dir = run_benchmark(config(tmp_path, built, td, concurrency=1), environ=ENV)
     by_id = {r.task_id: r for r in results(run_dir)}
-    assert by_id["b-reader"].verdict is not None and by_id["b-reader"].verdict.correct
+    assert by_id["b-reader"].verdict is not None
+    assert by_id["b-reader"].verdict.correct
     con = duckdb.connect(str(built.db_path), read_only=True)
     try:
         template_orders = con.execute("select count(*) from orders").fetchone()
@@ -166,7 +173,9 @@ def test_one_process_per_trial(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"), task_doc("b", "Q4", "ANSWER 7"))
     run_benchmark(config(tmp_path, built, td, n=2), environ=ENV)
     pids = [r["pid"] for r in recorded_runs(env)]
-    assert len(pids) == 4 and len(set(pids)) == 4 and os.getpid() not in pids
+    assert len(pids) == 4
+    assert len(set(pids)) == 4
+    assert os.getpid() not in pids
 
 
 def test_agent_sees_only_the_prompt(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -189,8 +198,10 @@ def test_trials_get_fresh_copies(tmp_path: Path, built: BuiltDataset, env: Path)
     envs = [r["input"]["env"] for r in recorded_runs(env)]
     stores = {e["store_dir"] for e in envs}
     dbs = {e["db_path"] for e in envs}
-    assert len(stores) == 2 and len(dbs) == 2
-    assert str(built.store_dir) not in stores and str(built.db_path) not in dbs
+    assert len(stores) == 2
+    assert len(dbs) == 2
+    assert str(built.store_dir) not in stores
+    assert str(built.db_path) not in dbs
 
 
 def test_credentials_reach_agent(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -233,12 +244,19 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
     md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
     assert md.slayer_version == "1.0.2"
     assert md.sdk_version == claude_agent_sdk.__version__
-    assert md.models == ["claude-opus-5-5"] and md.mode == "repeat" and md.n == 1
-    assert md.auth_mode == "api-key" and md.max_turns == 60 and md.timeout_s == 900
+    assert md.models == ["claude-opus-5-5"]
+    assert md.mode == "repeat"
+    assert md.n == 1
+    assert md.auth_mode == "api-key"
+    assert md.max_turns == 60
+    assert md.timeout_s == 900
     rs = {r.task_id: r for r in results(run_dir)}
-    assert rs["x"].xfail == "DEV-2058" and rs["a"].xfail is None
+    assert rs["x"].xfail == "DEV-2058"
+    assert rs["a"].xfail is None
     for r in rs.values():
-        assert r.row in ("Q1", "Q20") and r.end_reason == "submitted" and r.verdict is not None
+        assert r.row in ("Q1", "Q20")
+        assert r.end_reason == "submitted"
+        assert r.verdict is not None
     for r in rs.values():
         stem = f"{r.task_id}__{r.profile}__{r.model}__{r.trial}"
         trace = run_dir / "traces" / f"{stem}.json"
@@ -250,6 +268,7 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
 
 def test_missing_auth_mode_refuses_before_running(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"))
+    cfg = config(tmp_path, built, td, auth_mode=None)
     with pytest.raises(AuthError):
-        run_benchmark(config(tmp_path, built, td, auth_mode=None), environ=ENV)
+        run_benchmark(cfg, environ=ENV)
     assert recorded_runs(env) == []

@@ -14,7 +14,8 @@ def test_mode_required():
     with pytest.raises(AuthError) as exc:
         resolve_auth(None, env_file=None, environ={"ANTHROPIC_API_KEY": KEY, "CLAUDE_CODE_OAUTH_TOKEN": OAUTH})
     msg = str(exc.value)
-    assert "--subscription-auth" in msg and "--api-key-auth" in msg
+    assert "--subscription-auth" in msg
+    assert "--api-key-auth" in msg
 
 
 def test_subscription_mode():
@@ -22,7 +23,8 @@ def test_subscription_mode():
         "subscription", env_file=None, environ={"CLAUDE_CODE_OAUTH_TOKEN": OAUTH, "ANTHROPIC_API_KEY": KEY}
     )
     assert creds["CLAUDE_CODE_OAUTH_TOKEN"] == OAUTH
-    assert creds["ANTHROPIC_API_KEY"] == "" and creds["ANTHROPIC_AUTH_TOKEN"] == ""
+    assert creds["ANTHROPIC_API_KEY"] == ""
+    assert creds["ANTHROPIC_AUTH_TOKEN"] == ""
 
 
 def test_api_key_mode():

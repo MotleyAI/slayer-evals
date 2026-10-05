@@ -15,7 +15,7 @@ ALLOWED = {
     "tasks": {"core"},
     "grading": {"core"},
     "agents": {"core"},
-    "runner": {"core", "dataset", "tasks", "agents", "grading"},
+    "runner": {"core", "dataset", "tasks", "agents", "grading", "report"},
     "report": {"core"},
     "cli": {"runner", "report", "dataset", "tasks"},
 }
@@ -41,7 +41,8 @@ def imported_modules(path: Path) -> set[str]:
 @pytest.mark.parametrize("node", NODES)
 def test_node_exists(node: str):
     files = node_files(node)
-    assert files and all(f.exists() for f in files), node
+    assert files, node
+    assert all(f.exists() for f in files), node
 
 
 @pytest.mark.parametrize("node", NODES)

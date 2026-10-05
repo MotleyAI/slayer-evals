@@ -210,7 +210,8 @@ def test_python_in_sandbox_ok():
 
 def test_python_opens_the_database():
     ok, reasons = no_hack(task(), py("import duckdb\ncon = duckdb.connect('/tmp/trial-1/bench.duckdb')"))
-    assert not ok and reasons
+    assert not ok
+    assert reasons
 
 
 @pytest.mark.parametrize(

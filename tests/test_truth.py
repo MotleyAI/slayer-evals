@@ -72,8 +72,9 @@ def test_snapshot_drift_detected(db: Path, tmp_path: Path):
 def test_missing_snapshot_is_drift(db: Path, tmp_path: Path):
     snap = tmp_path / "truth"
     snap.mkdir()
+    truths = compute_truths([make_task(id="new-task", truth_sql="select 1 as x")], db)
     with pytest.raises(SnapshotDriftError) as exc:
-        check_snapshots(compute_truths([make_task(id="new-task", truth_sql="select 1 as x")], db), snap)
+        check_snapshots(truths, snap)
     assert "new-task" in str(exc.value)
 
 

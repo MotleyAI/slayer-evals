@@ -14,7 +14,8 @@ def test_baseline_report_regenerates():
 
 def test_baseline_covers_all_tasks_both_profiles():
     md = RunMetadata.model_validate_json((BASELINE / "metadata.json").read_text())
-    assert md.models == ["claude-opus-5-5"] and md.n == 1
+    assert md.models == ["claude-opus-5-5"]
+    assert md.n == 1
     assert sorted(md.profiles) == ["slayer", "slayer+python"]
     results = [TrialResult.model_validate_json(x) for x in (BASELINE / "results.jsonl").read_text().splitlines()]
     task_ids = {t.id for t in load_tasks(REPO / "tasks")}

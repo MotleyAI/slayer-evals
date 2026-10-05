@@ -56,8 +56,11 @@ async def test_submitted(tmp_path: Path):
     assert made[0].prompt == inp.prompt
     assert made[0].interrupted
     query = [c for c in out.trace.calls if c.tool == "query"]
-    assert len(query) == 1 and query[0].parsed is not None and not query[0].is_error
-    assert out.trace.usage.input_tokens == 1000 and out.trace.usage.cache_read_tokens == 5000
+    assert len(query) == 1
+    assert query[0].parsed is not None
+    assert not query[0].is_error
+    assert out.trace.usage.input_tokens == 1000
+    assert out.trace.usage.cache_read_tokens == 5000
     assert not out.trace.usage.partial
     assert out.trace.cost_usd == 0.12
 
@@ -74,7 +77,8 @@ async def test_leaked_server_aborts(tmp_path: Path):
     a, made = agent(submitted_script(), servers=["slayer", "bench", "claude_ai_Gmail"])
     out = await a.run(make_input(tmp_path))
     assert out.trace.end_reason == "error"
-    assert out.trace.error is not None and "claude_ai_Gmail" in out.trace.error
+    assert out.trace.error is not None
+    assert "claude_ai_Gmail" in out.trace.error
     assert out.submission is None
     assert made[0].prompt is None
 
@@ -86,7 +90,8 @@ async def test_timeout_keeps_transcript(tmp_path: Path):
     out = await a.run(inp)
     assert out.trace.end_reason == "timeout"
     lines = inp.env.transcript_path.read_text().splitlines()
-    assert lines and "let me look at the models" in lines[0]
+    assert lines
+    assert "let me look at the models" in lines[0]
     json.loads(lines[0])
 
 
@@ -112,7 +117,8 @@ async def test_error_with_partial_usage(tmp_path: Path):
     a, _ = agent(script)
     out = await a.run(make_input(tmp_path))
     assert out.trace.end_reason == "error"
-    assert out.trace.error is not None and "stream broke" in out.trace.error
+    assert out.trace.error is not None
+    assert "stream broke" in out.trace.error
     u = out.trace.usage
     assert u.partial
     assert (u.input_tokens, u.output_tokens, u.cache_read_tokens, u.cache_write_tokens) == (300, 30, 110, 11)
@@ -130,6 +136,7 @@ async def test_python_audit_reaches_trace(tmp_path: Path):
     a, _ = agent(script)
     out = await a.run(make_input(tmp_path, profile="slayer+python"))
     py = [c for c in out.trace.calls if c.tool == "python"]
-    assert len(py) == 1 and py[0].audit is not None
+    assert len(py) == 1
+    assert py[0].audit is not None
     assert "/etc/hostname" in [e.path for e in py[0].audit.events]
     assert "hi" in py[0].result_text

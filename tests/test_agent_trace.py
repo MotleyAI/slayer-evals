@@ -24,10 +24,15 @@ def test_tool_calls_normalized():
     trace = normalize_messages(msgs, end_reason="submitted")
     assert [c.tool for c in trace.calls] == ["query", "query", "create_model"]
     q, e, c = trace.calls
-    assert q.args == ok["args"] and q.result_text == ok["text"] and not q.is_error
-    assert q.parsed is not None and "orders_flat.region_total" in q.parsed.columns
-    assert e.is_error and e.result_text == err["text"]
-    assert c.parsed is None and c.result_text == created["text"]
+    assert q.args == ok["args"]
+    assert q.result_text == ok["text"]
+    assert not q.is_error
+    assert q.parsed is not None
+    assert "orders_flat.region_total" in q.parsed.columns
+    assert e.is_error
+    assert e.result_text == err["text"]
+    assert c.parsed is None
+    assert c.result_text == created["text"]
 
 
 def test_parallel_tool_calls_matched_by_id():
@@ -54,16 +59,21 @@ def test_parallel_tool_calls_matched_by_id():
 
 def test_call_without_result_kept():
     trace = normalize_messages([tool_use("a", "mcp__slayer__query", {"query": "monthly_rev"})], end_reason="timeout")
-    assert len(trace.calls) == 1 and trace.calls[0].result_text == "" and trace.end_reason == "timeout"
+    assert len(trace.calls) == 1
+    assert trace.calls[0].result_text == ""
+    assert trace.end_reason == "timeout"
 
 
 def test_usage_from_result_message():
     msgs = [text_turn("x", message_id="m1", usage=turn_usage()), result_message(turns=7, cost=0.5)]
     trace = normalize_messages(msgs, end_reason="submitted")
-    assert trace.usage.input_tokens == 1000 and trace.usage.output_tokens == 200
-    assert trace.usage.cache_read_tokens == 5000 and trace.usage.cache_write_tokens == 300
+    assert trace.usage.input_tokens == 1000
+    assert trace.usage.output_tokens == 200
+    assert trace.usage.cache_read_tokens == 5000
+    assert trace.usage.cache_write_tokens == 300
     assert not trace.usage.partial
-    assert trace.turns == 7 and trace.cost_usd == 0.5
+    assert trace.turns == 7
+    assert trace.cost_usd == 0.5
 
 
 def test_usage_fallback_deduplicated():
@@ -75,8 +85,10 @@ def test_usage_fallback_deduplicated():
     ]
     trace = normalize_messages(msgs, end_reason="error", error="boom")
     u = trace.usage
-    assert u.partial and (u.input_tokens, u.output_tokens, u.cache_read_tokens, u.cache_write_tokens) == (30, 3, 6, 9)
-    assert trace.error == "boom" and trace.cost_usd is None
+    assert u.partial
+    assert (u.input_tokens, u.output_tokens, u.cache_read_tokens, u.cache_write_tokens) == (30, 3, 6, 9)
+    assert trace.error == "boom"
+    assert trace.cost_usd is None
 
 
 def test_python_audits_attached_in_order():

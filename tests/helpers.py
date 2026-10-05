@@ -105,6 +105,12 @@ def manifest_with_aov() -> StoreManifest:
     )
 
 
+def servers_of(options: Any) -> dict[str, Any]:
+    """`ClaudeAgentOptions.mcp_servers` as the dict the agent builds."""
+    assert isinstance(options.mcp_servers, dict)
+    return dict(options.mcp_servers)
+
+
 async def list_sdk_tools(server_config: Any) -> list[str]:
     """Tool names an in-process SDK MCP server advertises."""
     server = server_config["instance"]

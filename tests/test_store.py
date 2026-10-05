@@ -7,6 +7,7 @@ from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.types import CallToolResult, TextContent
 from slayer.core.query import SlayerQuery
 from slayer.storage.yaml_storage import YAMLStorage
 
@@ -15,6 +16,12 @@ from slayer_evals.dataset import DB_FILE, MANIFEST_FILE, STORE_DIR, BuiltDataset
 
 SLAYER = str(Path(sys.executable).parent / "slayer")
 MODELS = {"regions", "customers", "orders", "returns", "events", "orders_flat"}
+
+
+def text_of(res: CallToolResult) -> str:
+    content = res.content[0]
+    assert isinstance(content, TextContent)
+    return content.text
 
 
 def test_layout(built: BuiltDataset):
@@ -28,12 +35,18 @@ async def test_datasource_and_granularities(built: BuiltDataset):
     storage = YAMLStorage(base_dir=str(built.store_dir))
     assert await storage.list_datasources() == ["bench"]
     ds = await storage.get_datasource("bench")
-    assert ds is not None and ds.type == "duckdb"
+    assert ds is not None
+    assert ds.type == "duckdb"
+    assert ds.database is not None
     assert not Path(ds.database).is_absolute()
     grans = {g.name: g for g in ds.granularities}
-    assert grans["fiscal_year"].base == "month" and grans["fiscal_year"].multiple == 12
-    assert grans["fiscal_year"].origin.month == 4
-    assert grans["quarter_hour"].base == "minute" and grans["quarter_hour"].multiple == 15
+    assert grans["fiscal_year"].base == "month"
+    assert grans["fiscal_year"].multiple == 12
+    origin = grans["fiscal_year"].origin
+    assert origin is not None
+    assert origin.month == 4
+    assert grans["quarter_hour"].base == "minute"
+    assert grans["quarter_hour"].multiple == 15
 
 
 async def test_models_and_joins(built: BuiltDataset):
@@ -53,7 +66,7 @@ async def test_models_and_joins(built: BuiltDataset):
 
 async def test_manifest_matches_store(built: BuiltDataset):
     storage = YAMLStorage(base_dir=str(built.store_dir))
-    measures: set[tuple[str, str, str]] = set()
+    measures: set[tuple[str, str | None, str]] = set()
     queries: dict[str, object] = {}
     for name in await storage.list_models(data_source="bench"):
         model = await storage.get_model(name, data_source="bench")
@@ -87,11 +100,11 @@ async def test_store_copy_loads_and_answers(built: BuiltDataset, tmp_path: Path)
     async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
         await session.initialize()
         ds = await session.call_tool("list_datasources", {})
-        assert "bench" in ds.content[0].text
+        assert "bench" in text_of(ds)
         summary = await session.call_tool("models_summary", {"datasource_name": "bench"})
         assert not summary.isError
         for model in MODELS:
-            assert f"`{model}`" in summary.content[0].text
+            assert f"`{model}`" in text_of(summary)
         res = await session.call_tool(
             "query",
             {
@@ -99,7 +112,8 @@ async def test_store_copy_loads_and_answers(built: BuiltDataset, tmp_path: Path)
                 "format": "json",
             },
         )
-        assert not res.isError, res.content[0].text
-        payload = json.loads(res.content[0].text)
+        assert not res.isError, text_of(res)
+        payload = json.loads(text_of(res))
         data = payload["data"] if isinstance(payload, dict) else payload
-        assert data and next(iter(data[0].values())) > 0
+        assert data
+        assert next(iter(data[0].values())) > 0
