@@ -1,4 +1,4 @@
-"""Trial subprocess entry point: load the agent, run it on one input, write its outcome as JSON."""
+"""Trial subprocess entry point: read the spec from stdin (it holds credentials), run the agent, write its outcome."""
 
 import asyncio
 import sys
@@ -24,8 +24,8 @@ def run_trial(spec: TrialSpec) -> AgentOutcome:
 
 
 def main(argv: list[str]) -> int:
-    spec_path, outcome_path = Path(argv[1]), Path(argv[2])
-    outcome = run_trial(TrialSpec.model_validate_json(spec_path.read_text()))
+    outcome_path = Path(argv[1])
+    outcome = run_trial(TrialSpec.model_validate_json(sys.stdin.read()))
     outcome_path.write_text(outcome.model_dump_json())
     return 0
 

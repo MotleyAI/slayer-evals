@@ -1,12 +1,28 @@
 """Task schema: prompt, truth SQL, comparison rules, expectations."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 ALL_ROWS = tuple(f"Q{i}" for i in range(1, 26))
 UNCOVERED_ROWS = ("Q19", "Q22")
 COVERED_ROWS = tuple(r for r in ALL_ROWS if r not in UNCOVERED_ROWS)
+STEM_SEP = "__"
+
+
+def _safe_name(v: str) -> str:
+    if not v or v.startswith(".") or "/" in v or "\\" in v or STEM_SEP in v:
+        raise ValueError(f"{v!r} must be a single path component without a leading dot or {STEM_SEP!r}")
+    return v
+
+
+# A name that becomes part of a trial's output file stem.
+SafeName = Annotated[str, AfterValidator(_safe_name)]
+
+
+def trial_stem(task_id: str, profile: str, model: str, trial: int) -> str:
+    """The file stem of one trial's trace and transcript."""
+    return STEM_SEP.join([task_id, profile, model, str(trial)])
 
 
 class Strict(BaseModel):
@@ -47,7 +63,7 @@ class XFail(Strict):
 
 
 class Task(Strict):
-    id: str
+    id: SafeName
     row: str
     prompt: str
     truth_sql: str

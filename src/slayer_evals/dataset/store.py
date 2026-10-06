@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime as dt
+import shutil
 from pathlib import Path
 
 import yaml
@@ -54,6 +55,8 @@ def build_dataset(out_dir: Path, seed: int = DEFAULT_SEED) -> BuiltDataset:
     out_dir.mkdir(parents=True, exist_ok=True)
     db_path = build_database(out_dir / DB_FILE, seed=seed)
     store_dir = out_dir / STORE_DIR
+    if store_dir.exists():
+        shutil.rmtree(store_dir)
     asyncio.run(_fill_store(store_dir, db_path))
     return BuiltDataset(dir=out_dir, db_path=db_path, store_dir=store_dir)
 

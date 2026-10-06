@@ -11,7 +11,7 @@ from mcp.client.stdio import stdio_client
 from mcp.types import CallToolResult, TextContent
 from slayer.storage.yaml_storage import YAMLStorage
 
-from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset, load_built
+from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset, build_dataset, load_built
 
 SLAYER = str(Path(sys.executable).parent / "slayer")
 MODELS = {"regions", "customers", "orders", "returns", "events", "orders_flat"}
@@ -102,6 +102,15 @@ async def test_store_copy_loads_and_answers(built: BuiltDataset, tmp_path: Path)
         data = payload["data"] if isinstance(payload, dict) else payload
         assert data
         assert next(iter(data[0].values())) > 0
+
+
+def test_rebuild_drops_stale_store_files(tmp_path: Path):
+    stale = tmp_path / STORE_DIR / "stale_model.yaml"
+    stale.parent.mkdir()
+    stale.write_text("name: stale\n")
+    built = build_dataset(tmp_path)
+    assert not stale.exists()
+    assert (built.store_dir / "datasources").is_dir()
 
 
 def test_load_built_rejects_a_non_dataset(tmp_path: Path):

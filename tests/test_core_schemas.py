@@ -2,6 +2,9 @@
 
 import datetime as dt
 
+import pytest
+from pydantic import ValidationError
+
 from slayer_evals.core import (
     ALL_ROWS,
     COVERED_ROWS,
@@ -71,6 +74,12 @@ def test_task_round_trip():
         xfail={"issue": "DEV-2058", "reason": "relative dates need a pinned clock"},
     )
     assert type(task).model_validate_json(task.model_dump_json()) == task
+
+
+@pytest.mark.parametrize("task_id", ["a/b", "..", ".hidden", "a__b", ""])
+def test_task_id_must_be_path_safe(task_id: str):
+    with pytest.raises(ValidationError):
+        make_task(id=task_id)
 
 
 def test_verdict_passed_is_correct_and_single_query():

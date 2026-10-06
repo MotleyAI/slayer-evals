@@ -6,6 +6,7 @@ import datetime as dt
 import importlib.metadata
 import os
 import shutil
+import signal
 import sys
 import tempfile
 import time
@@ -26,6 +27,7 @@ from slayer_evals.core import (
     Trace,
     TrialEnv,
     TrialResult,
+    trial_stem,
 )
 from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset, build_dataset, load_built
 from slayer_evals.grading import grade
@@ -66,7 +68,7 @@ class Runner:
         self.results_path = run_dir / "results.jsonl"
 
     def _stem(self, combo: Combo, trial: int) -> str:
-        return f"{combo.task.id}__{combo.profile}__{combo.model}__{trial}"
+        return trial_stem(combo.task.id, combo.profile, combo.model, trial)
 
     def _child_env(self) -> dict[str, str]:
         return {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS}
@@ -84,26 +86,30 @@ class Runner:
         )
         inp = AgentInput(prompt=combo.task.prompt, profile=combo.profile, env=env)
         spec = TrialSpec(agent=self.cfg.agent, model=combo.model, input=inp)
-        with tempfile.TemporaryDirectory(prefix="slayer-evals-spec-") as io_dir:
-            spec_path, outcome_path = Path(io_dir) / "spec.json", Path(io_dir) / "outcome.json"
-            spec_path.write_text(spec.model_dump_json())
+        with tempfile.TemporaryDirectory(prefix="slayer-evals-outcome-") as io_dir:
+            outcome_path = Path(io_dir) / "outcome.json"
             start = time.monotonic()
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-m",
                 "slayer_evals.runner.trial",
-                str(spec_path),
                 str(outcome_path),
                 env=self._child_env(),
+                stdin=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                start_new_session=True,
             )
             try:
-                _, stderr = await asyncio.wait_for(proc.communicate(), timeout=self.cfg.timeout_s + KILL_GRACE_S)
+                _, stderr = await asyncio.wait_for(
+                    proc.communicate(spec.model_dump_json().encode()), timeout=self.cfg.timeout_s + KILL_GRACE_S
+                )
             except TimeoutError:
-                with contextlib.suppress(ProcessLookupError):
-                    proc.kill()
-                await proc.wait()
                 return AgentOutcome(submission=None, trace=Trace(end_reason="timeout")), time.monotonic() - start
+            finally:
+                # The agent's own subprocesses (CLI, MCP servers, Python tool) share the trial's process group.
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(proc.pid, signal.SIGKILL)
+                await proc.wait()
             elapsed = time.monotonic() - start
             if not outcome_path.exists():
                 tail = stderr.decode(errors="replace")[-2000:]

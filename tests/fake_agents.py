@@ -1,7 +1,7 @@
 """Agents the runner can load by import path in its trial subprocesses; behaviour is read from the prompt.
 
 Prompt directives (one per line): `ANSWER <x>`, `PASS_FROM_ATTEMPT <k>`, `END <reason>`, `SLEEP <s>`,
-`WRITE_MARKER`, `CHECK_MARKER`, `WRITE_DB`. Every run is recorded under `$FAKE_AGENT_STATE` and writes a
+`WRITE_MARKER`, `CHECK_MARKER`, `WRITE_DB`, `SPAWN_SLEEPER`. Every run is recorded under `$FAKE_AGENT_STATE` and writes a
 one-line transcript.
 """
 
@@ -10,6 +10,8 @@ import fcntl
 import hashlib
 import json
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import cast
@@ -21,6 +23,7 @@ from slayer_evals.core import AgentInput, AgentOutcome, EndReason, ParsedResult,
 STATE_ENV = "FAKE_AGENT_STATE"
 MARKER = "leak_marker.yaml"
 TRANSCRIPT_TAG = "fake-agent-transcript"
+SLEEPER_PID = "sleeper.pid"
 
 
 def _directives(prompt: str) -> dict[str, str]:
@@ -71,14 +74,22 @@ class ScriptedAgent:
 
     async def run(self, inp: AgentInput) -> AgentOutcome:
         d = _directives(inp.prompt)
+        secrets = [v for v in inp.env.credentials.values() if v]
         record = {
             "pid": os.getpid(),
+            "argv_files_with_secrets": [
+                a for a in sys.argv if Path(a).is_file() and any(s in Path(a).read_text() for s in secrets)
+            ],
             "input": json.loads(inp.model_dump_json()),
             "model": self.model,
             "start": time.time(),
         }
         inp.env.transcript_path.write_text(json.dumps({"tag": TRANSCRIPT_TAG, "prompt": inp.prompt}) + "\n")
         attempt = _attempt(inp, self.model)
+        if "SPAWN_SLEEPER" in d:
+            # Not asyncio's: it kills its children on exit, which would hide a leak.
+            sleeper = subprocess.Popen(["sleep", "120"])  # noqa: ASYNC220
+            (_state_dir() / SLEEPER_PID).write_text(str(sleeper.pid))
         if "SLEEP" in d:
             await asyncio.sleep(float(d["SLEEP"]))
         if "WRITE_MARKER" in d:

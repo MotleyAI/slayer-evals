@@ -15,8 +15,10 @@ from slayer_evals.core.task import (
     UNCOVERED_ROWS,
     Compare,
     Expectation,
+    SafeName,
     Task,
     XFail,
+    trial_stem,
 )
 from slayer_evals.core.trace import (
     PROFILES,
@@ -51,6 +53,7 @@ __all__ = [
     "ResultWarning",
     "RunMetadata",
     "RunMode",
+    "SafeName",
     "Submission",
     "Table",
     "Task",
@@ -62,4 +65,5 @@ __all__ = [
     "Usage",
     "Verdict",
     "XFail",
+    "trial_stem",
 ]

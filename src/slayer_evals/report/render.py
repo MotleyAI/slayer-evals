@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from slayer_evals.core import ALL_ROWS, UNCOVERED_ROWS, RunMetadata, Trace, TrialResult
+from slayer_evals.core import ALL_ROWS, UNCOVERED_ROWS, RunMetadata, Trace, TrialResult, trial_stem
 
 REPORT_FILE = "report.md"
 RESULTS_FILE = "results.jsonl"
@@ -45,7 +45,7 @@ _ERROR_RE = re.compile(r"Error executing tool [\w.-]+: ([A-Za-z_][\w.]*):")
 
 
 def stem(r: TrialResult) -> str:
-    return f"{r.task_id}__{r.profile}__{r.model}__{r.trial}"
+    return trial_stem(r.task_id, r.profile, r.model, r.trial)
 
 
 def load_results(run_dir: Path) -> list[TrialResult]:

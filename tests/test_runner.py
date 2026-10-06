@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -10,11 +11,13 @@ from typing import Any
 import claude_agent_sdk
 import duckdb
 import pytest
+from pydantic import ValidationError
 
+import slayer_evals.runner.run as run_module
 from slayer_evals.core import RunMetadata, TrialResult
 from slayer_evals.dataset import BuiltDataset
 from slayer_evals.runner import AuthError, RunConfig, run_benchmark, select_tasks
-from tests.fake_agents import STATE_ENV, TRANSCRIPT_TAG, recorded_runs
+from tests.fake_agents import SLEEPER_PID, STATE_ENV, TRANSCRIPT_TAG, recorded_runs
 from tests.helpers import REPO, make_task, write_task
 
 FAKE = "tests.fake_agents:ScriptedAgent"
@@ -86,6 +89,22 @@ def test_select_by_rows_and_ids():
     assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q1", "Q4"]))] == ["a", "b"]
     assert [t.id for t in select_tasks(tasks, RunConfig(task_ids=["c"]))] == ["c"]
     assert [t.id for t in select_tasks(tasks, RunConfig())] == ["a", "b", "c"]
+
+
+@pytest.mark.parametrize("model", ["a/b", "..", ".hidden", "a__b", ""])
+def test_model_names_must_be_path_safe(model: str):
+    with pytest.raises(ValidationError):
+        RunConfig(models=[model])
+
+
+@pytest.mark.parametrize(
+    ("cfg", "unknown"),
+    [(RunConfig(task_ids=["a", "typo"]), "typo"), (RunConfig(rows=["Q1", "Q99"]), "Q99")],
+)
+def test_select_rejects_unknown_ids_and_rows(cfg: RunConfig, unknown: str):
+    tasks = [make_task(id="a", row="Q1"), make_task(id="b", row="Q4")]
+    with pytest.raises(ValueError, match=unknown):
+        select_tasks(tasks, cfg)
 
 
 def test_row_filter_run(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -210,6 +229,37 @@ def test_credentials_reach_agent(tmp_path: Path, built: BuiltDataset, env: Path)
     creds = rec["input"]["env"]["credentials"]
     assert creds["ANTHROPIC_API_KEY"] == "sk-ant-api-test"
     assert creds.get("CLAUDE_CODE_OAUTH_TOKEN", "") == ""
+
+
+def _alive(pid: int) -> bool:
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0] != "Z"
+    except FileNotFoundError:
+        return False
+
+
+def test_trial_timeout_kills_the_agents_subprocesses(
+    tmp_path: Path, built: BuiltDataset, env: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(run_module, "KILL_GRACE_S", 0.0)
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "SPAWN_SLEEPER\nSLEEP 60\nANSWER 7"))
+    start = time.monotonic()
+    run_dir = run_benchmark(config(tmp_path, built, td, timeout_s=5.0), environ=ENV)
+    assert time.monotonic() - start < 30  # a surviving sleeper holds the trial's stderr open until it exits
+    (r,) = results(run_dir)
+    assert r.end_reason == "timeout"
+    pid = int((env / SLEEPER_PID).read_text())
+    deadline = time.monotonic() + 5
+    while _alive(pid) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    assert not _alive(pid)
+
+
+def test_credentials_not_in_a_file_named_on_the_trial_command_line(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"))
+    run_benchmark(config(tmp_path, built, td), environ=ENV)
+    (rec,) = recorded_runs(env)
+    assert rec["argv_files_with_secrets"] == []
 
 
 FAKE_SLAYER = """
