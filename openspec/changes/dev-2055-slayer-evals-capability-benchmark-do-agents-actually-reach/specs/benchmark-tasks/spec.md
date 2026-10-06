@@ -1,16 +1,15 @@
 ## Purpose
 
-Defines what a benchmark task is — a business question with machine-checkable truth and capability expectations —
-and how tasks are loaded and their truth computed and pinned.
+Defines what a benchmark task is — a business question with machine-checkable truth, worded so that one SLayer query
+using the row's capability answers it — and how tasks are loaded and their truth computed and pinned.
 
 ## ADDED Requirements
 
 ### Requirement: Task file format
 Each task SHALL be one YAML file with: `id` (unique), `row` (one of Q1–Q18, Q20, Q21, Q23–Q25), `prompt` (a natural
 language business question), `truth_sql` (DuckDB SQL over the built dataset), `compare` (`keys`, `values`,
-`tolerance` default 1e-6, `ordered` default false, `columns_exact` default false), `capabilities` (predicates, see the
-grading capability), `allow` (construct-specific hack-rule exemptions, default none), `expect` (`match` by default, or
-`{error: <kind>, message_any: [...]}` / `{warning: <kind>, message_any: [...]}`), and optional `xfail` (an issue key
+`tolerance` default 1e-6, `ordered` default false, `columns_exact` default false), `expect` (`match` by default, or
+`{error: <kind or list of kinds>, message_any: [...]}` / `{warning: <kind or list of kinds>, message_any: [...]}`), and optional `xfail` (an issue key
 with a reason). Loading MUST reject a file with an unknown key, a missing required key, a duplicate id, or a row
 outside the covered set.
 

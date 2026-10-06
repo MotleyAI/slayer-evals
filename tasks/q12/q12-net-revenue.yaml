@@ -6,5 +6,3 @@ prompt: >-
 truth_sql: |
   select region, sum(amount - discount) as net_revenue from orders_flat group by 1
 compare: {keys: [region], values: [net_revenue]}
-capabilities:
-  - {kind: call, fn: sum, dotted_arg: true}

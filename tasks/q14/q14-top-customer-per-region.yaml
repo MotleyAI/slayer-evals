@@ -10,5 +10,3 @@ truth_sql: |
     from orders_flat where region is not null and customer_id is not null group by 1, 2)
   where rk = 1
 compare: {keys: [region, customer_id], values: [revenue]}
-capabilities:
-  - {kind: call, fn: [rank, dense_rank, row_number], clause: filters}

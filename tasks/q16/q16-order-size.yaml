@@ -7,7 +7,3 @@ truth_sql: |
   select case when amount > 100 then 'big' else 'small' end as size, count(*) as orders, sum(amount) as revenue
   from orders group by 1
 compare: {keys: [size], values: [orders, revenue]}
-allow:
-  - {construct: inline_column_sql, scope: row_scalar}
-capabilities:
-  - {kind: inline_extension}

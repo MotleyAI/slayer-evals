@@ -4,7 +4,7 @@ prompt: >-
   What is the total credit limit of our customers for each order status?
 truth_sql: select 1 as nothing where false
 expect:
-  warning: broadcast
-  message_any: [broadcast, repeat, "same value", "same total", "same amount", "not attribut", "cannot be split", "can't be split", "double count", "fan out", "fans out"]
-capabilities:
-  - {kind: call, fn: sum}
+  warning: [broadcast, associated]
+  message_any: [broadcast, repeat, overlap, "same value", "same total", "same amount", "not attribut", "not additive",
+                "cannot be split", "can't be split", "counted in both", "counted in more than one", "double count",
+                "shouldn't be added", "should not be added", "fan out", "fans out"]

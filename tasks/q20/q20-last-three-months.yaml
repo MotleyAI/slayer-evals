@@ -7,8 +7,6 @@ truth_sql: |
   where order_date >= date '2025-10-01' and order_date < date '2026-01-01'
   group by 1
 compare: {keys: [month], values: [revenue]}
-capabilities:
-  - {kind: time_filter, form: relative}
 xfail:
   issue: DEV-2058
   reason: slayer mcp cannot pin "now"; the truth assumes now is in January 2026

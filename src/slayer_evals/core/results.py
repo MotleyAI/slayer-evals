@@ -31,20 +31,29 @@ class StoreManifest(BaseModel):
     queries: list[SavedQuery] = Field(default_factory=list)
 
 
+class TraceFlags(BaseModel):
+    """Informational facts read off the trace; they do not affect `passed`."""
+
+    used_python: bool = False
+    raw_sql: bool = False
+    edited_models: bool = False
+    slayer_errors: bool = False
+    several_queries: bool = False
+
+
 class Verdict(BaseModel):
     correct: bool
-    capability: bool
-    no_hack: bool
+    single_query: bool
     correct_reasons: list[str] = Field(default_factory=list)
-    capability_reasons: list[str] = Field(default_factory=list)
-    no_hack_reasons: list[str] = Field(default_factory=list)
-    # Truth column → result column of the submission match and of the qualifying query's match.
+    single_query_reasons: list[str] = Field(default_factory=list)
+    # Truth column → result column of the submission match and of the single query's match.
     correct_columns: dict[str, str] = Field(default_factory=dict)
-    capability_columns: dict[str, str] = Field(default_factory=dict)
+    single_query_columns: dict[str, str] = Field(default_factory=dict)
+    flags: TraceFlags = Field(default_factory=TraceFlags)
 
     @property
     def passed(self) -> bool:
-        return self.correct and self.capability and self.no_hack
+        return self.correct and self.single_query
 
 
 class TrialResult(BaseModel):

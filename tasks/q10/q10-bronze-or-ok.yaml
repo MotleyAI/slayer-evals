@@ -7,5 +7,3 @@ truth_sql: |
   select count(*) as customers from customers
   where tier = 'bronze' or id in (select customer_id from orders where status = 'ok')
 compare: {values: [customers]}
-capabilities:
-  - {kind: filter, bool_op: or, dotted_ref: true}

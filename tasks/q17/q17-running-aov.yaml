@@ -8,5 +8,3 @@ truth_sql: |
              from orders where order_date >= date '2025-01-01' group by 1)
   select month, sum(aov) over (order by month) as running_aov from a
 compare: {keys: [month], values: [running_aov]}
-capabilities:
-  - {kind: call, fn: cumsum, within: {kind: call, fn: sum}}

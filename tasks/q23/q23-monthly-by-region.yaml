@@ -8,5 +8,3 @@ truth_sql: |
   where order_date >= date '2025-01-01' and order_date < date '2025-04-01'
   group by 1, 2
 compare: {keys: [month, region], values: [revenue]}
-capabilities:
-  - {kind: saved_query, name: monthly_rev, refine: true}

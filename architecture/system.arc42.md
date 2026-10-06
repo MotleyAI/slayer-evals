@@ -5,7 +5,8 @@
 A capability benchmark for agents that use SLayer through its MCP server: it measures whether an agent answers
 analytics questions by reaching for SLayer's DSL (partitioned aggregates, transforms, multi-stage queries, …) rather
 than pulling raw rows and post-processing them. Tasks run against a seeded demo database; each trial is graded on
-correctness, use of the intended capability, and absence of hacks. Any agent can be benchmarked through one adapter.
+correctness and on whether a single SLayer query's own result is the answer. Any agent can be benchmarked through
+one adapter.
 
 ## Building blocks
 
@@ -41,8 +42,8 @@ flowchart TD
 
 ## Principles
 
-1. Pure grading: a verdict is a function of the task, its truth, the store manifest, the submission and the trace;
-   grading does no I/O and imports only `core` and SLayer's expression parser. [enforced: arch_check:model-truth]
+1. Pure grading: a verdict is a function of the task, its truth, the submission and the trace; grading does no I/O
+   and imports only `core`. [enforced: arch_check:model-truth]
 2. Blind agents: an agent receives only the prompt text, its profile and the trial environment.
    [enforced: test:tests/test_runner.py]
 3. Agent-agnostic: nothing outside `agents` reads agent SDK objects. [enforced: arch_check:model-truth]

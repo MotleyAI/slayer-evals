@@ -13,6 +13,7 @@ from slayer_evals.core import (
     Submission,
     ToolCall,
     Trace,
+    TraceFlags,
     TrialResult,
     Usage,
     Verdict,
@@ -66,27 +67,8 @@ def test_trace_round_trip():
 
 def test_task_round_trip():
     task = make_task(
-        allow=[{"construct": "inline_column_sql", "scope": "row_scalar"}],
-        expect={"warning": "broadcast", "message_any": ["broadcast"]},
+        expect={"warning": ["broadcast", "associated"], "message_any": ["broadcast"]},
         xfail={"issue": "DEV-2058", "reason": "relative dates need a pinned clock"},
-        capabilities=[
-            {
-                "kind": "any_of",
-                "options": [
-                    [{"kind": "multi_stage"}],
-                    [
-                        {
-                            "kind": "trace_pattern",
-                            "steps": [
-                                {"tool": "create_model", "has_args": ["query"]},
-                                {"tool": "query", "uses_model_from_step": 0},
-                            ],
-                        }
-                    ],
-                ],
-            },
-            {"kind": "call", "fn": "cumsum", "within": {"kind": "call", "fn": "change"}},
-        ],
     )
     assert type(task).model_validate_json(task.model_dump_json()) == task
 
@@ -96,10 +78,10 @@ def test_manifest_round_trip():
     assert type(m).model_validate_json(m.model_dump_json()) == m
 
 
-def test_verdict_passed_is_all_three():
-    v = Verdict(correct=True, capability=True, no_hack=True)
+def test_verdict_passed_is_correct_and_single_query():
+    v = Verdict(correct=True, single_query=True, flags=TraceFlags(used_python=True, raw_sql=True))
     assert v.passed
-    for field in ("correct", "capability", "no_hack"):
+    for field in ("correct", "single_query"):
         assert not v.model_copy(update={field: False}).passed
 
 
@@ -110,7 +92,12 @@ def test_trial_result_round_trip():
         profile="slayer+python",
         model="claude-opus-5-5",
         trial=2,
-        verdict=Verdict(correct=True, capability=False, no_hack=True, capability_reasons=["unmet: call sum"]),
+        verdict=Verdict(
+            correct=True,
+            single_query=False,
+            single_query_reasons=["no single query returns the answer"],
+            flags=TraceFlags(several_queries=True),
+        ),
         end_reason="submitted",
         usage=Usage(input_tokens=1, output_tokens=2, cache_read_tokens=3, cache_write_tokens=4),
         cost_usd=0.1,

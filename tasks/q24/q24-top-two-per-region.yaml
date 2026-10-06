@@ -13,6 +13,3 @@ truth_sql: |
   join rt on rt.region = cr.region
   where rk <= 2
 compare: {keys: [region, customer_id], values: [revenue, region_revenue]}
-capabilities:
-  - {kind: call, fn: [rank, dense_rank, row_number], kwarg: partition_by}
-  - {kind: call, fn: sum, kwarg: partition_by}

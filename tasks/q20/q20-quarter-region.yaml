@@ -8,5 +8,3 @@ truth_sql: |
   where order_date >= date '2025-01-01' and order_date < date '2025-04-01'
   group by 1
 compare: {keys: [region], values: [revenue]}
-capabilities:
-  - {kind: time_filter, form: typed}

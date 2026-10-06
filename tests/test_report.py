@@ -53,7 +53,7 @@ def table_with(text: str, *headers: str) -> list[dict[str, str]]:
 
 def row_counts(report: str, profile: str, row: str, model: str = MODEL) -> dict[str, str]:
     rows = table_with(
-        section(report, profile, model), "Row", "Tasks", "Trials", "Correct", "Capability", "No hack", "Passed"
+        section(report, profile, model), "Row", "Tasks", "Trials", "Correct", "Single query", "Passed", "Raw SQL"
     )
     (match,) = [r for r in rows if r["Row"] == row]
     return match
@@ -71,18 +71,18 @@ def test_metadata(repeat_report: str):
 
 def test_row_counts_per_profile(repeat_report: str):
     q1 = row_counts(repeat_report, "slayer", "Q1")
-    assert (q1["Tasks"], q1["Trials"], q1["Correct"], q1["Capability"], q1["No hack"], q1["Passed"]) == (
+    assert (q1["Tasks"], q1["Trials"], q1["Correct"], q1["Single query"], q1["Passed"], q1["Raw SQL"]) == (
         "1",
         "3",
         "3",
         "3",
         "3",
-        "3",
+        "0",
     )
     q4 = row_counts(repeat_report, "slayer", "Q4")
-    assert (q4["Correct"], q4["Capability"], q4["Passed"]) == ("3", "0", "0")
+    assert (q4["Correct"], q4["Single query"], q4["Passed"]) == ("3", "0", "0")
     q1p = row_counts(repeat_report, "slayer+python", "Q1")
-    assert (q1p["No hack"], q1p["Passed"]) == ("2", "2")
+    assert (q1p["Single query"], q1p["Passed"], q1p["Raw SQL"], q1p["Several queries"]) == ("2", "2", "1", "1")
 
 
 def test_uncovered_rows(repeat_report: str):
@@ -104,7 +104,7 @@ def test_repeat_pass_rate(repeat_report: str):
 
 def test_models_reported_separately(repeat_report: str):
     other = row_counts(repeat_report, "slayer", "Q1", model=OTHER_MODEL)
-    assert (other["Trials"], other["Capability"], other["Passed"]) == ("3", "0", "0")
+    assert (other["Trials"], other["Single query"], other["Passed"]) == ("3", "0", "0")
     assert row_counts(repeat_report, "slayer", "Q1")["Passed"] == "3"
 
 
@@ -124,8 +124,7 @@ def test_totals(repeat_report: str):
 
 
 def test_failures_listed_with_reasons_and_calls(repeat_report: str):
-    assert "unmet predicate: call sum with partition_by" in repeat_report
-    assert "create_model call #2 supplies raw SQL in sql" in repeat_report
+    assert "no single query returns the answer" in repeat_report
     fail_idx = next(
         i
         for i, x in enumerate(repeat_report.splitlines())
@@ -134,8 +133,8 @@ def test_failures_listed_with_reasons_and_calls(repeat_report: str):
     failures = "\n".join(repeat_report.splitlines()[fail_idx:])
     assert "q4-a" in failures
     assert "sum(amount)" in failures
-    assert failures.count("create_model call #2 supplies raw SQL in sql") == 1
-    assert failures.count("unmet predicate: call sum with partition_by") >= 6
+    assert failures.count("flags: Raw SQL, Model edits, Several queries") == 1
+    assert failures.count("no single query returns the answer") >= 6
 
 
 def test_not_single_trial(repeat_report: str):

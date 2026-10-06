@@ -15,7 +15,6 @@ def _doc(**overrides: Any) -> dict[str, Any]:
         "row": "Q4",
         "prompt": "Monthly revenue in 2025 with a running total.",
         "truth_sql": "select 1 as month, 2 as rev",
-        "capabilities": [{"kind": "call", "fn": "cumsum"}],
     }
     doc.update(overrides)
     return doc
@@ -32,16 +31,13 @@ def test_valid_task_loads_with_defaults(tmp_path: Path):
     assert task.compare.tolerance == 1e-6
     assert task.compare.ordered is False
     assert task.compare.columns_exact is False
-    assert task.allow == []
     assert task.expect == "match"
     assert task.xfail is None
-    assert len(task.capabilities) == 1
 
 
 def test_all_fields_load(tmp_path: Path):
     doc = _doc(
         compare={"keys": ["month"], "values": ["rev"], "tolerance": 0.01, "ordered": True, "columns_exact": True},
-        allow=[{"construct": "inline_column_sql", "scope": "row_scalar"}],
         expect={"error": "TimeDimensionColumnError", "message_any": ["already bucketed", "month"]},
         xfail={"issue": "DEV-2058", "reason": "no pinned clock"},
     )
@@ -49,8 +45,6 @@ def test_all_fields_load(tmp_path: Path):
     assert task.compare.keys == ["month"]
     assert task.compare.tolerance == 0.01
     assert task.compare.ordered
-    assert task.allow[0].construct == "inline_column_sql"
-    assert task.allow[0].scope == "row_scalar"
     assert task.expect != "match"
     assert task.expect.error == "TimeDimensionColumnError"
     assert task.expect.message_any == ["already bucketed", "month"]
@@ -72,7 +66,7 @@ def test_warning_expectation(tmp_path: Path):
         (_doc(row="Q19"), "Q19"),
         (_doc(row="Q22"), "Q22"),
         (_doc(row="Q99"), "Q99"),
-        (_doc(capabilities=[{"kind": "no_such_predicate"}]), "no_such_predicate"),
+        (_doc(capabilities=[{"kind": "call", "fn": "sum"}]), "capabilities"),
         (_doc(compare={"keys": ["a"], "bogus": 1}), "bogus"),
     ],
 )
@@ -102,3 +96,9 @@ def test_load_tasks_recurses_and_skips_truth_dir(tmp_path: Path):
     (tmp_path / "truth" / "q1-a.json").write_text('{"columns": [], "rows": []}')
     tasks = load_tasks(tmp_path)
     assert sorted(t.id for t in tasks) == ["q1-a", "q4-running-total"]
+
+
+def test_expectation_kind_list(tmp_path: Path):
+    task = load_task(write_task(tmp_path, _doc(expect={"warning": ["broadcast", "associated"], "message_any": ["x"]})))
+    assert task.expect != "match"
+    assert task.expect.kinds == ["broadcast", "associated"]

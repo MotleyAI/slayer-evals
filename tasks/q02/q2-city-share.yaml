@@ -10,5 +10,3 @@ truth_sql: |
          sum(amount) / sum(sum(amount)) over () as share_of_total
   from orders_flat group by 1, 2
 compare: {keys: [region, city], values: [share_of_region, share_of_total]}
-capabilities:
-  - {kind: call, fn: sum, kwarg: partition_by}

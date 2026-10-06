@@ -9,7 +9,7 @@ import pytest
 
 from slayer_evals.core import Submission, Table, Trace
 from slayer_evals.grading import grade
-from tests.helpers import REPO, empty_manifest, make_task, query_call, submission_of, trace_of
+from tests.helpers import REPO, make_task, query_call, submission_of, trace_of
 
 TRUTH = Table(columns=["region", "city", "region_total"], rows=[["North", "Oslo", 705.0], ["South", "Rome", 890.0]])
 COLS = ["orders_flat.region", "orders_flat.city", "orders_flat.region_total"]
@@ -25,30 +25,29 @@ def good_trace() -> Trace:
 
 
 def test_right_answer_passes():
-    v = grade(make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), good_trace())
+    v = grade(make_task(), TRUTH, submission_of(TRUTH), good_trace())
     assert v.correct
-    assert v.capability
-    assert v.no_hack
+    assert v.single_query
     assert v.passed
 
 
 def test_wrong_answer():
     sub = Submission(columns=TRUTH.columns, rows=[["North", "Oslo", 1.0], ["South", "Rome", 890.0]])
-    v = grade(make_task(), TRUTH, empty_manifest(), sub, good_trace())
+    v = grade(make_task(), TRUTH, sub, good_trace())
     assert not v.correct
     assert v.correct_reasons
     assert not v.passed
 
 
 def test_missing_submission():
-    v = grade(make_task(), TRUTH, empty_manifest(), None, good_trace())
-    assert (v.correct, v.capability, v.no_hack) == (False, False, False)
-    for reasons in (v.correct_reasons, v.capability_reasons, v.no_hack_reasons):
+    v = grade(make_task(), TRUTH, None, good_trace())
+    assert (v.correct, v.single_query) == (False, False)
+    for reasons in (v.correct_reasons, v.single_query_reasons):
         assert any("no submission" in r for r in reasons)
 
 
 def test_same_inputs_same_verdict():
-    args = (make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), good_trace())
+    args = (make_task(), TRUTH, submission_of(TRUTH), good_trace())
     assert grade(*args) == grade(*args)
 
 
@@ -56,7 +55,7 @@ def test_grading_does_no_io(monkeypatch: pytest.MonkeyPatch):
     def refuse(*_a, **_k):
         raise AssertionError("grading must not do I/O")
 
-    args = (make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), good_trace())
+    args = (make_task(), TRUTH, submission_of(TRUTH), good_trace())
     expected = grade(*args)
     monkeypatch.setattr(builtins, "open", refuse)
     monkeypatch.setattr(socket, "socket", refuse)
@@ -64,7 +63,6 @@ def test_grading_does_no_io(monkeypatch: pytest.MonkeyPatch):
     assert grade(*args) == expected
 
 
-ALLOWED_SLAYER = {"slayer.engine.syntax", "slayer.core.formula"}
 FORBIDDEN_TOP = {
     "duckdb",
     "sqlite3",
@@ -94,15 +92,14 @@ def _imports(path: Path) -> set[str]:
     return out
 
 
-def test_grading_imports_only_core_and_slayer_parser():
+def test_grading_imports_only_core():
     files = sorted((REPO / "src" / "slayer_evals" / "grading").rglob("*.py"))
     assert files
     for f in files:
         for mod in _imports(f):
             top = mod.split(".")[0]
             assert top not in FORBIDDEN_TOP, f"{f.name} imports {mod}"
-            if top == "slayer":
-                assert mod in ALLOWED_SLAYER, f"{f.name} imports {mod}"
+            assert top != "slayer", f"{f.name} imports {mod}"
             if top == "slayer_evals":
                 assert mod == "slayer_evals.core" or mod.startswith(("slayer_evals.core.", "slayer_evals.grading")), (
                     f"{f.name} imports {mod}"
@@ -111,15 +108,15 @@ def test_grading_imports_only_core_and_slayer_parser():
 
 def test_verdict_records_column_mappings():
     sub = Submission(columns=["Region", "City", "Total"], rows=[[r[0], r[1], r[2]] for r in TRUTH.rows])
-    v = grade(make_task(), TRUTH, empty_manifest(), sub, good_trace())
+    v = grade(make_task(), TRUTH, sub, good_trace())
     assert v.passed
     assert v.correct_columns == {"region": "Region", "city": "City", "region_total": "Total"}
-    assert v.capability_columns == dict(zip(TRUTH.columns, COLS, strict=True))
+    assert v.single_query_columns == dict(zip(TRUTH.columns, COLS, strict=True))
 
 
-def test_capability_query_matched_by_values():
+def test_single_query_matched_by_values():
     renamed = query_call(QUERY, ["orders.customers.regions.name", "orders.customers.city", "orders.rt"], TRUTH.rows)
-    v = grade(make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), trace_of(renamed))
-    assert v.capability, v.capability_reasons
-    assert v.capability_columns["region_total"] == "orders.rt"
-    assert any("matched by values" in r for r in v.capability_reasons)
+    v = grade(make_task(), TRUTH, submission_of(TRUTH), trace_of(renamed))
+    assert v.single_query, v.single_query_reasons
+    assert v.single_query_columns["region_total"] == "orders.rt"
+    assert any("matched by values" in r for r in v.single_query_reasons)

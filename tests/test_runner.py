@@ -29,7 +29,6 @@ def task_doc(tid: str, row: str, prompt: str, truth: str = "select 7.0 as v", **
         "prompt": prompt,
         "truth_sql": truth,
         "compare": {"values": ["v"]},
-        "capabilities": [],
         **kw,
     }
 
@@ -181,7 +180,7 @@ def test_one_process_per_trial(tmp_path: Path, built: BuiltDataset, env: Path):
 def test_agent_sees_only_the_prompt(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(
         tmp_path,
-        task_doc("a", "Q1", "ANSWER 7", truth=SECRET_SQL, capabilities=[{"kind": "call", "fn": "secret_fn_marker"}]),
+        task_doc("a", "Q1", "ANSWER 7", truth=SECRET_SQL, xfail={"issue": "DEV-1", "reason": "secret_fn_marker"}),
     )
     run_benchmark(config(tmp_path, built, td), environ=ENV)
     (rec,) = recorded_runs(env)

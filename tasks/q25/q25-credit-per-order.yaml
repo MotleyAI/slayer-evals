@@ -6,7 +6,3 @@ prompt: >-
 truth_sql: |
   select avg(c.credit) as avg_credit from orders o join customers c on o.customer_id = c.id
 compare: {values: [avg_credit]}
-allow:
-  - {construct: inline_column_sql, scope: row_scalar}
-capabilities:
-  - {kind: inline_extension}

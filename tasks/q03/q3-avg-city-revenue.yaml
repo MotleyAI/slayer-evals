@@ -9,8 +9,3 @@ truth_sql: |
   from (select region, city, sum(amount) as rev from orders_flat group by 1, 2)
   group by 1
 compare: {keys: [region], values: [avg_city_revenue]}
-capabilities:
-  - kind: any_of
-    options:
-      - [{kind: call, fn: avg, within: {kind: call, fn: sum, kwarg: partition_by}}]
-      - [{kind: multi_stage}]

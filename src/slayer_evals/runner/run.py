@@ -125,7 +125,7 @@ class Runner:
             finally:
                 shutil.rmtree(trial_dir, ignore_errors=True)
         task = combo.task
-        verdict = grade(task, self.truths[task.id], self.built.manifest, outcome.submission, outcome.trace)
+        verdict = grade(task, self.truths[task.id], outcome.submission, outcome.trace)
         (self.run_dir / "traces" / f"{stem}.json").write_text(outcome.trace.model_dump_json(indent=1) + "\n")
         result = TrialResult(
             task_id=task.id,

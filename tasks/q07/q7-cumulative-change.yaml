@@ -10,5 +10,3 @@ truth_sql: |
   select month, sum(change) over (order by month) as cumulative_change
   from c where month >= date '2025-01-01'
 compare: {keys: [month], values: [cumulative_change]}
-capabilities:
-  - {kind: call, fn: cumsum, within: {kind: call, fn: [change, lag, time_shift]}}

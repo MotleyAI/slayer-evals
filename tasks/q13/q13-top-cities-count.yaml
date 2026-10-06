@@ -7,5 +7,3 @@ truth_sql: |
   select city, count(*) as orders from orders_flat where city is not null
   group by 1 order by sum(amount) desc limit 3
 compare: {keys: [city], values: [orders], ordered: true, columns_exact: true}
-capabilities:
-  - {kind: order_unselected}

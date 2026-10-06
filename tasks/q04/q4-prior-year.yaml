@@ -9,5 +9,3 @@ truth_sql: |
   from m a left join m b on b.month = a.month - interval 12 month
   where a.month between date '2025-01-01' and date '2025-03-01'
 compare: {keys: [month], values: [revenue, prior_year_revenue]}
-capabilities:
-  - {kind: call, fn: [time_shift, lag]}

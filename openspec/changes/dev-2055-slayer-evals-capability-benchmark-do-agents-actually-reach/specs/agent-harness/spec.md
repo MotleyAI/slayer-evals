@@ -7,7 +7,7 @@ SLayer MCP server verbatim in two tool profiles.
 
 ### Requirement: Agent contract
 An agent SHALL receive only the task prompt text, the profile name, and the trial environment (store path, database
-path, credentials, budgets). It MUST NOT receive the task's row, capability predicates, allowances, expectations or
+path, credentials, budgets). It MUST NOT receive the task's row, comparison rules, expectations or
 truth. It SHALL return a submission (`columns`, `rows`, `message`, or none) and a normalized trace: an ordered list of
 tool calls, each with tool name, arguments, raw result text, parsed result (columns and rows, warnings) when the tool
 is a SLayer `query`, an error flag, and for the Python tool its audit log; plus usage (input, output, cache read and

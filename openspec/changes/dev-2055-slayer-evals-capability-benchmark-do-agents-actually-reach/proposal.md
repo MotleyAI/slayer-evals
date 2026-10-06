@@ -13,11 +13,11 @@ fixed there.
 - A seeded, deterministic dataset generator reproducing the schema and edge cases of SLayer's comparison probe
   dataset at realistic size, plus a SLayer store template (datasource, models, saved measures and queries).
 - Task files for matrix rows Q1–Q18, Q20, Q21, Q23–Q25 (Q19 and Q22 out of scope; Q21 and Q24 limited to their
-  supported subset), each with truth SQL, comparison rules, capability predicates, hack-rule allowances and an
+  supported subset), each with truth SQL, comparison rules and an
   optional xfail issue; committed truth snapshots generated from the built database.
-- A rule-based grader scoring each trial on (a) answer correctness, (b) use of the intended capability by a SLayer
-  query whose own result matches the truth, and (c) absence of hacks (raw-SQL escape hatches, direct database
-  access from Python, reads of benchmark files).
+- A rule-based grader scoring each trial on (a) answer correctness and (b) whether a single SLayer query's own result
+  is the answer (no combining, no post-processing), plus informational trace flags (Python used, raw SQL, model edits,
+  SLayer errors, several queries).
 - An agent-agnostic adapter contract (`Submission` + normalized `Trace`) and a hermetic Claude Agent SDK adapter with
   two profiles: `slayer` (SLayer MCP + `submit_answer`) and `slayer+python` (adds a sandboxed Python tool).
 - A runner and CLI: task/row/profile/model selection, `repeat` and `until-pass` modes with N trials, concurrency,
@@ -30,7 +30,7 @@ fixed there.
 ### New Capabilities
 - `benchmark-dataset`: deterministic generator, planted edge cases, built DuckDB and SLayer store template.
 - `benchmark-tasks`: task file format, task loading, truth computation and truth snapshots.
-- `grading`: correctness, capability and hack verdicts over a submission and a normalized trace.
+- `grading`: correctness and single-query verdicts and trace flags over a submission and a normalized trace.
 - `agent-harness`: the adapter contract and the hermetic Claude Agent SDK adapter with its two profiles.
 - `benchmark-runs`: run selection, run modes, per-trial isolation, auth, concurrency and result files.
 - `benchmark-report`: the markdown report and the committed baseline.
@@ -40,7 +40,7 @@ fixed there.
 ## Impact
 
 - New repository content only; no existing code changes.
-- Dependencies: `motley-slayer` (exact pin; its parser is used by the grader), `claude-agent-sdk` (pinned), `duckdb`,
+- Dependencies: `motley-slayer` (exact pin), `claude-agent-sdk` (pinned), `duckdb`,
   `pydantic`, `pyyaml`; pandas and numpy for the Python sandbox profile.
 - Relative-date tasks depend on SLayer pinning "now" (DEV-2058) and stay xfail until a release has it.
 - Running the benchmark needs Claude credentials (subscription OAuth token or API key) supplied via an env file.

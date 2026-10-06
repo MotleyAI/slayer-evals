@@ -8,5 +8,3 @@ truth_sql: |
   from orders_flat
   group by 1, 2
 compare: {keys: [region, city], values: [revenue, region_total]}
-capabilities:
-  - {kind: call, fn: sum, kwarg: partition_by}

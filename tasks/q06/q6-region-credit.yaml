@@ -11,5 +11,3 @@ truth_sql: |
   select o.region, o.revenue, c.total_credit
   from o left join c on o.region is not distinct from c.region
 compare: {keys: [region], values: [revenue, total_credit]}
-capabilities:
-  - {kind: call, fn: sum, dotted_arg: true}

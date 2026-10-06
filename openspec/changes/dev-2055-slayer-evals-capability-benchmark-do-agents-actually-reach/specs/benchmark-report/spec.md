@@ -1,13 +1,14 @@
 ## Purpose
 
-Turns a run's results into a readable markdown report — where agents do and do not reach for each capability, and
-why — and publishes the baseline with the repository.
+Turns a run's results into a readable markdown report — where agents do and do not answer with a single SLayer
+query, and why — and publishes the baseline with the repository.
 
 ## ADDED Requirements
 
 ### Requirement: Run report
 The report SHALL show the run metadata (SLayer and SDK versions, model, mode, N, budgets, auth mode, date); a table per
-profile and model of rows Q1–Q25 with tasks, trials, and pass counts for `correct`, `capability`, `no_hack` and overall;
+profile and model of rows Q1–Q25 with tasks, trials, counts for `correct`, `single_query` and `passed`, and counts of
+the trace flags;
 for `repeat` the pass rate k/N and pass^N per task; for `until-pass` first-try passes, eventual passes and attempts
 used; xfail tasks in their own section with their issue key; totals of tokens, cost and duration; and for every failed
 trial its unmet criteria with reasons and a digest of its SLayer calls. Rows Q19 and Q22 SHALL appear as not covered.

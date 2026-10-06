@@ -20,11 +20,12 @@ from slayer_evals.core import AgentInput, AgentOutcome, EndReason, PythonAudit, 
 SLAYER_SERVER = "slayer"
 BENCH_SERVER = "bench"
 SUBMIT_TOOL = "submit_answer"
+SUBMIT_FULL_NAME = f"mcp__{BENCH_SERVER}__{SUBMIT_TOOL}"
 TEARDOWN_TIMEOUT_S = 30.0
 SYSTEM_PROMPT = (
     "You are a data analyst answering a business question about the data available through your tools. "
-    "Work out the answer with the tools, then call submit_answer once with the result table and a short message. "
-    "If the question cannot be answered as asked, call submit_answer with no rows and explain why in the message. "
+    f"Work out the answer with the tools, then call {SUBMIT_FULL_NAME} once with the result table and a short message. "
+    f"If the question cannot be answered as asked, call {SUBMIT_FULL_NAME} with no rows and explain why in the message. "
     'Request query results with format="json" so numbers are exact; the default markdown rounds some values.'
 )
 TELEMETRY_ENV = {
@@ -76,8 +77,7 @@ def _text(text: str, is_error: bool = False) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": text}], "is_error": is_error}
 
 
-def _ragged(args: dict[str, Any]) -> str | None:
-    columns, rows = args.get("columns"), args.get("rows")
+def _ragged(columns: Any, rows: Any) -> str | None:
     if not isinstance(columns, list) or not all(isinstance(c, str) for c in columns):
         return "columns must be a list of column names"
     if not isinstance(rows, list) or not all(isinstance(r, list) for r in rows):
@@ -98,7 +98,7 @@ class AnswerCollector:
     def bench_server(self, profile: str, sandbox_dir: Path) -> Any:
         @tool(SUBMIT_TOOL, SUBMIT_DESCRIPTION, SUBMIT_SCHEMA)
         async def submit_answer(args: dict[str, Any]) -> dict[str, Any]:
-            problem = _ragged(args)
+            problem = _ragged(args.get("columns"), args.get("rows"))
             if problem is not None:
                 return _text(f"Answer rejected: {problem}. Fix it and submit again.", is_error=True)
             if self.submission is None:

@@ -11,7 +11,7 @@
 
 ## 3. Core schemas
 
-- [x] 3.1 Implement `core` pydantic models (task, compare, predicates incl. `any_of` and trace patterns, allowances, expectations, store manifest, submission, tool call, trace, usage, verdict, trial result, run metadata); verify JSON round-trip tests pass
+- [x] 3.1 Implement `core` pydantic models (task, compare, expectations, store manifest, submission, tool call, trace, usage, verdict, trial result, run metadata); verify JSON round-trip tests pass
 
 ## 4. Dataset
 
@@ -27,8 +27,8 @@
 ## 6. Grading
 
 - [x] 6.1 Implement result parsing (markdown, JSON array, JSON object with `data`/`warnings`) and table comparison (column resolution with ambiguity failure, multiset/ordered, tolerance, NULL/NaN, dates, row counts); verify table-driven tests including fixtures captured from real MCP responses
-- [x] 6.2 Implement capability predicates on SLayer-parsed queries, saved-measure expansion (manifest + in-trace), multi-stage, saved query + refine, unselected order, inline extension, time filters, ordered trace patterns, `any_of`, and refusal matching; verify per-predicate tests, parser fixture tests and adversarial traces
-- [x] 6.3 Implement hack rules (default-deny raw SQL with construct-specific allowances; Python audit-log and static checks) and the verdict; verify adversarial tests (CTEs, comments, quoted functions, windows, subqueries, query-backed models, file reads)
+- [x] 6.2 Implement the single-query criterion (some successful `query` call's own result matches the truth; refusal tasks: some call returned an expected kind) and drop capability predicates, `capabilities` and `allow` from the task format; verify single-query tests
+- [x] 6.3 Implement the trace flags (`used_python`, `raw_sql`, `edited_models`, `slayer_errors`, `several_queries`) and the verdict; verify a test per flag
 
 ## 7. Agents
 

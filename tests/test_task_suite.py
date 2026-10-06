@@ -84,17 +84,7 @@ def test_committed_snapshots_and_sizes(committed: list[Task], built: BuiltDatase
     assert check_truth_sizes(truths) == []
 
 
-def test_relative_date_tasks_are_xfail(committed: list[Task]):
-    relative = [
-        t
-        for t in committed
-        if any(
-            getattr(p, "kind", None) == "time_filter" and getattr(p, "form", None) == "relative" for p in t.capabilities
-        )
-    ]
+def test_relative_date_task_is_xfail(committed: list[Task]):
+    relative = [t for t in committed if t.row == "Q20" and t.xfail is not None]
     assert relative, "Q20 needs a relative-date task"
     assert all(t.xfail is not None and t.xfail.issue == "DEV-2058" for t in relative)
-
-
-def test_committed_tasks_have_predicates(committed: list[Task]):
-    assert [t.id for t in committed if not t.capabilities] == []

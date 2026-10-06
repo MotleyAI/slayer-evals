@@ -27,10 +27,10 @@ check, telemetry env, pinned prompt caching, explicit auth mode, one spawned pro
 ### Architecture: eight precise nodes under `python` (root package `slayer_evals`, source root `src`)
 | Node | Owns | Imports |
 |---|---|---|
-| `core` | pydantic schemas: task, predicates, store manifest, submission, trace, verdict, trial result | — |
+| `core` | pydantic schemas: task, store manifest, submission, trace, verdict, trial result | — |
 | `dataset` | seeded generator, DuckDB build, store template, manifest | core |
 | `tasks` | task YAML loading and validation, truth computation, truth snapshots | core |
-| `grading` | table comparison, result parsing, capability predicates, hack rules, verdict | core |
+| `grading` | table comparison, verdict, trace flags | core |
 | `agents` | adapter protocol, Claude SDK adapter, `submit_answer`, Python sandbox, trace normalization | core |
 | `runner` | trial isolation, run modes, concurrency, auth, result files | core, dataset, tasks, agents, grading, report |
 | `report` | markdown report from a run directory | core |
@@ -44,8 +44,8 @@ Spec ownership (`specs:` metadata): `benchmark-dataset`→dataset, `benchmark-ta
 `agent-harness`→agents, `benchmark-runs`→runner, `benchmark-report`→report. `core` and `cli` own no behaviour.
 
 `system.arc42.md` principles (exact wording is approved when it lands):
-1. Pure grading: a verdict is a function of (task, truth, store manifest, submission, trace); grading does no I/O and
-   imports only `core` and SLayer's expression parser. [enforced: arch_check:model-truth] plus a test.
+1. Pure grading: a verdict is a function of (task, truth, submission, trace); grading does no I/O and imports only
+   `core`. [enforced: arch_check:model-truth] plus a test.
 2. Blind agents: an agent receives only the prompt text, its profile and the trial environment. [enforced: test]
 3. Agent-agnostic: nothing outside `agents` reads SDK objects. [enforced: arch_check:model-truth]
 4. Hermetic sessions: a session loads exactly its profile's MCP servers, with sanitized subprocess environments.
@@ -54,29 +54,20 @@ Spec ownership (`specs:` metadata): `benchmark-dataset`→dataset, `benchmark-ta
    [enforced: test]
 6. Fix the surface, not the eval: prompts stay generic and capability-neutral. [review] plus the prompt deny-list test.
 
-### Grader parses with SLayer's own parser
-SLayer formulas and filters are not plain Python: SLayer rewrites `count(*)`, SQL `CASE`, single `=` and
-function-style aggregations before `ast.parse`. The grader therefore uses SLayer's public parsing entry points
-(`slayer.engine.syntax.parse_expr` / `parse_filter_expr`, `slayer.core.formula.parse_formula`, from the pinned release)
-and evaluates predicates on the parsed trees. Fixture tests over real formulas catch parser drift on a version bump.
-Alternative: a home-grown grammar; rejected as a second, divergent parser.
+### Verdict: correct, and answered by a single query
+A trial passes when the answer is correct and some successful `query` call's own result matches the truth: the answer
+needed no combining of queries and no post-processing. Which DSL features that query uses is not graded — a task's
+wording forces its intended feature, and a task that turns out to be solvable another way is refined, not graded
+harder. Results are parsed at capture time from markdown and both JSON shapes; the system prompt asks for JSON results,
+since SLayer's markdown rounds formatted measures for display. A truncated result fails on row count. Agents name
+measures freely and reach dimensions by different paths, so columns resolve by name first and by values second; the
+mapping used is recorded in the verdict.
 
-### Capability = a qualifying call whose own result is right
-(b) needs a successful `query` call that both satisfies the predicates and returns the truth. Combined with (a), the
-submission then equals that call's result, which is the provenance we need without forcing the agent to point at a
-call. Saved measures are expanded from the store manifest plus measures the agent saves during the trace. Trace-level
-predicates (ordered patterns) cover create-then-query flows. Results are parsed at capture time from markdown and both
-JSON shapes; the system prompt asks for JSON results, since SLayer's markdown rounds formatted measures for display. A truncated result fails on row count. Agents name measures freely
-and reach dimensions by different paths, so columns resolve by name first and by values second; the mapping used is
-recorded in the verdict.
-
-### Hack rules are default-deny on raw SQL
-Every SQL-bearing argument of any SLayer tool is a hack unless the task's `allow` names the construct; allowances
-are construct-specific (row-level scalar SQL never admits aggregates, windows or subqueries). In `slayer+python`,
-direct database access and reads outside the sandbox are hacks, detected by a Python audit hook (`sys.addaudithook`
-on `open` and `subprocess.Popen`) plus a static check for `duckdb`/`sqlite3`/the database path. Aggregating
-SLayer-fetched raw rows in Python is caught by (b), so no container sandbox is needed for grading integrity; the
-sandbox (temp cwd, env allow-list, rlimits, timeout) exists for host hygiene.
+### Trace flags, not hack rules
+The verdict carries informational flags read straight off the trace (Python used, raw SQL handed to SLayer, models
+edited, SLayer errors, several queries); they do not affect `passed`. Finer failure categories are left to analysis of
+the recorded traces and transcripts once real failure modes are known. The Python sandbox (temp cwd, env allow-list,
+rlimits, timeout, audit log of file opens) exists for host hygiene and diagnosis.
 
 ### Dataset: probe schema at realistic size
 A generator with one dedicated `random.Random(seed)` per table, stable iteration order and fixed dates, then planted
@@ -92,7 +83,7 @@ an explicit flag; credentials come from `--env-file` (for the baseline, `/home/j
 subscription OAuth token, never copied into the repository).
 
 ### Task catalogue (guidance for authoring; each task adapts that row's probes in `probes.yaml`)
-| Row | Task sketch | Predicate sketch |
+| Row | Task sketch | Intended feature |
 |---|---|---|
 | Q1 | revenue per region and city with the region's total alongside | `sum` + `partition_by` |
 | Q2 | each city's share of its region's and of all revenue | ratio with `partition_by` (incl. `[]`) |
@@ -120,13 +111,10 @@ subscription OAuth token, never copied into the repository).
 
 ## Risks / Trade-offs
 
-- [Predicates too narrow: an equivalent idiom scores as a miss] → `any_of` alternatives; each failure's reason names
-  the unmet predicate so the report exposes over-narrow tasks; tasks are reviewed against the probe variants.
-- [SLayer parser API changes on a version bump] → parser fixture tests; exact version pin.
+- [A task is solvable without its intended feature] → it still passes; failures and traces show it, and the task's
+  wording is refined.
 - [Single-trial baseline is noisy] → labelled as a snapshot in the report and README; `--trials` and both run modes
   make repeats cheap.
 - [Subscription rate limits stall long runs] → results are written per trial; selection flags allow resuming by
   task subset.
 - [Relative-date tasks cannot pass until DEV-2058 ships] → marked xfail with the issue key, reported separately.
-- [Python audit hook misses native file opens (duckdb's C++ layer)] → the static `duckdb`/`sqlite3`/path check
-  covers the database route; (b) still fails any answer not produced by a qualifying SLayer query.

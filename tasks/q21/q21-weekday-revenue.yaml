@@ -7,5 +7,3 @@ truth_sql: |
   select isodow(order_date) as day_of_week, sum(amount) as revenue from orders
   where order_date >= date '2025-01-01' group by 1
 compare: {keys: [day_of_week], values: [revenue]}
-capabilities:
-  - {kind: call, fn: date_part}

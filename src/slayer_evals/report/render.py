@@ -61,24 +61,40 @@ def _table(header: list[str], rows: list[list[Any]]) -> list[str]:
     return out
 
 
+FLAGS = (
+    ("used_python", "Python"),
+    ("raw_sql", "Raw SQL"),
+    ("edited_models", "Model edits"),
+    ("slayer_errors", "SLayer errors"),
+    ("several_queries", "Several queries"),
+)
+
+
 def _count(results: list[TrialResult], field: str) -> int:
     return sum(1 for r in results if r.verdict is not None and getattr(r.verdict, field))
+
+
+def _flag_count(results: list[TrialResult], flag: str) -> int:
+    return sum(1 for r in results if r.verdict is not None and getattr(r.verdict.flags, flag))
 
 
 def _row_table(results: list[TrialResult]) -> list[str]:
     rows = []
     for row in ALL_ROWS:
         title = ROW_TITLES[row]
+        blank = [""] * (3 + len(FLAGS))
         if row in UNCOVERED_ROWS:
-            rows.append([row, title, "not covered", "", "", "", "", ""])
+            rows.append([row, title, "not covered", "", *blank])
             continue
         rs = [r for r in results if r.row == row]
         if not rs:
-            rows.append([row, title, 0, 0, "", "", "", ""])
+            rows.append([row, title, 0, 0, *blank])
             continue
-        counts = [_count(rs, f) for f in ("correct", "capability", "no_hack", "passed")]
-        rows.append([row, title, len({r.task_id for r in rs}), len(rs), *counts])
-    return _table(["Row", "Feature", "Tasks", "Trials", "Correct", "Capability", "No hack", "Passed"], rows)
+        counts = [_count(rs, f) for f in ("correct", "single_query", "passed")]
+        flags = [_flag_count(rs, f) for f, _ in FLAGS]
+        rows.append([row, title, len({r.task_id for r in rs}), len(rs), *counts, *flags])
+    header = ["Row", "Feature", "Tasks", "Trials", "Correct", "Single query", "Passed", *(h for _, h in FLAGS)]
+    return _table(header, rows)
 
 
 def _by_task(results: list[TrialResult]) -> dict[str, list[TrialResult]]:
@@ -205,11 +221,13 @@ def _failures(run_dir: Path, results: list[TrialResult]) -> list[str]:
         else:
             for name, ok, reasons in (
                 ("correct", v.correct, v.correct_reasons),
-                ("capability", v.capability, v.capability_reasons),
-                ("no hack", v.no_hack, v.no_hack_reasons),
+                ("single query", v.single_query, v.single_query_reasons),
             ):
                 if not ok:
                     out.append(f"  - {name}: {'; '.join(reasons) or 'failed'}")
+            raised = [h for f, h in FLAGS if getattr(v.flags, f)]
+            if raised:
+                out.append(f"  - flags: {', '.join(raised)}")
         trace = _load_trace(run_dir, r)
         if trace is not None:
             if trace.error:
@@ -247,9 +265,10 @@ def render_report(run_dir: Path) -> str:
     out += [*_metadata(md, results), ""]
     out += [
         (
-            "Each trial is scored on three criteria: **correct** (the submitted table matches the truth), "
-            "**capability** (a SLayer query using the row's intended feature itself returned the truth) and "
-            "**no hack** (no raw SQL handed to SLayer, no direct database or benchmark-file access from Python)."
+            "A trial passes when its answer is **correct** (the submitted table matches the truth) and is a "
+            "**single query**'s result (one SLayer query's own result matches the truth, with no combining or "
+            "post-processing). The flag columns count trials that used Python, handed SLayer raw SQL, edited models, "
+            "hit SLayer errors or ran several queries; they do not affect passing."
         ),
         "",
     ]

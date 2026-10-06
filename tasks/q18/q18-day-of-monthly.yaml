@@ -6,6 +6,3 @@ truth_sql: select 1 as nothing where false
 expect:
   error: TimeDimensionColumnError
   message_any: [bucketed, granularity, "monthly", "per month", "by month", "month level", "month-level"]
-capabilities:
-  - {kind: source_model, name: monthly_rev}
-  - {kind: time_dimension, granularity: day}

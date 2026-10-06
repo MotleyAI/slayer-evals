@@ -8,8 +8,3 @@ truth_sql: |
   from customers c left join orders o on o.customer_id = c.id
   group by 1
 compare: {keys: [tier], values: [customers, revenue]}
-capabilities:
-  - kind: any_of
-    options:
-      - [{kind: no_source_model}]
-      - [{kind: source_model, name: customers}]

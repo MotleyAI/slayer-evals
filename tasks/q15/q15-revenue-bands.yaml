@@ -10,11 +10,3 @@ truth_sql: |
          count(*) as customers
   from c group by 1
 compare: {keys: [band], values: [customers]}
-capabilities:
-  - kind: any_of
-    options:
-      - [{kind: multi_stage}]
-      - - kind: trace_pattern
-          steps:
-            - {tool: create_model, has_args: [query]}
-            - {tool: query, uses_model_from_step: 0}

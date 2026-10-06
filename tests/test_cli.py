@@ -37,7 +37,6 @@ def _tasks(tmp_path: Path) -> Path:
             "prompt": "ANSWER 7",
             "truth_sql": "select 7.0 as v",
             "compare": {"values": ["v"]},
-            "capabilities": [],
         },
     )
     return d
@@ -109,7 +108,6 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
             "prompt": "ANSWER 7",
             "truth_sql": "select 7.0 as v",
             "compare": {"values": ["v"]},
-            "capabilities": [],
         },
     )
     write_task(
@@ -120,7 +118,6 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
             "prompt": "SLEEP 120\nANSWER 7",
             "truth_sql": "select 7.0 as v",
             "compare": {"values": ["v"]},
-            "capabilities": [],
         },
     )
     env_file = tmp_path / ".env"

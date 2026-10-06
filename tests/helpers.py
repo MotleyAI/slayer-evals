@@ -36,7 +36,6 @@ def make_task(**overrides: Any) -> Task:
         "prompt": "Revenue per region and city, with each region's total revenue alongside.",
         "truth_sql": "select 1",
         "compare": {"keys": ["region", "city"], "values": ["region_total"]},
-        "capabilities": [{"kind": "call", "fn": "sum", "kwarg": "partition_by"}],
     }
     doc.update(overrides)
     return Task.model_validate(doc)
@@ -81,10 +80,6 @@ def trace_of(*calls: ToolCall) -> Trace:
 
 def submission_of(table: Table, message: str = "") -> Submission:
     return Submission(columns=list(table.columns), rows=[list(r) for r in table.rows], message=message)
-
-
-def empty_manifest() -> StoreManifest:
-    return StoreManifest(datasource="bench", models=["orders", "customers", "regions"], measures=[], queries=[])
 
 
 def manifest_with_aov() -> StoreManifest:

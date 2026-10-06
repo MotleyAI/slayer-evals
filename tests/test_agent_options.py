@@ -189,3 +189,7 @@ def test_every_slayer_tool_offered(tmp_path: Path):
 
 def test_system_prompt_asks_for_json_results():
     assert 'format="json"' in SYSTEM_PROMPT
+
+
+def test_system_prompt_names_the_submit_tool_exactly():
+    assert "mcp__bench__submit_answer" in SYSTEM_PROMPT
