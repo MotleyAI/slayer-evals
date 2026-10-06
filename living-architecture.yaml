@@ -1,0 +1,10 @@
+# Config for the la-* tools (github.com/MotleyAI/living-architecture).
+tracker: linear  # detected: Linear MCP + <user>/<key>-<slug> branch names
+openspec: true  # your answer
+architecture: true
+reviewers:
+  codex: true  # detected: Codex MCP server available
+issue_key_pattern: "DEV-\\d+"  # detected: branch dev-2055, matches sibling slayer repo
+commands:
+  test: poetry run pytest -m "not integration"  # your answer (mirrors slayer)
+  lint: poetry run ruff check .  # your answer (mirrors slayer)

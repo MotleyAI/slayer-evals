@@ -1,0 +1,19 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "customers",
+   "dimensions": [
+    "regions.name"
+   ],
+   "measures": [
+    {
+     "formula": "count(*)",
+     "name": "n"
+    }
+   ]
+  }
+ },
+ "is_error": false,
+ "text": "| customers.regions.name | customers.n |\n| --- | --- |\n| North | 3 |\n| South | 3 |\n|  | 1 |\n\nMeasure attributes:\n  customers.n: format=(type=integer)"
+}

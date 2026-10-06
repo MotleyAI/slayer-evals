@@ -1,0 +1,20 @@
+{
+ "columns": [
+  "city",
+  "orders"
+ ],
+ "rows": [
+  [
+   "Bergen",
+   823
+  ],
+  [
+   "Oslo",
+   839
+  ],
+  [
+   "Rome",
+   752
+  ]
+ ]
+}

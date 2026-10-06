@@ -1,0 +1,10 @@
+id: q17-running-aov
+row: Q17
+prompt: >-
+  Take each month's average order value (revenue divided by the number of orders) and, for each month of 2025, show the
+  running sum of those monthly average order values since January 2025.
+truth_sql: |
+  with a as (select date_trunc('month', order_date)::date as month, sum(amount) / count(*) as aov
+             from orders where order_date >= date '2025-01-01' group by 1)
+  select month, sum(aov) over (order by month) as running_aov from a
+compare: {keys: [month], values: [running_aov]}

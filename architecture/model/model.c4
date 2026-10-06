@@ -1,0 +1,75 @@
+specification {
+  element system
+  element node
+  element bucket {
+    #virtual
+  }
+  tag legacy
+  tag virtual
+}
+
+model {
+  python = system 'slayer_evals' {
+    agents = node 'agents' {
+      metadata {
+        package 'slayer_evals.agents'
+        specs ['agent-harness']
+      }
+    }
+    cli = node 'cli' {
+      metadata {
+        package 'slayer_evals.cli'
+      }
+    }
+    core = node 'core' {
+      metadata {
+        package 'slayer_evals.core'
+      }
+    }
+    dataset = node 'dataset' {
+      metadata {
+        package 'slayer_evals.dataset'
+        specs ['benchmark-dataset']
+      }
+    }
+    grading = node 'grading' {
+      metadata {
+        package 'slayer_evals.grading'
+        specs ['grading']
+      }
+    }
+    report = node 'report' {
+      metadata {
+        package 'slayer_evals.report'
+        specs ['benchmark-report']
+      }
+    }
+    runner = node 'runner' {
+      metadata {
+        package 'slayer_evals.runner'
+        specs ['benchmark-runs']
+      }
+    }
+    tasks = node 'tasks' {
+      metadata {
+        package 'slayer_evals.tasks'
+        specs ['benchmark-tasks']
+      }
+    }
+
+    agents -> core
+    cli -> dataset
+    cli -> report
+    cli -> runner
+    cli -> tasks
+    grading -> core
+    report -> core
+    runner -> agents
+    runner -> core
+    runner -> dataset
+    runner -> grading
+    runner -> report
+    runner -> tasks
+    tasks -> core
+  }
+}

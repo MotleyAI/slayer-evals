@@ -1,0 +1,19 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "customers",
+   "dimensions": [
+    "orders.status"
+   ],
+   "measures": [
+    {
+     "formula": "sum(credit)",
+     "name": "total_credit"
+    }
+   ]
+  }
+ },
+ "is_error": false,
+ "text": "| customers.orders.status | customers.total_credit |\n| --- | --- |\n|  | 2800.0 |\n| bad | 2800.0 |\n| ok | 2800.0 |\n\nWarnings:\n  - metric 'total_credit' (at stages[0]) broadcast across unattributable dimension(s): orders.status (crosses a fanning or unproven join hop to orders) \u2014 filtering on this dimension restricts the metric by association while slicing only repeats the value; set to_many_handling='associate' to reconcile the two."
+}

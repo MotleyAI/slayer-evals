@@ -1,0 +1,30 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "orders",
+   "time_dimensions": [
+    {
+     "dimension": "order_date",
+     "granularity": "month"
+    }
+   ],
+   "measures": [
+    {
+     "formula": "sum(amount)",
+     "name": "rev"
+    },
+    {
+     "formula": "cumsum(sum(amount))",
+     "name": "running"
+    }
+   ],
+   "filters": [
+    "order_date >= '2025-01-01'"
+   ]
+  },
+  "format": "json"
+ },
+ "is_error": false,
+ "text": "{\"data\": [{\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 140.0, \"orders.running\": 140.0}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.rev\": 200.0, \"orders.running\": 340.0}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.rev\": 140.0, \"orders.running\": 480.0}, {\"orders.order_date\": \"2025-05-01 00:00:00\", \"orders.rev\": 225.0, \"orders.running\": 705.0}, {\"orders.order_date\": \"2025-06-01 00:00:00\", \"orders.rev\": 210.0, \"orders.running\": 915.0}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.running\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}"
+}

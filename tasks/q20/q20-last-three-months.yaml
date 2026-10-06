@@ -1,0 +1,12 @@
+id: q20-last-three-months
+row: Q20
+prompt: >-
+  What was the revenue (the sum of order amounts) in each of the last three complete calendar months?
+truth_sql: |
+  select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders
+  where order_date >= date '2025-10-01' and order_date < date '2026-01-01'
+  group by 1
+compare: {keys: [month], values: [revenue]}
+xfail:
+  issue: DEV-2058
+  reason: slayer mcp cannot pin "now"; the truth assumes now is in January 2026

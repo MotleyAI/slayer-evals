@@ -1,0 +1,16 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "orders",
+   "measures": [
+    {
+     "formula": "sum(nope)",
+     "name": "total_v"
+    }
+   ]
+  }
+ },
+ "is_error": true,
+ "text": "Error executing tool query: UnknownReferenceError: Cannot resolve reference 'nope'.\n  scope: ModelScope: model 'orders' columns: ['id', 'customer_id', 'amount', 'status', 'order_date']"
+}

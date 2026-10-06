@@ -1,0 +1,9 @@
+id: q10-bronze-or-ok
+row: Q10
+prompt: >-
+  How many customers are either in the bronze tier or have at least one order with status 'ok'? Count each customer
+  once.
+truth_sql: |
+  select count(*) as customers from customers
+  where tier = 'bronze' or id in (select customer_id from orders where status = 'ok')
+compare: {values: [customers]}

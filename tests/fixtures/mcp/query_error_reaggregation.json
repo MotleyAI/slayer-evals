@@ -1,0 +1,20 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "orders_flat",
+   "dimensions": [
+    "region"
+   ],
+   "measures": [
+    {
+     "formula": "sum(sum(amount, partition_by=city))",
+     "name": "v"
+    }
+   ],
+   "to_many_handling": "error"
+  }
+ },
+ "is_error": true,
+ "text": "Error executing tool query: ReaggregationError: The re-aggregation cannot attribute dimension(s) region to the operand dataset under to_many_handling='error'.\n  at measure 'v'\n  suggestion: Add them to the inner partition_by= so the operand is grained by them, or choose 'broadcast'/'associate'."
+}

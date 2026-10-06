@@ -1,0 +1,48 @@
+{
+ "calls": [
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders_flat",
+     "dimensions": [
+      "region",
+      "city"
+     ],
+     "measures": [
+      {
+       "formula": "sum(amount)",
+       "name": "v"
+      }
+     ]
+    }
+   },
+   "result_text": "| orders_flat.v |\n| --- |\n| 1.0 |",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders_flat.v"
+    ],
+    "rows": [
+     [
+      1.0
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 1000,
+  "output_tokens": 100,
+  "cache_read_tokens": 4000,
+  "cache_write_tokens": 200,
+  "partial": false
+ },
+ "cost_usd": 0.25,
+ "duration_s": 30.0,
+ "turns": 5,
+ "end_reason": "timeout",
+ "error": null
+}

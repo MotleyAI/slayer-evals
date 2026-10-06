@@ -1,0 +1,25 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "orders_flat",
+   "dimensions": [
+    "region",
+    "city"
+   ],
+   "measures": [
+    {
+     "formula": "sum(amount)",
+     "name": "rev"
+    },
+    {
+     "formula": "sum(amount, partition_by=region)",
+     "name": "region_total"
+    }
+   ]
+  },
+  "format": "json"
+ },
+ "is_error": false,
+ "text": "[{\"orders_flat.region\": \"South\", \"orders_flat.city\": \"Rome\", \"orders_flat.rev\": 695.0, \"orders_flat.region_total\": 890.0}, {\"orders_flat.region\": null, \"orders_flat.city\": \"Paris\", \"orders_flat.rev\": 280.0, \"orders_flat.region_total\": 310.0}, {\"orders_flat.region\": \"North\", \"orders_flat.city\": \"Bergen\", \"orders_flat.rev\": 335.0, \"orders_flat.region_total\": 705.0}, {\"orders_flat.region\": \"South\", \"orders_flat.city\": \"Oslo\", \"orders_flat.rev\": 195.0, \"orders_flat.region_total\": 890.0}, {\"orders_flat.region\": \"North\", \"orders_flat.city\": \"Oslo\", \"orders_flat.rev\": 370.0, \"orders_flat.region_total\": 705.0}, {\"orders_flat.region\": null, \"orders_flat.city\": null, \"orders_flat.rev\": 30.0, \"orders_flat.region_total\": 310.0}]"
+}

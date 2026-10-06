@@ -1,0 +1,20 @@
+{
+ "tool": "create_model",
+ "args": {
+  "name": "per_cust",
+  "query": {
+   "source_model": "orders",
+   "dimensions": [
+    "customer_id"
+   ],
+   "measures": [
+    {
+     "formula": "sum(amount)",
+     "name": "rev"
+    }
+   ]
+  }
+ },
+ "is_error": false,
+ "text": "Model 'per_cust' created from query. Columns: ['customer_id', 'rev']. Measures: []."
+}

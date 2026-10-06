@@ -1,0 +1,6 @@
+{
+ "tool": "list_datasources",
+ "args": {},
+ "is_error": false,
+ "text": "- probe (duckdb)"
+}

@@ -1,0 +1,24 @@
+{
+ "tool": "query",
+ "args": {
+  "query": {
+   "source_model": "orders_flat",
+   "dimensions": [
+    "region",
+    "city"
+   ],
+   "measures": [
+    {
+     "formula": "sum(amount)",
+     "name": "rev"
+    },
+    {
+     "formula": "sum(amount, partition_by=region)",
+     "name": "region_total"
+    }
+   ]
+  }
+ },
+ "is_error": false,
+ "text": "| orders_flat.region | orders_flat.city | orders_flat.rev | orders_flat.region_total |\n| --- | --- | --- | --- |\n| North | Oslo | 370.0 | 705.0 |\n|  |  | 30.0 | 310.0 |\n| South | Rome | 695.0 | 890.0 |\n|  | Paris | 280.0 | 310.0 |\n| South | Oslo | 195.0 | 890.0 |\n| North | Bergen | 335.0 | 705.0 |"
+}

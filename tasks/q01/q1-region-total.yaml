@@ -1,0 +1,10 @@
+id: q1-region-total
+row: Q1
+prompt: >-
+  For every region and city, show the city's revenue (the sum of order amounts) and, on the same row, the total
+  revenue of the region the city belongs to. Orders whose customer has no known region or city form their own groups.
+truth_sql: |
+  select region, city, sum(amount) as revenue, sum(sum(amount)) over (partition by region) as region_total
+  from orders_flat
+  group by 1, 2
+compare: {keys: [region, city], values: [revenue, region_total]}
