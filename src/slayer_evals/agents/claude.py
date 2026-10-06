@@ -1,4 +1,4 @@
-"""The hermetic Claude Agent SDK agent: SLayer's MCP server verbatim, plus `submit_answer` (and Python)."""
+"""The hermetic Claude Agent SDK agent: SLayer's MCP server verbatim or a raw `sql` tool, plus `submit_answer` and Python."""
 
 import asyncio
 import contextlib
@@ -14,18 +14,23 @@ from typing import Any, TextIO
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, ResultMessage, create_sdk_mcp_server, tool
 
 from slayer_evals.agents.sandbox import run_python
+from slayer_evals.agents.sql import SQL_DESCRIPTION, SQL_TOOL, run_sql
 from slayer_evals.agents.trace import PYTHON_TOOL, normalize_messages, transcript_line
-from slayer_evals.core import AgentInput, AgentOutcome, EndReason, PythonAudit, Submission
+from slayer_evals.core import AgentInput, AgentOutcome, EndReason, Profile, PythonAudit, Submission
 
 SLAYER_SERVER = "slayer"
 BENCH_SERVER = "bench"
 SUBMIT_TOOL = "submit_answer"
 SUBMIT_FULL_NAME = f"mcp__{BENCH_SERVER}__{SUBMIT_TOOL}"
 TEARDOWN_TIMEOUT_S = 30.0
-SYSTEM_PROMPT = (
+SLAYER_PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python")
+PYTHON_PROFILES: tuple[Profile, ...] = ("slayer+python", "sql+python")
+BASE_PROMPT = (
     "You are a data analyst answering a business question about the data available through your tools. "
     f"Work out the answer with the tools, then call {SUBMIT_FULL_NAME} once with the result table and a short message. "
-    f"If the question cannot be answered as asked, call {SUBMIT_FULL_NAME} with no rows and explain why in the message. "
+    f"If the question cannot be answered as asked, call {SUBMIT_FULL_NAME} with no rows and explain why in the message."
+)
+JSON_RESULTS_SENTENCE = (
     'Request query results with format="json" so numbers are exact; the default markdown rounds some values.'
 )
 TELEMETRY_ENV = {
@@ -68,6 +73,16 @@ class LeakedServerError(RuntimeError):
     pass
 
 
+def system_prompt(profile: Profile) -> str:
+    """Identical across profiles except for the JSON-results sentence of the SLayer profiles."""
+    return f"{BASE_PROMPT} {JSON_RESULTS_SENTENCE}" if profile in SLAYER_PROFILES else BASE_PROMPT
+
+
+def mcp_servers_of(profile: Profile) -> set[str]:
+    """The MCP servers a session in `profile` may load."""
+    return {SLAYER_SERVER, BENCH_SERVER} if profile in SLAYER_PROFILES else {BENCH_SERVER}
+
+
 def slayer_server_env(environ: Mapping[str, str]) -> dict[str, str]:
     """The SLayer server's environment: an allow-list, so no credentials reach it."""
     return {k: environ[k] for k in SLAYER_ENV_ALLOW if k in environ}
@@ -95,7 +110,7 @@ class AnswerCollector:
         self.submission: Submission | None = None
         self.python_audits: list[PythonAudit] = []
 
-    def bench_server(self, profile: str, sandbox_dir: Path) -> Any:
+    def bench_server(self, profile: Profile, sandbox_dir: Path, db_path: Path) -> Any:
         @tool(SUBMIT_TOOL, SUBMIT_DESCRIPTION, SUBMIT_SCHEMA)
         async def submit_answer(args: dict[str, Any]) -> dict[str, Any]:
             problem = _ragged(args.get("columns"), args.get("rows"))
@@ -115,7 +130,16 @@ class AnswerCollector:
             out = run.stdout + (f"\n[stderr]\n{run.stderr}" if run.stderr.strip() else "")
             return _text(out or "(no output)", is_error=not run.ok)
 
-        tools = [submit_answer, python] if profile == "slayer+python" else [submit_answer]
+        @tool(SQL_TOOL, SQL_DESCRIPTION, {"sql": str})
+        async def sql(args: dict[str, Any]) -> dict[str, Any]:
+            run = await run_sql(str(args.get("sql", "")), db_path=db_path)
+            return _text(run.text, is_error=not run.ok)
+
+        tools = [submit_answer]
+        if profile in PYTHON_PROFILES:
+            tools.append(python)
+        if profile not in SLAYER_PROFILES:
+            tools.append(sql)
         return create_sdk_mcp_server(BENCH_SERVER, tools=tools)
 
 
@@ -149,13 +173,15 @@ class ClaudeAgent:
             "args": ["-i", *(f"{k}={v}" for k, v in env.items()), *cmd, "mcp", "--storage", str(inp.env.store_dir)],
             "env": env,
         }
-        bench = collector.bench_server(inp.profile, inp.env.trial_dir / "sandbox")
+        bench = collector.bench_server(inp.profile, inp.env.trial_dir / "sandbox", inp.env.db_path)
+        servers = {SLAYER_SERVER: slayer, BENCH_SERVER: bench}
+        names = sorted(mcp_servers_of(inp.profile))
         return ClaudeAgentOptions(
             tools=[],
             setting_sources=[],
-            allowed_tools=[f"mcp__{SLAYER_SERVER}", f"mcp__{BENCH_SERVER}"],
-            mcp_servers={SLAYER_SERVER: slayer, BENCH_SERVER: bench},  # pyright: ignore[reportArgumentType]
-            system_prompt=SYSTEM_PROMPT,
+            allowed_tools=[f"mcp__{n}" for n in names],
+            mcp_servers={n: servers[n] for n in names},  # pyright: ignore[reportArgumentType]
+            system_prompt=system_prompt(inp.profile),
             model=self.model,
             max_turns=inp.env.max_turns,
             cwd=inp.env.trial_dir,
@@ -176,7 +202,7 @@ class ClaudeAgent:
         status = await client.get_mcp_status()
         session["mcp_status"] = status
         servers = (status or {}).get("mcpServers", [])
-        extra = sorted({s["name"] for s in servers} - {SLAYER_SERVER, BENCH_SERVER})
+        extra = sorted({s["name"] for s in servers} - mcp_servers_of(inp.profile))
         if extra:
             raise LeakedServerError(f"unexpected MCP server(s) loaded: {', '.join(extra)}")
         await client.query(inp.prompt)
@@ -246,6 +272,8 @@ class ClaudeAgent:
                 shutil.rmtree(config_dir, ignore_errors=True)
             sink.write(json.dumps(self._session_line(inp, options, session, end_reason, error, collector), default=str))
             sink.write("\n")
-        trace = normalize_messages(messages, end_reason=end_reason, error=error, python_audits=collector.python_audits)
+        trace = normalize_messages(
+            messages, end_reason=end_reason, error=error, python_audits=collector.python_audits, profile=inp.profile
+        )
         trace.duration_s = time.monotonic() - start
         return AgentOutcome(submission=collector.submission, trace=trace)

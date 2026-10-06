@@ -1,0 +1,20 @@
+{
+ "columns": [
+  "tier",
+  "customers"
+ ],
+ "rows": [
+  [
+   "bronze",
+   35
+  ],
+  [
+   "gold",
+   15
+  ],
+  [
+   "silver",
+   21
+  ]
+ ]
+}

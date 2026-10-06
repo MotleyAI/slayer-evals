@@ -1,0 +1,12 @@
+id: c-aov-change
+covers: [Q17, Q4]
+prompt: >-
+  For each month of 2025, show the average order value (revenue divided by the number of orders) and its change from
+  the previous month (this month's value minus the previous month's).
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, sum(amount) / count(*) as aov from orders group by 1)
+  select month, aov, aov_change
+  from (select month, aov, aov - lag(aov) over (order by month) as aov_change from m)
+  where month >= date '2025-01-01'
+slayer_query: {"query": {"source_model": "orders", "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": "2025"}], "measures": [{"formula": "aov"}, {"formula": "change(aov)", "name": "aov_change"}]}}
+compare: {keys: [month], values: [aov, aov_change]}

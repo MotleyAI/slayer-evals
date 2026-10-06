@@ -1,0 +1,24 @@
+id: t-bridge-email
+covers: [Q10, bridge]
+prompt: >-
+  For each region, what is the revenue (the sum of order amounts) from customers who are members of at least one email
+  campaign?
+truth_sql: |
+  select r.name as region, sum(o.amount) as revenue
+  from orders o
+  join customers c on c.id = o.customer_id
+  left join regions r on r.id = c.region_id
+  where c.id in (select cm.customer_id from campaign_members cm join campaigns ca on ca.id = cm.campaign_id
+                 where ca.channel = 'email')
+  group by 1
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}], "filters": ["customers.campaign_members.campaigns.channel == 'email'"]}}
+naive_sql: |
+  select r.name as region, sum(o.amount) as revenue
+  from orders o
+  join customers c on c.id = o.customer_id
+  join regions r on r.id = c.region_id
+  join campaign_members cm on cm.customer_id = c.id
+  join campaigns ca on ca.id = cm.campaign_id
+  where ca.channel = 'email'
+  group by 1
+compare: {keys: [region], values: [revenue]}

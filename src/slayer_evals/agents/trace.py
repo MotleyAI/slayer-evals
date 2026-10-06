@@ -5,9 +5,11 @@ from typing import Any
 
 from claude_agent_sdk import AssistantMessage, ResultMessage, ToolResultBlock, ToolUseBlock, UserMessage
 
-from slayer_evals.core import EndReason, ParsedResult, PythonAudit, ToolCall, Trace, Usage
+from slayer_evals.core import EndReason, ParsedResult, Profile, PythonAudit, ToolCall, Trace, Usage
 
 PYTHON_TOOL = "python"
+# Tools whose successful results are tables.
+TABLE_TOOLS = ("query", "sql")
 
 
 def tool_name(name: str) -> str:
@@ -69,6 +71,7 @@ def normalize_messages(
     end_reason: EndReason,
     error: str | None = None,
     python_audits: list[PythonAudit] | None = None,
+    profile: Profile = "slayer",
 ) -> Trace:
     order: list[str] = []
     calls: dict[str, ToolCall] = {}
@@ -85,7 +88,7 @@ def normalize_messages(
                     call = calls[block.tool_use_id]
                     call.result_text = result_text(block.content)
                     call.is_error = bool(block.is_error)
-                    if call.tool == "query" and not call.is_error:
+                    if call.tool in TABLE_TOOLS and not call.is_error:
                         call.parsed = ParsedResult.from_text(call.result_text)
         elif isinstance(msg, ResultMessage):
             result = msg
@@ -101,7 +104,9 @@ def normalize_messages(
     else:
         usage, turns = _fallback_usage(messages)
         cost = None
-    return Trace(calls=ordered, usage=usage, cost_usd=cost, turns=turns, end_reason=end_reason, error=error)
+    return Trace(
+        profile=profile, calls=ordered, usage=usage, cost_usd=cost, turns=turns, end_reason=end_reason, error=error
+    )
 
 
 def _jsonable(obj: Any) -> Any:

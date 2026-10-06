@@ -1,0 +1,28 @@
+{
+ "columns": [
+  "region",
+  "orders"
+ ],
+ "rows": [
+  [
+   "Arctic",
+   0
+  ],
+  [
+   "East",
+   365
+  ],
+  [
+   "North",
+   556
+  ],
+  [
+   "South",
+   554
+  ],
+  [
+   "West",
+   244
+  ]
+ ]
+}

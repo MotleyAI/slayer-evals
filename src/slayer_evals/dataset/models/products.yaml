@@ -1,0 +1,7 @@
+name: products
+sql_table: products
+columns:
+  - {name: id, type: number, primary_key: true}
+  - {name: name, type: string}
+  - {name: category, type: string}
+  - {name: list_price, type: number}

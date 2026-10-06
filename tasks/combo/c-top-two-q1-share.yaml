@@ -1,0 +1,17 @@
+id: c-top-two-q1-share
+covers: [Q24, Q2, Q20]
+prompt: >-
+  For the first quarter of 2025, list for each region its two customers (by customer id) with the highest revenue,
+  with each customer's revenue and their share (between 0 and 1) of the region's revenue in that quarter. Revenue is
+  the sum of order amounts; leave out customers without a region.
+truth_sql: |
+  with cr as (select region, customer_id, sum(amount) as revenue from orders_flat
+              where region is not null and order_date >= date '2025-01-01' and order_date < date '2025-04-01'
+              group by 1, 2)
+  select region, customer_id, revenue, share_of_region from (
+    select region, customer_id, revenue, revenue / sum(revenue) over (partition by region) as share_of_region,
+           rank() over (partition by region order by revenue desc) as rk
+    from cr)
+  where rk <= 2
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region", "customer_id"], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=region)", "name": "share_of_region"}], "filters": ["region is not null", "order_date in '2025-Q1'", "rank(sum(amount), partition_by=region, direction='desc') <= 2"]}}
+compare: {keys: [region, customer_id], values: [revenue, share_of_region]}

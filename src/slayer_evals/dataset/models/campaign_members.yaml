@@ -1,0 +1,10 @@
+name: campaign_members
+sql_table: campaign_members
+default_time_dimension: joined_date
+columns:
+  - {name: campaign_id, type: number, primary_key: true}
+  - {name: customer_id, type: number, primary_key: true}
+  - {name: joined_date, type: date}
+joins:
+  - {target_model: campaigns, join_pairs: [[campaign_id, id]], cardinality: many_to_one}
+  - {target_model: customers, join_pairs: [[customer_id, id]], cardinality: many_to_one}

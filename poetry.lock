@@ -771,15 +771,13 @@ files = [
 
 [[package]]
 name = "motley-slayer"
-version = "1.0.2"
+version = "1.1.0"
 description = "A lightweight, agent-first semantic layer for AI agents"
 optional = false
-python-versions = ">=3.11"
+python-versions = "^3.11"
 groups = ["main"]
-files = [
-    {file = "motley_slayer-1.0.2-py3-none-any.whl", hash = "sha256:e19e6ff903c98dd7057612978816a22a36af878c31a2a6343e0295edcc658d10"},
-    {file = "motley_slayer-1.0.2.tar.gz", hash = "sha256:904eb93c94b62d471b432873d084bf46489ae0f41c432187568fd2c192745cf9"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 duckdb = ">=0.9"
@@ -787,7 +785,7 @@ duckdb-engine = ">=0.13"
 esprima = ">=4.0"
 fastapi = ">=0.100"
 greenlet = ">=1"
-jafgen = ">=0.4.14,<0.5.0"
+jafgen = "^0.4.14"
 mcp = ">=1.0,<2"
 pydantic = ">=2.0"
 python-dateutil = ">=2.8"
@@ -795,7 +793,7 @@ pyyaml = ">=6.0"
 rank-bm25 = ">=0.2.2"
 sqlalchemy = ">=2.0"
 sqlglot = {version = ">=30.17", extras = ["c"]}
-tantivy = ">=0.26,<0.27"
+tantivy = "^0.26"
 uvicorn = ">=0.20"
 
 [package.extras]
@@ -811,6 +809,12 @@ mysql = ["aiomysql (>=0.2)", "pymysql (>=1.0)"]
 postgres = ["asyncpg (>=0.27)", "psycopg2-binary (>=2.9)"]
 snowflake = ["snowflake-connector-python (>=3.13)", "snowflake-sqlalchemy (>=1.7)"]
 sqlserver = ["pyodbc (>=5.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/MotleyAI/slayer.git"
+reference = "1653a918c62bb58fbc1a920c10246fc16e9b5894"
+resolved_reference = "1653a918c62bb58fbc1a920c10246fc16e9b5894"
 
 [[package]]
 name = "nodejs-wheel-binaries"
@@ -2079,4 +2083,4 @@ standard = ["httptools (>=0.8.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "04f85ad231df3cb23b5d903e00aa0a6e86dcb3a0999842c1cecb2fbdfbf5f62a"
+content-hash = "67d1423fd8499fd5168d5b42fac64895c414176e35737afeeb627137af9166ca"

@@ -1,4 +1,4 @@
-"""Table comparison: column resolution, multiset or ordered rows, numeric tolerance, NULL/NaN and date normalization."""
+"""Table comparison: column resolution, multiset or ordered rows, numeric tolerance, NULL/NaN/zero and date normalization."""
 
 import datetime as dt
 import decimal
@@ -101,6 +101,10 @@ def _leaf(column: str) -> str:
     return column.rsplit(".", 1)[-1].rsplit("__", 1)[-1].lower()
 
 
+def _zeroed(values: list[Any]) -> list[Any]:
+    return [0.0 if v is None else v for v in values]
+
+
 def _rows_match(want: list[list[Any]], got: list[list[Any]], compare: Compare) -> str | None:
     """None when the rows match (as a multiset, or in order when `ordered`); else why not."""
     tol = compare.tolerance
@@ -124,10 +128,14 @@ def _assignments(
     want_cols: dict[str, list[Any]],
     got_cols: dict[int, list[Any]],
     result: Table,
-    tol: float,
+    compare: Compare,
 ) -> list[tuple[int, ...]]:
     """Injective assignments of unmatched truth columns to free result columns with equal values, closest names first."""
-    candidates = [[i for i in free if _same_values(want_cols[n], got_cols[i], tol)] for n in unmatched]
+
+    def got(n: str, i: int) -> list[Any]:
+        return _zeroed(got_cols[i]) if compare.null_as_zero and n in compare.values else got_cols[i]
+
+    candidates = [[i for i in free if _same_values(want_cols[n], got(n, i), compare.tolerance)] for n in unmatched]
     found = [
         combo
         for combo in itertools.islice(itertools.product(*candidates), MAX_ASSIGNMENTS)
@@ -170,17 +178,20 @@ def match_tables(truth: Table, result: Table, compare: Compare) -> MatchResult:
     if len(set(resolved.values())) < len(resolved):
         return MatchResult(ok=False, reason="two truth columns resolve to the same result column")
     want_cols = {n: [normalize(r[truth.columns.index(n)]) for r in truth.rows] for n in names}
+    zero = {n for n in compare.values if compare.null_as_zero}
+    want_cols = {n: _zeroed(v) if n in zero else v for n, v in want_cols.items()}
     got_cols = {i: [normalize(r[i]) for r in result.rows] for i in range(len(result.columns))}
     unmatched = [n for n in names if n not in resolved]
     free = [i for i in range(len(result.columns)) if i not in resolved.values()]
-    combos = _assignments(unmatched, free, want_cols, got_cols, result, compare.tolerance) if unmatched else [()]
+    combos = _assignments(unmatched, free, want_cols, got_cols, result, compare) if unmatched else [()]
     if not combos:
         return MatchResult(ok=False, reason=f"no result column has the values of {', '.join(map(repr, unmatched))}")
     want = [[want_cols[n][k] for n in names] for k in range(len(truth.rows))]
     first_problem = ""
     for combo in combos:
         index = {**resolved, **dict(zip(unmatched, combo, strict=True))}
-        got = [[got_cols[index[n]][k] for n in names] for k in range(len(result.rows))]
+        cols = {n: _zeroed(got_cols[index[n]]) if n in zero else got_cols[index[n]] for n in names}
+        got = [[cols[n][k] for n in names] for k in range(len(result.rows))]
         problem = _rows_match(want, got, compare)
         if problem is None:
             columns = {n: result.columns[index[n]] for n in names}

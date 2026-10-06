@@ -1,0 +1,18 @@
+id: t-all-time-running
+covers: [Q4, Q15, filter_before_window]
+prompt: >-
+  For each month of 2025, show the revenue (the sum of order amounts) and the running total of revenue since the very
+  first order.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders group by 1)
+  select month, revenue, running_total
+  from (select month, revenue, sum(revenue) over (order by month) as running_total from m)
+  where month >= date '2025-01-01'
+slayer_query: {"query": [{"name": "monthly", "source_model": "orders", "time_dimensions": [{"dimension": "order_date", "granularity": "month"}], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "cumsum(sum(amount))", "name": "running_total"}]}, {"source_model": "monthly", "dimensions": ["order_date", "revenue", "running_total"], "filters": ["order_date >= '2025-01-01'"]}]}
+naive_sql: |
+  select date_trunc('month', order_date) as month, sum(amount) as revenue,
+         sum(sum(amount)) over (order by date_trunc('month', order_date)) as running_total
+  from orders
+  where order_date >= date '2025-01-01'
+  group by 1
+compare: {keys: [month], values: [revenue, running_total]}

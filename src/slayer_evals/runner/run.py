@@ -39,6 +39,8 @@ from slayer_evals.tasks import compute_truths, load_tasks
 
 # Extra wall-clock a trial process gets beyond the agent's own budget before it is killed.
 KILL_GRACE_S = 60.0
+# A task naming saved SLayer definitions fails in this profile without running an agent.
+RAW_SQL_PROFILE: Profile = "sql+python"
 VERSION_PROBE_TIMEOUT_S = 60.0
 TRANSCRIPT_FILE = "transcript.jsonl"
 
@@ -50,6 +52,10 @@ class Combo:
         self.task: Task = task
         self.profile: Profile = profile
         self.model: str = model
+
+    @property
+    def auto_fails(self) -> bool:
+        return bool(self.task.uses_saved) and self.profile == RAW_SQL_PROFILE
 
 
 class Runner:
@@ -104,7 +110,8 @@ class Runner:
                     proc.communicate(spec.model_dump_json().encode()), timeout=self.cfg.timeout_s + KILL_GRACE_S
                 )
             except TimeoutError:
-                return AgentOutcome(submission=None, trace=Trace(end_reason="timeout")), time.monotonic() - start
+                trace = Trace(profile=combo.profile, end_reason="timeout")
+                return AgentOutcome(submission=None, trace=trace), time.monotonic() - start
             finally:
                 # The agent's own subprocesses (CLI, MCP servers, Python tool) share the trial's process group.
                 with contextlib.suppress(ProcessLookupError):
@@ -114,11 +121,12 @@ class Runner:
             if not outcome_path.exists():
                 tail = stderr.decode(errors="replace")[-2000:]
                 error = f"trial process exited with {proc.returncode}: {tail}"
-                return AgentOutcome(submission=None, trace=Trace(end_reason="error", error=error)), elapsed
+                trace = Trace(profile=combo.profile, end_reason="error", error=error)
+                return AgentOutcome(submission=None, trace=trace), elapsed
             return AgentOutcome.model_validate_json(outcome_path.read_text()), elapsed
 
-    async def run_trial(self, combo: Combo, trial: int) -> TrialResult:
-        stem = self._stem(combo, trial)
+    async def _run_isolated(self, combo: Combo, stem: str) -> tuple[AgentOutcome, float]:
+        """Run the agent in its own process on fresh copies of the database and store; keep its transcript."""
         async with self.semaphore:
             trial_dir = Path(tempfile.mkdtemp(prefix="slayer-evals-trial-"))
             try:
@@ -130,12 +138,21 @@ class Runner:
                     shutil.copy2(transcript, self.run_dir / "transcripts" / f"{stem}.jsonl")
             finally:
                 shutil.rmtree(trial_dir, ignore_errors=True)
+        return outcome, elapsed
+
+    async def run_trial(self, combo: Combo, trial: int) -> TrialResult:
+        stem = self._stem(combo, trial)
+        if combo.auto_fails:
+            outcome = AgentOutcome(submission=None, trace=Trace(profile=combo.profile, end_reason="auto_fail"))
+            elapsed = 0.0
+        else:
+            outcome, elapsed = await self._run_isolated(combo, stem)
         task = combo.task
         verdict = grade(task, self.truths[task.id], outcome.submission, outcome.trace)
         (self.run_dir / "traces" / f"{stem}.json").write_text(outcome.trace.model_dump_json(indent=1) + "\n")
         result = TrialResult(
             task_id=task.id,
-            row=task.row,
+            covers=task.covers,
             profile=combo.profile,
             model=combo.model,
             trial=trial,
@@ -152,7 +169,8 @@ class Runner:
 
     async def until_pass(self, combo: Combo) -> None:
         for trial in range(1, self.cfg.n + 1):
-            if (await self.run_trial(combo, trial)).passed:
+            result = await self.run_trial(combo, trial)
+            if result.passed or combo.auto_fails:
                 return
 
     async def run(self, combos: list[Combo]) -> None:

@@ -36,7 +36,10 @@ class RunConfig(BaseModel):
 
 
 def select_tasks(tasks: list[Task], cfg: RunConfig) -> list[Task]:
-    unknown = sorted(set(cfg.task_ids) - {t.id for t in tasks}) + sorted(set(cfg.rows) - {t.row for t in tasks})
+    covered = {r for t in tasks for r in t.rows}
+    unknown = sorted(set(cfg.task_ids) - {t.id for t in tasks}) + sorted(set(cfg.rows) - covered)
     if unknown:
         raise ValueError(f"no tasks for selection: {', '.join(unknown)}")
-    return [t for t in tasks if (not cfg.task_ids or t.id in cfg.task_ids) and (not cfg.rows or t.row in cfg.rows)]
+    return [
+        t for t in tasks if (not cfg.task_ids or t.id in cfg.task_ids) and (not cfg.rows or set(t.rows) & set(cfg.rows))
+    ]

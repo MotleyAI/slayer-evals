@@ -1,0 +1,15 @@
+id: c-region-month-share
+covers: [Q2, Q4]
+prompt: >-
+  For each month of the first quarter of 2025 and each region, show the revenue (the sum of order amounts), the
+  region's share (between 0 and 1) of that month's revenue, and the change in the region's revenue from the previous
+  month (this month minus the previous month). Orders whose customer has no known region form their own group.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, region, sum(amount) as revenue
+             from orders_flat group by 1, 2)
+  select a.month, a.region, a.revenue, a.revenue / sum(a.revenue) over (partition by a.month) as share_of_month,
+         a.revenue - b.revenue as revenue_change
+  from m a left join m b on b.region is not distinct from a.region and b.month = a.month - interval 1 month
+  where a.month between date '2025-01-01' and date '2025-03-01'
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": ["2025-01-01", "2025-03-31"]}], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=order_date)", "name": "share_of_month"}, {"formula": "change(sum(amount))", "name": "revenue_change"}]}}
+compare: {keys: [month, region], values: [revenue, share_of_month, revenue_change]}

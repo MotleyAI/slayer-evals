@@ -1,5 +1,6 @@
 """Runner: selection, run modes, isolation, blind agents, SLayer override, run output."""
 
+import importlib.metadata
 import json
 import os
 import sys
@@ -382,7 +383,7 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
     run_dir = run_benchmark(config(tmp_path, built, td, n=1), environ=ENV)
     assert run_dir.parent == tmp_path / "runs"
     md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
-    assert md.slayer_version == "1.0.2"
+    assert md.slayer_version == importlib.metadata.version("motley-slayer")
     assert md.sdk_version == claude_agent_sdk.__version__
     assert md.models == ["claude-opus-5-5"]
     assert md.mode == "repeat"

@@ -1,0 +1,15 @@
+id: t-orders-per-category
+covers: [Q1, distinct_reagg]
+prompt: >-
+  For each product category, how many orders contain at least one item of that category? On the same rows, show the
+  total number of orders.
+truth_sql: |
+  select p.category, count(distinct i.order_id) as orders, (select count(*) from orders) as total_orders
+  from order_items i join products p on p.id = i.product_id
+  group by 1
+slayer_query: {"query": {"source_model": "order_items", "dimensions": ["products.category"], "measures": [{"formula": "count_distinct(order_id)", "name": "orders"}, {"formula": "count_distinct(order_id, partition_by=[])", "name": "total_orders"}]}}
+naive_sql: |
+  select p.category, count(distinct i.order_id) as orders, sum(count(distinct i.order_id)) over () as total_orders
+  from order_items i join products p on p.id = i.product_id
+  group by 1
+compare: {keys: [category], values: [orders, total_orders]}

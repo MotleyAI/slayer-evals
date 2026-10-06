@@ -1,0 +1,17 @@
+id: t-orders-per-customer
+covers: [Q8, count_outer_join]
+prompt: >-
+  For each customer tier, show the number of customers, the number of orders they placed, and the average number of
+  orders per customer, where a customer without orders has zero orders.
+truth_sql: |
+  select c.tier, count(*) as customers, coalesce(sum(o.n), 0) as orders,
+         coalesce(sum(o.n), 0) / count(*) as orders_per_customer
+  from customers c left join (select customer_id, count(*) as n from orders group by 1) o on o.customer_id = c.id
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tier"], "measures": [{"formula": "count(*)", "name": "customers"}, {"formula": "count(orders.id)", "name": "orders"}, {"formula": "count(orders.id) / count(*)", "name": "orders_per_customer"}]}}
+naive_sql: |
+  select c.tier, count(distinct c.id) as customers, count(*) as orders,
+         count(*) / count(distinct c.id) as orders_per_customer
+  from customers c left join orders o on o.customer_id = c.id
+  group by 1
+compare: {keys: [tier], values: [customers, orders, orders_per_customer]}

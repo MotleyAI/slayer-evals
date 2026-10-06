@@ -1,0 +1,21 @@
+id: t-fan-out-items
+covers: [Q6, fan_out]
+prompt: >-
+  For each region, show the revenue (the sum of order amounts) and the number of order lines (rows of the order items
+  table) of its orders. Orders whose customer has no known region form their own group.
+truth_sql: |
+  with l as (select order_id, count(*) as n from order_items group by 1)
+  select o.region, sum(o.amount) as revenue, sum(l.n) as lines
+  from orders_flat o join l on l.order_id = o.id
+  group by 1
+slayer_query: {"query": {"source_model": "order_items", "dimensions": ["orders.customers.regions.name"], "measures": [{"formula": "sum(orders.amount)", "name": "revenue"}, {"formula": "count(*)", "name": "lines"}]}}
+naive_sql:
+  - |
+    select o.region, sum(o.amount) as revenue, count(*) as lines
+    from orders_flat o join order_items i on i.order_id = o.id
+    group by 1
+  - |
+    select o.region, sum(distinct o.amount) as revenue, count(*) as lines
+    from orders_flat o join order_items i on i.order_id = o.id
+    group by 1
+compare: {keys: [region], values: [revenue, lines]}

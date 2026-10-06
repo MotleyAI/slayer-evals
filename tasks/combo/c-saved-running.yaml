@@ -1,0 +1,12 @@
+id: c-saved-running
+covers: [Q23, Q4]
+prompt: >-
+  Using the saved monthly revenue query (monthly_rev), show for each month of 2025 its revenue and the running total of
+  revenue since January 2025.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue
+             from orders where order_date >= date '2025-01-01' group by 1)
+  select month, revenue, sum(revenue) over (order by month) as running_total from m
+slayer_query: {"query": "monthly_rev", "refine": {"measures": [{"formula": "cumsum(sum(amount))", "name": "running_total"}], "filters": ["order_date in '2025'"]}}
+uses_saved: [monthly_rev]
+compare: {keys: [month], values: [revenue, running_total]}

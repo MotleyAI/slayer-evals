@@ -1,0 +1,7 @@
+name: campaigns
+sql_table: campaigns
+columns:
+  - {name: id, type: number, primary_key: true}
+  - {name: name, type: string}
+  - {name: channel, type: string}
+  - {name: start_date, type: date}

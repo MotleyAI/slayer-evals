@@ -1,0 +1,14 @@
+id: t-never-returned
+covers: [Q10, not_in_null]
+prompt: >-
+  For each customer tier, how many customers have never made a return?
+truth_sql: |
+  select tier, count(*) as customers from customers c
+  where not exists (select 1 from returns r where r.customer_id = c.id)
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tier"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["returns.id is null"]}}
+naive_sql: |
+  select tier, count(*) as customers from customers
+  where id not in (select customer_id from returns)
+  group by 1
+compare: {keys: [tier], values: [customers]}

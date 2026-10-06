@@ -1,0 +1,16 @@
+id: t-overall-aov
+covers: [Q1, avg_of_avgs]
+prompt: >-
+  For each region, show its average order value (revenue divided by the number of orders) and, on every row, the
+  company-wide average order value over all orders. Revenue is the sum of order amounts; orders whose customer has no
+  known region form their own group.
+truth_sql: |
+  select region, sum(amount) / count(*) as aov, (select sum(amount) / count(*) from orders) as overall_aov
+  from orders_flat
+  group by 1
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region"], "measures": [{"formula": "sum(amount) / count(*)", "name": "aov"}, {"formula": "sum(amount, partition_by=[]) / count(*, partition_by=[])", "name": "overall_aov"}]}}
+naive_sql: |
+  select region, sum(amount) / count(*) as aov, avg(sum(amount) / count(*)) over () as overall_aov
+  from orders_flat
+  group by 1
+compare: {keys: [region], values: [aov, overall_aov]}
