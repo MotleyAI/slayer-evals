@@ -1,0 +1,10 @@
+id: q9-credit-by-status
+row: Q9
+prompt: >-
+  What is the total credit limit of our customers for each order status?
+truth_sql: select 1 as nothing where false
+expect:
+  warning: broadcast
+  message_any: [broadcast, repeat, "same value", "same total", "same amount", "not attribut", "cannot be split", "can't be split", "double count", "fan out", "fans out"]
+capabilities:
+  - {kind: call, fn: sum}

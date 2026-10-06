@@ -11,6 +11,8 @@ import duckdb
 
 from slayer_evals.core import Table, Task
 
+SNAPSHOT_REL_TOL = 1e-9
+
 
 class TruthError(RuntimeError):
     pass
@@ -32,6 +34,10 @@ def _json_value(v: Any) -> Any:
     return v
 
 
+def _sort_key(row: list[Any]) -> list[tuple[int, Any]]:
+    return [(0, "") if v is None else (1, v) if isinstance(v, (int, float)) else (2, str(v)) for v in row]
+
+
 def _run(con: duckdb.DuckDBPyConnection, task: Task) -> Table:
     try:
         cur = con.execute(task.truth_sql)
@@ -39,7 +45,25 @@ def _run(con: duckdb.DuckDBPyConnection, task: Task) -> Table:
         rows = [[_json_value(v) for v in r] for r in cur.fetchall()]
     except duckdb.Error as exc:
         raise TruthError(f"task {task.id}: truth_sql failed: {exc}") from exc
+    if not task.compare.ordered:
+        rows.sort(key=_sort_key)
     return Table(columns=columns, rows=rows)
+
+
+def _same_value(a: Any, b: Any) -> bool:
+    if isinstance(a, float) and isinstance(b, (int, float)) or isinstance(b, float) and isinstance(a, (int, float)):
+        return math.isclose(a, b, rel_tol=SNAPSHOT_REL_TOL, abs_tol=SNAPSHOT_REL_TOL)
+    return a == b
+
+
+def same_table(a: Table, b: Table) -> bool:
+    """Equal columns and rows, floats within a relative 1e-9 (parallel sums differ in the last bits)."""
+    if a.columns != b.columns or len(a.rows) != len(b.rows):
+        return False
+    return all(
+        len(x) == len(y) and all(_same_value(u, v) for u, v in zip(x, y, strict=True))
+        for x, y in zip(a.rows, b.rows, strict=True)
+    )
 
 
 def compute_truth(task: Task, db_path: Path) -> Table:
@@ -76,7 +100,7 @@ def check_snapshots(truths: dict[str, Table], snapshot_dir: Path) -> None:
     problems += [
         f"{tid}: truth differs from its snapshot"
         for tid in sorted(set(truths) & set(committed))
-        if Table.model_validate_json(truths[tid].model_dump_json()) != committed[tid]
+        if not same_table(Table.model_validate_json(truths[tid].model_dump_json()), committed[tid])
     ]
     if problems:
         raise SnapshotDriftError(

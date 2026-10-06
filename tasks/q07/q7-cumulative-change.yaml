@@ -1,0 +1,14 @@
+id: q7-cumulative-change
+row: Q7
+prompt: >-
+  For each month of 2025, take the change in revenue from the previous month (this month minus the previous month,
+  where January is compared with December 2024) and show the running sum of those changes since January 2025.
+  Revenue is the sum of order amounts.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders group by 1),
+       c as (select month, revenue - lag(revenue) over (order by month) as change from m)
+  select month, sum(change) over (order by month) as cumulative_change
+  from c where month >= date '2025-01-01'
+compare: {keys: [month], values: [cumulative_change]}
+capabilities:
+  - {kind: call, fn: cumsum, within: {kind: call, fn: [change, lag, time_shift]}}

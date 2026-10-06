@@ -1,0 +1,15 @@
+id: q8-tier-customers
+row: Q8
+prompt: >-
+  For each customer tier, show the number of customers and their total revenue (the sum of their order amounts).
+  Every customer counts, including those who never placed an order.
+truth_sql: |
+  select c.tier, count(distinct c.id) as customers, sum(o.amount) as revenue
+  from customers c left join orders o on o.customer_id = c.id
+  group by 1
+compare: {keys: [tier], values: [customers, revenue]}
+capabilities:
+  - kind: any_of
+    options:
+      - [{kind: no_source_model}]
+      - [{kind: source_model, name: customers}]

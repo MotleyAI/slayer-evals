@@ -84,3 +84,22 @@ def test_stale_snapshot_is_drift(db: Path, tmp_path: Path):
     with pytest.raises(SnapshotDriftError) as exc:
         check_snapshots({}, snap)
     assert "gone" in str(exc.value)
+
+
+def test_unordered_truth_rows_are_sorted(db: Path):
+    truth = compute_truth(make_task(id="t", truth_sql="select k, v from t order by k desc"), db)
+    assert [r[0] for r in truth.rows] == ["a", "b"]
+
+
+def test_ordered_truth_keeps_sql_order(db: Path):
+    task = make_task(id="t", truth_sql="select k from t order by k desc", compare={"keys": ["k"], "ordered": True})
+    assert [r[0] for r in compute_truth(task, db).rows] == ["b", "a"]
+
+
+def test_snapshot_tolerates_last_bit_float_noise(tmp_path: Path):
+    snap = tmp_path / "truth"
+    write_snapshots({"t": Table(columns=["v"], rows=[[0.1 + 0.2]])}, snap)
+    check_snapshots({"t": Table(columns=["v"], rows=[[0.3]])}, snap)
+    drifted = {"t": Table(columns=["v"], rows=[[0.31]])}
+    with pytest.raises(SnapshotDriftError):
+        check_snapshots(drifted, snap)

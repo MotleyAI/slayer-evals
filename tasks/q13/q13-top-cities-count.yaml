@@ -1,0 +1,11 @@
+id: q13-top-cities-count
+row: Q13
+prompt: >-
+  List the three cities with the highest revenue (the sum of order amounts), highest first, showing only each city's
+  name and its number of orders, not the revenue.
+truth_sql: |
+  select city, count(*) as orders from orders_flat where city is not null
+  group by 1 order by sum(amount) desc limit 3
+compare: {keys: [city], values: [orders], ordered: true, columns_exact: true}
+capabilities:
+  - {kind: order_unselected}
