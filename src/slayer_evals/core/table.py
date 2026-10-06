@@ -61,13 +61,14 @@ def _rows_from_records(records: list[Any]) -> tuple[list[str], list[list[Any]]] 
     return columns, [[r.get(c) for c in columns] for r in records]
 
 
-def _from_columns_rows(columns: Any, rows: Any) -> ParsedResult | None:
+def _from_columns_rows(columns: Any, rows: Any, truncated: Any) -> ParsedResult | None:
     """The `sql` tool's `{columns, rows, truncated}` shape."""
     if not isinstance(columns, list) or not all(isinstance(c, str) for c in columns):
         return None
     if not isinstance(rows, list) or not all(isinstance(r, list) for r in rows):
         return None
-    return ParsedResult(columns=columns, rows=rows)
+    warnings = [ResultWarning(kind="truncated")] if truncated is True else []
+    return ParsedResult(columns=columns, rows=rows, warnings=warnings)
 
 
 def _from_json(text: str) -> ParsedResult | None:
@@ -77,7 +78,7 @@ def _from_json(text: str) -> ParsedResult | None:
         return None
     warnings: list[ResultWarning] = []
     if isinstance(payload, dict) and "columns" in payload:
-        return _from_columns_rows(payload.get("columns"), payload.get("rows"))
+        return _from_columns_rows(payload.get("columns"), payload.get("rows"), payload.get("truncated"))
     if isinstance(payload, dict):
         if not isinstance(payload.get("data"), list):
             return None

@@ -118,6 +118,12 @@ def test_columns_rows_object_parses():
     assert p.warnings == []
 
 
+def test_truncated_columns_rows_object_warns():
+    p = ParsedResult.from_text(json.dumps({"columns": ["a"], "rows": [[1]], "truncated": True}))
+    assert p is not None
+    assert [w.kind for w in p.warnings] == ["truncated"]
+
+
 def test_all_four_shapes_parse_alike():
     columns, rows = ["region", "revenue"], [["North", 1.5], ["South", 2.0], [None, 3.0]]
     records = [dict(zip(columns, r, strict=True)) for r in rows]

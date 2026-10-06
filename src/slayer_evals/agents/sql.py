@@ -19,6 +19,9 @@ SQL_TIMEOUT_S = 60
 MAX_ROWS = 1000
 # How long a timed-out statement may take to stop after it is interrupted.
 JOIN_TIMEOUT_S = 10.0
+GUARD_POLL_S = 0.05
+_GUARDS: dict[Path, threading.Lock] = {}
+_GUARDS_LOCK = threading.Lock()
 SQL_CONFIG: dict[str, str | bool | int | float | list[str]] = {
     "enable_external_access": False,
     "lock_configuration": True,
@@ -64,12 +67,43 @@ def _execute(con: duckdb.DuckDBPyConnection, sql: str) -> tuple[list[str], list[
     return columns, cur.fetchmany(MAX_ROWS + 1) if cur.description else []
 
 
+def _guard(db_path: Path) -> threading.Lock:
+    """The database's guard, held from a call's start until its worker exits."""
+    with _GUARDS_LOCK:
+        return _GUARDS.setdefault(db_path.resolve(), threading.Lock())
+
+
+def _close_and_release(con: duckdb.DuckDBPyConnection, guard: threading.Lock) -> None:
+    try:
+        with contextlib.suppress(Exception):  # the outcome is already known; a failed close must not mask it
+            con.close()
+    finally:
+        guard.release()
+
+
+async def _acquire(guard: threading.Lock, timeout_s: float) -> bool:
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_s
+    while not guard.acquire(blocking=False):
+        if loop.time() >= deadline:
+            return False
+        await asyncio.sleep(GUARD_POLL_S)
+    return True
+
+
 async def run_sql(sql: str, db_path: Path, timeout_s: float = SQL_TIMEOUT_S) -> SqlRun:
     """Run exactly one statement on its own read-only connection, interrupting it after `timeout_s`."""
+    guard = _guard(db_path)
+    if not await _acquire(guard, timeout_s):
+        return SqlRun(ok=False, timed_out=True, text=f"A previous statement is still running after {timeout_s:g} s.")
     try:
         con = duckdb.connect(str(db_path), read_only=True, config=SQL_CONFIG)
     except duckdb.Error as exc:
+        guard.release()
         return SqlRun(ok=False, text=str(exc))
+    except BaseException:
+        guard.release()
+        raise
     loop = asyncio.get_running_loop()
     done: asyncio.Future[Any] = loop.create_future()
 
@@ -78,10 +112,13 @@ async def run_sql(sql: str, db_path: Path, timeout_s: float = SQL_TIMEOUT_S) -> 
             done.set_result(outcome)
 
     def work() -> None:
+        # The worker closes its own connection (closing it from another thread mid-statement is unsafe) and frees the guard.
         try:
             outcome: Any = _execute(con, sql)
         except Exception as exc:  # noqa: BLE001 - handed back to the coroutine as the call's error
             outcome = exc
+        finally:
+            _close_and_release(con, guard)
         with contextlib.suppress(RuntimeError):  # the loop may be gone if the caller was cancelled
             loop.call_soon_threadsafe(settle, outcome)
 
@@ -98,11 +135,14 @@ async def run_sql(sql: str, db_path: Path, timeout_s: float = SQL_TIMEOUT_S) -> 
     except duckdb.Error as exc:
         return SqlRun(ok=False, text=str(exc))
     finally:
-        # A timed-out (or cancelled) statement is stopped before the connection closes, so it never overlaps a later call.
+        # A timed-out (or cancelled) statement is interrupted and awaited; one that outlives the join keeps the guard,
+        # so it never overlaps a later call.
         if worker.is_alive():
-            con.interrupt()
+            with contextlib.suppress(duckdb.Error):  # the worker may have just finished and closed it
+                con.interrupt()
             await asyncio.to_thread(worker.join, JOIN_TIMEOUT_S)
-        con.close()
+        elif worker.ident is None:
+            _close_and_release(con, guard)
     if isinstance(outcome, BaseException):
         return SqlRun(ok=False, text=str(outcome))
     return SqlRun(ok=True, text=_payload(*outcome))
