@@ -46,9 +46,10 @@ def tool_result(tid: str, text: str, is_error: bool = False, as_list: bool = Tru
 
 
 def result_message(
-    subtype: str = "success", is_error: bool = False, turns: int = 3, cost: float = 0.12
+    subtype: str = "success", is_error: bool = False, turns: int = 3, cost: float = 0.12, result: str | None = None
 ) -> ResultMessage:
     return ResultMessage(
+        result=result,
         subtype=subtype,
         duration_ms=4000,
         duration_api_ms=3500,

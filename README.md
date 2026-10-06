@@ -116,17 +116,19 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 
 `results/baseline/` holds a committed run of every task in both profiles with Claude Opus 5.5 — its
 [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task ran
-once per profile, so individual rates are noisy; use `--trials` for stable numbers.
+once per profile, so individual rates are noisy; use `--trials` for stable numbers. Two trials that hit API overload
+(HTTP 529) before their first turn were re-run.
 
 | Profile | Tasks scored | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- |
-| `slayer` | 24 | 23 | 19 | 19 |
-| `slayer+python` | 24 | 23 | 18 | 17 |
+| `slayer` | 24 | 22 | 19 | 18 |
+| `slayer+python` | 24 | 22 | 18 | 17 |
 
 (The relative-date task is xfail and not counted.) The agent got almost every answer right, but in about one task in
 five it reached the answer by combining queries, hand-written SQL or Python instead of one SLayer query — most
-often on rolling windows (Q11), ordering by an unshown measure (Q13), deep composition (Q7) and fan-out-safe
-cross-model aggregates (Q6). Each failure is listed with its SLayer calls in the report.
+often on rolling windows (Q11), ordering by an unshown measure (Q13), deep composition (Q7) and ranking (Q14).
+[docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by profile, against the previous
+baseline; the report lists each one with its SLayer calls.
 
 ## Plugging in your own agent
 

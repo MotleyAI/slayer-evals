@@ -28,7 +28,7 @@
      "source_model": "orders",
      "dimensions": [
       {
-       "expression": "CASE WHEN amount > 100 THEN 'big' ELSE 'small' END",
+       "expression": "case when amount > 100 then 'big' else 'small' end",
        "name": "size_class"
       }
      ],
@@ -45,7 +45,7 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}, {\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}, {\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -55,14 +55,14 @@
     ],
     "rows": [
      [
-      "big",
-      822,
-      117689.06000000017
-     ],
-     [
       "small",
       4194,
       214999.39000000033
+     ],
+     [
+      "big",
+      822,
+      117689.06000000017
      ]
     ],
     "warnings": []
@@ -89,7 +89,7 @@
       214999.39
      ]
     ],
-    "message": "Of the 5,016 orders, 822 are \"big\" (amount over 100), with revenue of 117,689.06. The other 4,194 are \"small\", with revenue of 214,999.39. I grouped orders by a size label calculated in the query itself (CASE WHEN amount > 100 THEN 'big' ELSE 'small' END), so the stored data model was not changed. Orders of exactly 100 count as small. Any order with a missing amount would also land in \"small\"; I didn't check whether there are any."
+    "message": "Orders classified as 'big' (amount > 100) or 'small' (everything else). The class was defined inside the query only, so the stored model was not changed. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -99,13 +99,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 323,
+  "output_tokens": 313,
   "cache_read_tokens": 71488,
   "cache_write_tokens": 1201,
   "partial": false
  },
- "cost_usd": 0.0267866,
- "duration_s": 12.259898919000989,
+ "cost_usd": 0.026586600000000002,
+ "duration_s": 15.05519256399566,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

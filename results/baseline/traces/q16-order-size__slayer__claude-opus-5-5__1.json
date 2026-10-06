@@ -45,7 +45,7 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}, {\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}, {\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -55,14 +55,14 @@
     ],
     "rows": [
      [
-      "small",
-      4194,
-      214999.39000000033
-     ],
-     [
       "big",
       822,
       117689.06000000017
+     ],
+     [
+      "small",
+      4194,
+      214999.39000000033
      ]
     ],
     "warnings": []
@@ -74,7 +74,7 @@
    "args": {
     "columns": "[\"size_class\",\"order_count\",\"revenue\"]",
     "rows": "[[\"big\",822,117689.06],[\"small\",4194,214999.39]]",
-    "message": "Orders classified with an in-query computed dimension (CASE WHEN amount > 100 THEN 'big' ELSE 'small'); stored model unchanged. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
+    "message": "Orders classified with a computed dimension in the query (CASE WHEN amount > 100 THEN 'big' ELSE 'small' END); the stored model was not changed. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
    },
    "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
    "is_error": true,
@@ -101,7 +101,7 @@
       214999.39
      ]
     ],
-    "message": "Orders classified with an in-query computed dimension (CASE WHEN amount > 100 THEN 'big' ELSE 'small'); stored model unchanged. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
+    "message": "Orders classified with a computed dimension in the query (CASE WHEN amount > 100 THEN 'big' ELSE 'small' END); the stored model was not changed. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -111,13 +111,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 580,
-  "cache_read_tokens": 95453,
-  "cache_write_tokens": 1611,
+  "output_tokens": 570,
+  "cache_read_tokens": 95447,
+  "cache_write_tokens": 1609,
   "partial": false
  },
- "cost_usd": 0.038777599999999995,
- "duration_s": 17.458218883999507,
+ "cost_usd": 0.0385664,
+ "duration_s": 19.415176859001804,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

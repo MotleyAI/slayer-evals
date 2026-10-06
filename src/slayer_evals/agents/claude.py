@@ -127,7 +127,8 @@ def _end_reason(result: ResultMessage | None, submitted: bool) -> tuple[EndReaso
     if result.subtype == "error_max_turns":
         return "max_turns", None
     if result.is_error:
-        return "error", f"session ended with {result.subtype}"
+        # API failures arrive as subtype "success" with is_error set; the cause is in `result`.
+        return "error", f"session ended with an error: {result.result or result.subtype}"
     return "error", "session ended without submitting an answer"
 
 

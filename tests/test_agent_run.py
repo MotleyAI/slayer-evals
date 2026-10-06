@@ -106,6 +106,15 @@ async def test_max_turns(tmp_path: Path):
     assert out.submission is None
 
 
+async def test_api_error_surfaces_the_message(tmp_path: Path):
+    overloaded = "API Error: 529 Overloaded. This is a server-side issue, usually temporary."
+    script = [result_message(is_error=True, turns=1, result=overloaded)]
+    a, _ = agent(script)
+    out = await a.run(make_input(tmp_path))
+    assert out.trace.end_reason == "error"
+    assert out.trace.error == f"session ended with an error: {overloaded}"
+
+
 async def test_error_with_partial_usage(tmp_path: Path):
     shared = turn_usage(inp=100, out=10, read=50, write=5)
     script = [
