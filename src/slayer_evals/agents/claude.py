@@ -25,10 +25,14 @@ SUBMIT_FULL_NAME = f"mcp__{BENCH_SERVER}__{SUBMIT_TOOL}"
 TEARDOWN_TIMEOUT_S = 30.0
 SLAYER_PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python")
 PYTHON_PROFILES: tuple[Profile, ...] = ("slayer+python", "sql+python")
+EXACT_ANSWER_SENTENCE = (
+    "Submit exact values without rounding, and use null as the label of a group whose key is unknown."
+)
 BASE_PROMPT = (
     "You are a data analyst answering a business question about the data available through your tools. "
     f"Work out the answer with the tools, then call {SUBMIT_FULL_NAME} once with the result table and a short message. "
-    f"If the question cannot be answered as asked, call {SUBMIT_FULL_NAME} with no rows and explain why in the message."
+    f"If the question cannot be answered as asked, call {SUBMIT_FULL_NAME} with no rows and explain why in the message. "
+    f"{EXACT_ANSWER_SENTENCE}"
 )
 JSON_RESULTS_SENTENCE = (
     'Request query results with format="json" so numbers are exact; the default markdown rounds some values.'

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from slayer_evals.agents.claude import (
+    EXACT_ANSWER_SENTENCE,
     JSON_RESULTS_SENTENCE,
     SLAYER_ENV_ALLOW,
     AnswerCollector,
@@ -27,6 +28,8 @@ TELEMETRY = (
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
 )
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+# The answer format asks for null group labels; that hints at no task's pitfall.
+SYSTEM_PROMPT_ALLOWED = ("null",)
 
 
 def options(tmp_path: Path, profile: Profile = "slayer"):
@@ -151,7 +154,8 @@ def test_system_prompt_generic(tmp_path: Path):
     for profile, prompt in prompts(tmp_path).items():
         low = prompt.lower()
         for kw in PROMPT_DENY_LIST:
-            assert kw.lower() not in low, (profile, kw)
+            if kw not in SYSTEM_PROMPT_ALLOWED:
+                assert kw.lower() not in low, (profile, kw)
         for word in ("partition", "rolling", "rank", "re-aggregat", "time shift", "Q1", "slayer", "trap"):
             assert word.lower() not in low, (profile, word)
 
@@ -213,6 +217,13 @@ def test_every_slayer_tool_offered(tmp_path: Path):
         assert not any(t.startswith("mcp__slayer") for t in opts.disallowed_tools)
         if opts.allowed_tools:
             assert offered <= set(opts.allowed_tools) or "mcp__slayer" in opts.allowed_tools
+
+
+def test_every_profile_asks_for_exact_answers(tmp_path: Path):
+    for profile, prompt in prompts(tmp_path).items():
+        assert EXACT_ANSWER_SENTENCE in prompt, profile
+    assert "without rounding" in EXACT_ANSWER_SENTENCE
+    assert "null" in EXACT_ANSWER_SENTENCE
 
 
 def test_json_results_sentence_asks_for_json():

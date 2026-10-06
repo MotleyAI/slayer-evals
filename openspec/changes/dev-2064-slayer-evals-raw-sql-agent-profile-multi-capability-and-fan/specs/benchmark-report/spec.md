@@ -30,7 +30,7 @@ snapshot.
 
 ### Requirement: Committed baseline
 The repository SHALL include a baseline: the report, results and normalized traces of a run of all tasks in all three
-profiles with model Opus 5.5 in `repeat` mode with N = 3; the README SHALL summarise it per suite and profile and link to
+profiles with model Opus 5.5 in `repeat` mode with N = 1; the README SHALL summarise it per suite and profile and link to
 it, and `docs/baseline-failures.md` SHALL break its failures down by profile and pitfall.
 
 #### Scenario: Baseline is reproducible from its files

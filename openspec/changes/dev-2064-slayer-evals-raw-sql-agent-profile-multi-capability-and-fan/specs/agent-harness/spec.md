@@ -25,7 +25,8 @@ other MCP server is loaded and abort the trial otherwise. The SLayer MCP server 
 the trial's store copy with a sanitized environment (an allow-list; no Claude or Anthropic credentials). Telemetry and
 non-essential traffic SHALL be disabled and the prompt-caching mode pinned. The system prompt SHALL be minimal,
 generic and identical across tasks and profiles, except that the SLayer profiles alone carry one sentence telling the
-agent to request `query` results as JSON so numbers are exact; it MUST NOT mention SLayer features or tasks.
+agent to request `query` results as JSON so numbers are exact; it SHALL ask every agent to submit exact, unrounded
+values with null as the label of a group whose key is unknown; it MUST NOT mention SLayer features or tasks.
 
 #### Scenario: Leaked server aborts
 - **WHEN** after connecting the session reports an MCP server the profile did not declare

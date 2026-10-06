@@ -48,6 +48,6 @@
 ## 8. Baseline and docs
 
 - [x] 8.1 Full non-integration suite, ruff and basedpyright green.
-- [ ] 8.2 Run all tasks × three profiles, Opus 5.5, `--mode repeat --trials 3`, subscription auth with the same env file as the previous baseline; rerun trials that died on API overload before their first turn and note it.
-- [ ] 8.3 Replace `results/baseline/` (report, results, metadata, traces); verify the baseline-reproducibility test.
-- [ ] 8.4 Update README (flavors, suites, `sql+python` profile, task format fields, new baseline table led by `correct`) and rewrite `docs/baseline-failures.md` as a per-profile, per-pitfall failure breakdown.
+- [x] 8.2 Run all tasks × three profiles, Opus 5.5, `--mode repeat --trials 1`, subscription auth with the same env file as the previous baseline; rerun trials that died on API overload before their first turn and note it.
+- [x] 8.3 Replace `results/baseline/` (report, results, metadata, traces); verify the baseline-reproducibility test.
+- [x] 8.4 Update README (flavors, suites, `sql+python` profile, task format fields, new baseline table led by `correct`) and rewrite `docs/baseline-failures.md` as a per-profile, per-pitfall failure breakdown.

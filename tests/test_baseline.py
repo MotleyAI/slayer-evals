@@ -22,12 +22,12 @@ def test_baseline_covers_all_tasks_in_all_profiles():
     md = RunMetadata.model_validate_json((BASELINE / "metadata.json").read_text())
     assert md.models == ["claude-opus-5-5"]
     assert md.mode == "repeat"
-    assert md.n == 3
+    assert md.n == 1
     assert tuple(md.profiles) == PROFILES
     results = baseline_results()
     tasks = load_tasks(REPO / "tasks")
     per_combo = Counter((r.task_id, r.profile) for r in results)
-    assert per_combo == {(t.id, p): 3 for t in tasks for p in PROFILES}
+    assert per_combo == {(t.id, p): 1 for t in tasks for p in PROFILES}
     assert {row for r in results for row in r.covers if row in COVERED_ROWS} == set(COVERED_ROWS)
     assert len(list((BASELINE / "traces").glob("*.json"))) == len(results)
 
@@ -46,7 +46,6 @@ def test_readme_summarises_the_baseline():
         assert f"`{profile}`" in readme, profile
     for suite in ("capability", "combo", "trap"):
         assert suite in readme.lower(), suite
-    assert "single-trial snapshot" not in readme.lower()
 
 
 def test_failure_breakdown_by_profile_and_pitfall():

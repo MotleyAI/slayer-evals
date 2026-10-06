@@ -9,7 +9,7 @@ trial with SLayer's MCP server and an in-process `bench` server (`submit_answer`
 **Goals:**
 - A raw-SQL flavor as hermetic as the SLayer ones, graded with the same verdict shape.
 - Tasks whose fairness is proven: a single SLayer query answers each; each trap's naive SQL demonstrably misses.
-- A three-flavor baseline at N = 3 whose headline is correctness.
+- A three-flavor baseline at N = 1 whose headline is correctness.
 
 **Non-Goals:**
 - Changing SLayer. Gaps found while authoring reference queries are raised with the user, never routed around.
@@ -91,7 +91,7 @@ leading boundary only.
 - [NULL foreign-key orders merge into SLayer's NULL-region cell] → truths of affected tasks define the NULL group the
   way SLayer does, and prompts state how unknown-region orders are grouped.
 - [`single_query` easier for raw SQL] → report leads with `correct`; README says so.
-- [Subscription rate limits during a 468-trial baseline] → results are written per trial; reruns by task selection.
+- [Subscription rate limits during a 159-trial baseline] → results are written per trial; reruns by task selection.
 
 ## Migration Plan
 

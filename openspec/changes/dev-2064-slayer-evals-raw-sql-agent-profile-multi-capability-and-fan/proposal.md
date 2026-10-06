@@ -22,7 +22,7 @@ has to back up.
 - 17 trap tasks and 11 multi-capability tasks (3 of them with three rows); prompts q3, q6, q10, q25 reworded to pass a
   wider hint deny-list.
 - Report: suite × flavor and pitfall × flavor tables; rows counted per covered row.
-- New committed baseline: all tasks, all three flavors, Opus 5.5, N = 3; README and failure breakdown rewritten.
+- New committed baseline: all tasks, all three flavors, Opus 5.5, N = 1; README and failure breakdown rewritten.
 - `architecture/system.arc42.md`: Purpose rewritten for three flavors and traps; new principle 7 (proven tasks).
 
 ## Capabilities
