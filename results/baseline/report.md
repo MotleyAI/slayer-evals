@@ -22,9 +22,9 @@ A trial passes when its answer is **correct** (the submitted table matches the t
 
 | Suite | Profile | Model | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | `claude-opus-5-5` | 24 | 22 | 20 | 18 |
-| capability | `slayer+python` | `claude-opus-5-5` | 24 | 22 | 15 | 15 |
-| capability | `sql+python` | `claude-opus-5-5` | 24 | 19 | 17 | 16 |
+| capability | `slayer` | `claude-opus-5-5` | 24 | 23 | 20 | 19 |
+| capability | `slayer+python` | `claude-opus-5-5` | 24 | 23 | 16 | 16 |
+| capability | `sql+python` | `claude-opus-5-5` | 24 | 20 | 17 | 17 |
 | combo | `slayer` | `claude-opus-5-5` | 11 | 11 | 4 | 4 |
 | combo | `slayer+python` | `claude-opus-5-5` | 11 | 11 | 4 | 4 |
 | combo | `sql+python` | `claude-opus-5-5` | 11 | 10 | 6 | 6 |
@@ -99,7 +99,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q9 | No silently wrong numbers | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | Q10 | Filters across one-to-many joins | 4 | 4 | 4 | 4 | 4 | 0 | 0 | 0 | 0 | 3 |
 | Q11 | Rolling time windows | 2 | 2 | 2 | 0 | 0 | 0 | 1 | 1 | 0 | 0 |
-| Q12 | Aggregates as arguments | 2 | 2 | 1 | 2 | 1 | 0 | 1 | 0 | 1 | 1 |
+| Q12 | Aggregates as arguments | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 0 | 1 | 2 |
 | Q13 | Order by what you don't show | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Q14 | Ranking and streaks | 3 | 3 | 3 | 1 | 1 | 0 | 0 | 0 | 1 | 3 |
 | Q15 | Multi-stage queries | 2 | 2 | 2 | 1 | 1 | 0 | 0 | 0 | 1 | 2 |
@@ -130,7 +130,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | q1-region-total | capability | Q1 | 1/1 | 1.000 |
 | q10-bronze-or-ok | capability | Q10 | 1/1 | 1.000 |
 | q11-rolling-customers | capability | Q11 | 0/1 | 0.000 |
-| q12-net-revenue | capability | Q12 | 0/1 | 0.000 |
+| q12-net-revenue | capability | Q12 | 1/1 | 1.000 |
 | q13-top-cities-count | capability | Q13 | 0/1 | 0.000 |
 | q14-top-customer-per-region | capability | Q14 | 1/1 | 1.000 |
 | q15-revenue-bands | capability | Q15 | 1/1 | 1.000 |
@@ -186,7 +186,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q9 | No silently wrong numbers | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | Q10 | Filters across one-to-many joins | 4 | 4 | 4 | 3 | 3 | 0 | 0 | 0 | 0 | 4 |
 | Q11 | Rolling time windows | 2 | 2 | 2 | 0 | 0 | 1 | 0 | 0 | 0 | 1 |
-| Q12 | Aggregates as arguments | 2 | 2 | 1 | 0 | 0 | 1 | 2 | 0 | 0 | 2 |
+| Q12 | Aggregates as arguments | 2 | 2 | 2 | 1 | 1 | 2 | 2 | 0 | 0 | 2 |
 | Q13 | Order by what you don't show | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 | Q14 | Ranking and streaks | 3 | 3 | 3 | 1 | 1 | 0 | 0 | 0 | 2 | 3 |
 | Q15 | Multi-stage queries | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 2 |
@@ -217,7 +217,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | q1-region-total | capability | Q1 | 1/1 | 1.000 |
 | q10-bronze-or-ok | capability | Q10 | 1/1 | 1.000 |
 | q11-rolling-customers | capability | Q11 | 0/1 | 0.000 |
-| q12-net-revenue | capability | Q12 | 0/1 | 0.000 |
+| q12-net-revenue | capability | Q12 | 1/1 | 1.000 |
 | q13-top-cities-count | capability | Q13 | 0/1 | 0.000 |
 | q14-top-customer-per-region | capability | Q14 | 0/1 | 0.000 |
 | q15-revenue-bands | capability | Q15 | 1/1 | 1.000 |
@@ -273,7 +273,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q9 | No silently wrong numbers | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 1 | 1 |
 | Q10 | Filters across one-to-many joins | 4 | 4 | 4 | 4 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Q11 | Rolling time windows | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 0 | 2 | 2 |
-| Q12 | Aggregates as arguments | 2 | 2 | 1 | 2 | 1 | 0 | 2 | 0 | 0 | 2 |
+| Q12 | Aggregates as arguments | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 0 | 0 | 2 |
 | Q13 | Order by what you don't show | 2 | 2 | 2 | 0 | 0 | 0 | 2 | 0 | 0 | 2 |
 | Q14 | Ranking and streaks | 3 | 3 | 3 | 2 | 2 | 0 | 3 | 0 | 1 | 3 |
 | Q15 | Multi-stage queries | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 0 | 1 | 2 |
@@ -304,7 +304,7 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | q1-region-total | capability | Q1 | 1/1 | 1.000 |
 | q10-bronze-or-ok | capability | Q10 | 1/1 | 1.000 |
 | q11-rolling-customers | capability | Q11 | 1/1 | 1.000 |
-| q12-net-revenue | capability | Q12 | 0/1 | 0.000 |
+| q12-net-revenue | capability | Q12 | 1/1 | 1.000 |
 | q13-top-cities-count | capability | Q13 | 0/1 | 0.000 |
 | q14-top-customer-per-region | capability | Q14 | 1/1 | 1.000 |
 | q15-revenue-bands | capability | Q15 | 1/1 | 1.000 |
@@ -358,12 +358,12 @@ These tasks run but are left out of the pass counts until the linked issue is fi
 | Total | Value |
 | --- | --- |
 | Trials | 159 |
-| Input tokens | 1328 |
-| Output tokens | 134145 |
-| Cache read tokens | 12915130 |
-| Cache write tokens | 568098 |
-| Cost (USD) | 8.11 |
-| Duration (s) | 2862 |
+| Input tokens | 1332 |
+| Output tokens | 134425 |
+| Cache read tokens | 12925274 |
+| Cache write tokens | 618901 |
+| Cost (USD) | 8.37 |
+| Duration (s) | 2866 |
 
 ## Failed trials
 
@@ -528,27 +528,6 @@ These tasks run but are left out of the pass counts until the linked issue is fi
   - #14 `query` orders measures=[{"formula":"count_distinct(customer_id)","name":"n"}] filters=["order_date >= '2025-08-03'","order_date < '2025-11-01'"] → 1 rows
   - #15 `query` orders measures=[{"formula":"count_distinct(customer_id)","name":"n"}] filters=["order_date >= '2025-09-02'","order_date < '2025-12-01'"] → 1 rows
   - #16 `query` orders measures=[{"formula":"count_distinct(customer_id)","name":"n"}] filters=["order_date >= '2025-10-03'","order_date < '2026-01-01'"] → 1 rows
-- **q12-net-revenue** (Q12) · slayer · claude-opus-5-5 · trial 1 · submitted
-  - correct: no result column has the values of 'net_revenue'
-  - #1 `inspect` {"entity_type":"model"} → ok
-  - #2 `inspect` {"entity_type":"model","reference":["bench.customers","bench.orders","bench.cities","bench.regions"],"compact":false} → ok
-  - #3 `query` orders dimensions=["customers.regions.name","customers.region_id"] measures=[{"formula":"sum(amount - coalesce(customers.discount, 0))","name":"net"},{"formula":"sum(amount - customers.discount)","name":"net_raw"},{"formula":"count(*)","na… → 5 rows
-- **q12-net-revenue** (Q12) · slayer+python · claude-opus-5-5 · trial 1 · submitted
-  - correct: no result column has the values of 'net_revenue'
-  - single query: no single query returns the answer (last, query #5: result has 1 rows, truth has 5)
-  - flags: Raw SQL, Several queries
-  - #1 `inspect` {"entity_type":"model"} → ok
-  - #2 `inspect` {"entity_type":"model","reference":["customers","orders","regions","cities"],"compact":false} → ok
-  - #3 `query` customers dimensions=["id"] measures=["count(*)"] filters=["count(*) > 1"] → 0 rows
-  - #4 `query` {'source_name': 'orders', 'columns': [{'name': 'net', 'sql': 'amount - COALESCE(customers.discount, 0)', 'type': 'DOUBLE'}]} dimensions=["customers.regions.name"] measures=[{"formula":"sum(net)","name":"net_total"},{"formula":"sum(amount)"… → 5 rows
-  - #5 `query` customers measures=[{"formula":"count(*)","name":"n"},{"formula":"count(discount)","name":"nd"},{"formula":"count(region_id)","name":"nr"}] → 1 rows
-- **q12-net-revenue** (Q12) · sql+python · claude-opus-5-5 · trial 1 · submitted
-  - correct: no result column has the values of 'net_revenue'
-  - flags: Raw SQL, Several queries
-  - #1 `sql` select table_name, column_name, data_type from information_schema.columns order by table_name, ordinal_position → 51 rows
-  - #2 `sql` select count(*), count(o.amount), count(c.id), count(c.discount), count(c.region_id), count(r.id), count(o.customer_id) from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id → 1 rows
-  - #3 `sql` select (select count(*)-count(distinct id) from customers), (select count(*)-count(distinct id) from regions), (select count(*) from customers where discount is null) → 1 rows
-  - #4 `sql` select r.name, sum(o.amount - coalesce(c.discount,0)) v, sum(o.amount - c.discount) strict_v, count(*) from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by 1 order by 1 → 5 rows
 - **q13-top-cities-count** (Q13) · slayer · claude-opus-5-5 · trial 1 · submitted
   - single query: no single query returns the answer (last, query #3: result has 3 columns, expected exactly 2)
   - #1 `inspect` {"entity_type":"model"} → ok

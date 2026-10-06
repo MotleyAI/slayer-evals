@@ -161,13 +161,14 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task ran
 once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
 `1653a91` of its main branch (reported as 1.1.0). The `sql+python` trials were rerun after the system prompt gained
-its exact-answers sentence; the SLayer profiles ran just before it.
+its exact-answers sentence; the SLayer profiles ran just before it. `q12-net-revenue` was rerun in all three profiles
+after its prompt was made explicit about orders without a customer.
 
 | Suite | Profile | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | 24 | 22 | 20 | 18 |
-| capability | `slayer+python` | 24 | 22 | 15 | 15 |
-| capability | `sql+python` | 24 (2 auto-failed) | 19 | 17 | 16 |
+| capability | `slayer` | 24 | 23 | 20 | 19 |
+| capability | `slayer+python` | 24 | 23 | 16 | 16 |
+| capability | `sql+python` | 24 (2 auto-failed) | 20 | 17 | 17 |
 | combo | `slayer` | 11 | 11 | 4 | 4 |
 | combo | `slayer+python` | 11 | 11 | 4 | 4 |
 | combo | `sql+python` | 11 (1 auto-failed) | 10 | 6 | 6 |

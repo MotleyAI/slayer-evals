@@ -10,7 +10,9 @@ after the system prompt gained one sentence for every profile: *"Submit exact va
 as the label of a group whose key is unknown."* Without it the raw-SQL agent labelled the unknown-region group
 "Unknown", rounded to two decimals or added empty rows, and the strict grader marked 7 of its 17 traps wrong although
 it had avoided every one of those traps (10/17 correct before, 16/17 after). The SLayer profiles had only two such answers, so
-they were not rerun; their transcripts show the shorter prompt.
+they were not rerun; their transcripts show the shorter prompt. `q12-net-revenue` failed in all three profiles the same
+way (agents counted orders without a customer with a discount of 0, which the truth leaves out); its prompt now says
+those orders are left out, and it was rerun in all three profiles (19:02 UTC), passing in each.
 
 ✓ pass · ✗ correct answer, but not one query's own result · **✗c** wrong answer · auto: the task names a saved SLayer
 definition, so it fails in `sql+python` without running
@@ -19,9 +21,9 @@ definition, so it fails in `sql+python` without running
 
 | Suite | Profile | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | 24 | 22 | 20 | 18 |
-| capability | `slayer+python` | 24 | 22 | 15 | 15 |
-| capability | `sql+python` | 24 (2 auto) | 19 | 17 | 16 |
+| capability | `slayer` | 24 | 23 | 20 | 19 |
+| capability | `slayer+python` | 24 | 23 | 16 | 16 |
+| capability | `sql+python` | 24 (2 auto) | 20 | 17 | 17 |
 | combo | `slayer` | 11 | 11 | 4 | 4 |
 | combo | `slayer+python` | 11 | 11 | 4 | 4 |
 | combo | `sql+python` | 11 (1 auto) | 10 | 6 | 6 |
@@ -70,7 +72,6 @@ combined the results, where one query with cross-model measures or `partition_by
 
 | Task | Row(s) | `slayer` | `slayer+python` | `sql+python` | Why |
 | --- | --- | --- | --- | --- | --- |
-| q12-net-revenue | Q12 | **✗c** | **✗c** | **✗c** | every agent counted the 6 orders without a customer with a discount of 0; the truth (and SLayer's own arithmetic) leaves them out, since an amount minus a missing discount is missing |
 | q3-avg-city-revenue | Q3 | **✗c** | ✗ | **✗c** | `slayer` labelled the unknown group; `sql+python` left the orders without a customer out of it (one city instead of two) |
 | q6-region-credit | Q6 | ✗ | **✗c** | ✓ | an extra, empty row for the region without customers |
 | q9-credit-by-status | Q9 | ✓ | ✓ | **✗c** | the raw-SQL agent explained the overlap but still submitted the (overlapping) totals |
@@ -107,5 +108,5 @@ The persistent patterns, as in the previous baseline:
 - **Combos cost single-query passes in every profile:** 4/11 for both SLayer profiles, 6/10 for raw SQL. With two or
   three capabilities in play, agents build the answer in steps.
 
-`slayer+python` passes less often than `slayer` (27 against 32 of 52): with Python available, the agent more often
+`slayer+python` passes less often than `slayer` (28 against 33 of 52): with Python available, the agent more often
 pulls partial results and finishes the work in pandas.
