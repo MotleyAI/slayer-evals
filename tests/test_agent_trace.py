@@ -1,5 +1,7 @@
 """Trace normalization from SDK messages."""
 
+import json
+
 from claude_agent_sdk import AssistantMessage, ToolResultBlock, ToolUseBlock, UserMessage
 
 from slayer_evals.agents.claude import normalize_messages
@@ -117,3 +119,18 @@ def test_trace_serializes():
     ]
     trace = normalize_messages(msgs, end_reason="error")
     assert Trace.model_validate_json(trace.model_dump_json()) == trace
+
+
+def test_cli_result_envelope_unwrapped():
+    fx = mcp_fixture("query_json")
+    wrapped = json.dumps({"result": fx["text"]})
+    msgs = [tool_use("a", "mcp__slayer__query", fx["args"]), tool_result("a", wrapped)]
+    (call,) = normalize_messages(msgs, end_reason="submitted").calls
+    assert call.result_text == fx["text"]
+    assert call.parsed is not None
+
+
+def test_other_json_results_kept():
+    text = json.dumps({"result": "x", "other": 1})
+    msgs = [tool_use("a", "mcp__slayer__inspect", {}), tool_result("a", text)]
+    assert normalize_messages(msgs, end_reason="submitted").calls[0].result_text == text

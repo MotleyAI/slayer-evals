@@ -107,3 +107,19 @@ def test_grading_imports_only_core_and_slayer_parser():
                 assert mod == "slayer_evals.core" or mod.startswith(("slayer_evals.core.", "slayer_evals.grading")), (
                     f"{f.name} imports {mod}"
                 )
+
+
+def test_verdict_records_column_mappings():
+    sub = Submission(columns=["Region", "City", "Total"], rows=[[r[0], r[1], r[2]] for r in TRUTH.rows])
+    v = grade(make_task(), TRUTH, empty_manifest(), sub, good_trace())
+    assert v.passed
+    assert v.correct_columns == {"region": "Region", "city": "City", "region_total": "Total"}
+    assert v.capability_columns == dict(zip(TRUTH.columns, COLS, strict=True))
+
+
+def test_capability_query_matched_by_values():
+    renamed = query_call(QUERY, ["orders.customers.regions.name", "orders.customers.city", "orders.rt"], TRUTH.rows)
+    v = grade(make_task(), TRUTH, empty_manifest(), submission_of(TRUTH), trace_of(renamed))
+    assert v.capability, v.capability_reasons
+    assert v.capability_columns["region_total"] == "orders.rt"
+    assert any("matched by values" in r for r in v.capability_reasons)

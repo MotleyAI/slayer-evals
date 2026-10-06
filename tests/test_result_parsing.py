@@ -99,3 +99,15 @@ def test_error_kind(name: str, kind: str):
 
 def test_error_kind_none_for_plain_text():
     assert error_kind("Model 'x' created.") is None
+
+
+@pytest.mark.parametrize("name", ["query_markdown", "query_json", "query_json_warning"])
+def test_sql_preamble_skipped(name: str):
+    plain = parse(name)
+    sql = "WITH _base AS (\n  SELECT 1\n\n  FROM orders\n)\nSELECT * FROM _base"
+    with_sql = ParsedResult.from_text(f"SQL:\n{sql}\n\n{mcp_fixture(name)['text']}")
+    assert with_sql == plain
+
+
+def test_sql_only_is_not_a_result():
+    assert ParsedResult.from_text("SQL:\nSELECT 1\n\nQuery Plan:\nscan orders") is None

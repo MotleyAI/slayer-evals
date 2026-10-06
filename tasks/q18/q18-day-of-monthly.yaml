@@ -1,0 +1,11 @@
+id: q18-day-of-monthly
+row: Q18
+prompt: >-
+  Using the monthly revenue summary (monthly_rev), break its revenue down by day for January 2025.
+truth_sql: select 1 as nothing where false
+expect:
+  error: TimeDimensionColumnError
+  message_any: [bucketed, granularity, "monthly", "per month", "by month", "month level", "month-level"]
+capabilities:
+  - {kind: source_model, name: monthly_rev}
+  - {kind: time_dimension, granularity: day}

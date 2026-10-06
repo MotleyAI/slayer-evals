@@ -38,6 +38,13 @@ class ParsedResult(Table):
     def from_text(cls, text: str) -> "ParsedResult | None":
         """A `query` tool result as a table, or None when the text is not one."""
         stripped = text.strip()
+        if stripped.startswith("SQL:"):
+            # `show_sql` puts the SQL first; the result follows the first blank line that starts a table.
+            for k in (i for i in range(len(stripped)) if stripped.startswith("\n\n", i)):
+                parsed = cls.from_text(stripped[k + 2 :])
+                if parsed is not None:
+                    return parsed
+            return None
         if stripped.startswith(("{", "[")):
             return _from_json(stripped)
         if stripped.startswith("|"):

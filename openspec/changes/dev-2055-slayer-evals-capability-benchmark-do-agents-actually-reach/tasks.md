@@ -5,7 +5,7 @@
 
 ## 2. Architecture model (every model, `index.yaml` and arc42 edit needs the user's OK on the exact text before it lands)
 
-- [ ] 2.1 Write `architecture/index.yaml` (python section: `root_package: slayer_evals`, `source_root: src`; `legacy_arrows: {baseline: 0}`), `architecture/model/specification.c4`, `architecture/model/slayer_evals.c4` with the eight nodes, arrows and `specs:` per design.md, and `architecture/views.c4`; verify `npx likec4 validate` (or the lightest parsing command) passes
+- [ ] 2.1 Write `architecture/index.yaml` (python section: `root_package: slayer_evals`, `source_root: src`; `legacy_arrows: {baseline: 0}`), `architecture/model/model.c4` (the one model: specification and model) with the eight nodes, arrows and `specs:` per design.md, and `architecture/views.c4`; verify `npx likec4 validate` (or the lightest parsing command) passes
 - [ ] 2.2 Write `architecture/system.arc42.md` with the six principles from design.md, each status-tagged; verify `la-arch-diagrams` embeds fresh diagrams and `la-arch-check` passes once the packages exist
 - [ ] 2.3 Set `architecture: true` in `living-architecture.yaml` once `la-arch-check` passes; verify `la-doctor --require-config` passes
 

@@ -35,20 +35,21 @@ def _unmet(predicates: list[Predicate], contexts: list[CallContext]) -> list[str
 
 def _match_capability(
     task: Task, truth: Table, manifest: StoreManifest, calls: list[ToolCall]
-) -> tuple[bool, list[str]]:
-    """Whether some successful query satisfies every predicate and itself returns the truth, with reasons."""
+) -> tuple[bool, list[str], dict[str, str]]:
+    """Whether some successful query satisfies every predicate and itself returns the truth; reasons; its mapping."""
     candidates = [i for i, c in enumerate(calls) if c.tool == "query" and not c.is_error and c.parsed is not None]
     if not candidates:
-        return False, ["no successful query call"]
+        return False, ["no successful query call"], {}
     contexts = [CallContext(calls, i, manifest) for i in candidates]
     mismatches = []
     for ctx in contexts:
         if ctx.call.parsed is not None and all(satisfies(p, ctx) for p in task.capabilities):
             m = match_tables(truth, ctx.call.parsed, task.compare)
             if m.ok:
-                return True, [f"query #{ctx.index + 1} satisfies all predicates"]
+                detail = m.reason.removeprefix("rows match in order").removeprefix("rows match")
+                return True, [f"query #{ctx.index + 1} satisfies all predicates{detail}"], m.columns
             mismatches.append(f"query #{ctx.index + 1} satisfies all predicates but its result differs: {m.reason}")
-    return False, mismatches or _unmet(task.capabilities, contexts)
+    return False, mismatches or _unmet(task.capabilities, contexts), {}
 
 
 def _first_qualifying(task: Task, manifest: StoreManifest, calls: list[ToolCall], expect: Expectation) -> int | None:
@@ -73,9 +74,10 @@ def grade(task: Task, truth: Table, manifest: StoreManifest, submission: Submiss
     no_hack_reasons = hacks or ["no raw SQL"]
     if task.expect == "match":
         m = match_tables(truth, Table(columns=submission.columns, rows=submission.rows), task.compare)
-        correct, correct_reasons = m.ok, [m.reason]
-        capability, capability_reasons = _match_capability(task, truth, manifest, calls)
+        correct, correct_reasons, correct_columns = m.ok, [m.reason], m.columns
+        capability, capability_reasons, capability_columns = _match_capability(task, truth, manifest, calls)
     else:
+        correct_columns, capability_columns = {}, {}
         expect = task.expect
         kind = expect.error or expect.warning
         phrase = next((p for p in expect.message_any if p.lower() in submission.message.lower()), None)
@@ -99,4 +101,6 @@ def grade(task: Task, truth: Table, manifest: StoreManifest, submission: Submiss
         correct_reasons=correct_reasons,
         capability_reasons=capability_reasons,
         no_hack_reasons=no_hack_reasons,
+        correct_columns=correct_columns,
+        capability_columns=capability_columns,
     )

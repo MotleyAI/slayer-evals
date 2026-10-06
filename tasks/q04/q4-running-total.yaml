@@ -1,0 +1,23 @@
+id: q4-running-total
+row: Q4
+prompt: >-
+  For each month of 2025, show the revenue (the sum of order amounts), the running total of revenue since the start
+  of 2025, and the change in revenue from the previous month (this month minus the previous month).
+truth_sql: |
+  with m as (
+    select date_trunc('month', order_date)::date as month, sum(amount) as revenue
+    from orders group by 1
+  ), c as (
+    select month, revenue, revenue - lag(revenue) over (order by month) as change from m
+  )
+  select month, revenue, sum(revenue) over (order by month) as running_total, change
+  from c where month >= date '2025-01-01'
+  order by month
+compare: {keys: [month], values: [revenue, running_total, change]}
+capabilities:
+  - {kind: call, fn: cumsum}
+  - kind: any_of
+    options:
+      - [{kind: call, fn: change}]
+      - [{kind: call, fn: lag}]
+      - [{kind: call, fn: time_shift}]

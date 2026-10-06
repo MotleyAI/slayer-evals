@@ -66,7 +66,9 @@ Alternative: a home-grown grammar; rejected as a second, divergent parser.
 submission then equals that call's result, which is the provenance we need without forcing the agent to point at a
 call. Saved measures are expanded from the store manifest plus measures the agent saves during the trace. Trace-level
 predicates (ordered patterns) cover create-then-query flows. Results are parsed at capture time from markdown and both
-JSON shapes; the agent is never told which format to use. A truncated result fails on row count.
+JSON shapes; the system prompt asks for JSON results, since SLayer's markdown rounds formatted measures for display. A truncated result fails on row count. Agents name measures freely
+and reach dimensions by different paths, so columns resolve by name first and by values second; the mapping used is
+recorded in the verdict.
 
 ### Hack rules are default-deny on raw SQL
 Every SQL-bearing argument of any SLayer tool is a hack unless the task's `allow` names the construct; allowances

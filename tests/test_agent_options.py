@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from slayer_evals.agents.claude import SYSTEM_PROMPT, AnswerCollector, ClaudeAgent, slayer_server_env
+from slayer_evals.agents.claude import SLAYER_ENV_ALLOW, SYSTEM_PROMPT, AnswerCollector, ClaudeAgent, slayer_server_env
 from slayer_evals.core import PROFILES, Profile, Submission
 from slayer_evals.tasks import PROMPT_DENY_LIST
 from tests.fake_sdk import MODEL, make_input
@@ -61,10 +61,24 @@ def test_profile_servers(tmp_path: Path):
 def test_slayer_server_runs_on_trial_store(tmp_path: Path):
     inp, opts = options(tmp_path)
     slayer = servers_of(opts)["slayer"]
-    assert slayer["command"] == inp.env.slayer_command[0]
     args = slayer["args"]
-    assert "mcp" in args
+    start = args.index(inp.env.slayer_command[0])
+    assert args[start : start + 2] == [inp.env.slayer_command[0], "mcp"]
     assert args[args.index("--storage") + 1] == str(inp.env.store_dir)
+
+
+def test_slayer_launched_with_only_the_allow_list(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    for var in CREDENTIALS:
+        monkeypatch.setenv(var, "secret-" + var)
+    monkeypatch.setenv("SOME_UNRELATED_SECRET", "x")
+    inp, opts = options(tmp_path)
+    slayer = servers_of(opts)["slayer"]
+    args = slayer["args"]
+    assert Path(slayer["command"]).name == "env"
+    assert args[0] == "-i"
+    assignments = args[1 : args.index(inp.env.slayer_command[0])]
+    assert {a.split("=", 1)[0] for a in assignments} <= set(SLAYER_ENV_ALLOW)
+    assert not any("secret" in a for a in args)
 
 
 def test_slayer_subprocess_has_no_credentials(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -171,3 +185,7 @@ def test_every_slayer_tool_offered(tmp_path: Path):
         assert not any(t.startswith("mcp__slayer") for t in opts.disallowed_tools)
         if opts.allowed_tools:
             assert offered <= set(opts.allowed_tools) or "mcp__slayer" in opts.allowed_tools
+
+
+def test_system_prompt_asks_for_json_results():
+    assert 'format="json"' in SYSTEM_PROMPT

@@ -24,8 +24,12 @@ Two tables SHALL match when, after column resolution, the key and value columns'
 (or as sequences when `ordered`), with numeric values equal within `tolerance`, NULL equal only to NULL, NaN treated
 as NULL, and dates and timestamps compared after normalization to ISO form. Column resolution SHALL map each truth
 column to a result column by exact name, else by `.name` suffix, else by a flattened `a__b` form; a truth column that
-resolves to no column or to more than one column MUST make the match fail with a reason naming it. Extra result
-columns SHALL be ignored unless `columns_exact`. The row counts MUST be equal.
+resolves by name to more than one column MUST make the match fail with a reason naming it. Truth columns that resolve
+by name to no column SHALL be matched by values: the tables match if some one-to-one assignment of those truth columns
+to the result columns not already used makes the rows match, preferring, when several do, the assignment whose result
+column names are closest to the truth names; if none does, the match fails with a reason naming those columns. A
+successful match SHALL record the column mapping it used, and the verdict SHALL carry the mappings of its correctness
+and capability matches. Extra result columns SHALL be ignored unless `columns_exact`. The row counts MUST be equal.
 
 #### Scenario: Order-insensitive match with tolerance
 - **WHEN** a result has the truth rows in a different order and a value off by 1e-9
@@ -34,6 +38,10 @@ columns SHALL be ignored unless `columns_exact`. The row counts MUST be equal.
 #### Scenario: Ambiguous column fails
 - **WHEN** truth column `name` matches both `customers.name` and `regions.name` in the result
 - **THEN** the match fails with a reason naming `name` as ambiguous
+
+#### Scenario: Columns matched by values
+- **WHEN** a result names its columns `orders.customers.regions.name` and `orders.rev` for truth columns `region` and `revenue`, with matching rows
+- **THEN** the tables match and the recorded mapping is `region` → `orders.customers.regions.name`, `revenue` → `orders.rev`
 
 #### Scenario: Truncated result fails
 - **WHEN** a result holds 20 of the truth's 25 rows

@@ -1,0 +1,6 @@
+views {
+  view python of python {
+    title 'slayer_evals nodes'
+    include *
+  }
+}

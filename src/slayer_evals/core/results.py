@@ -38,6 +38,9 @@ class Verdict(BaseModel):
     correct_reasons: list[str] = Field(default_factory=list)
     capability_reasons: list[str] = Field(default_factory=list)
     no_hack_reasons: list[str] = Field(default_factory=list)
+    # Truth column → result column of the submission match and of the qualifying query's match.
+    correct_columns: dict[str, str] = Field(default_factory=dict)
+    capability_columns: dict[str, str] = Field(default_factory=dict)
 
     @property
     def passed(self) -> bool:

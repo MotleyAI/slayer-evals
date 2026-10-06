@@ -24,7 +24,8 @@ TEARDOWN_TIMEOUT_S = 30.0
 SYSTEM_PROMPT = (
     "You are a data analyst answering a business question about the data available through your tools. "
     "Work out the answer with the tools, then call submit_answer once with the result table and a short message. "
-    "If the question cannot be answered as asked, call submit_answer with no rows and explain why in the message."
+    "If the question cannot be answered as asked, call submit_answer with no rows and explain why in the message. "
+    'Request query results with format="json" so numbers are exact; the default markdown rounds some values.'
 )
 TELEMETRY_ENV = {
     "DISABLE_TELEMETRY": "1",
@@ -36,6 +37,7 @@ TELEMETRY_ENV = {
 }
 # Exactly one caching knob is on; the others are blanked so the parent env cannot override them.
 CACHE_ENV = {"FORCE_PROMPT_CACHING_5M": "1", "ENABLE_PROMPT_CACHING_1H": "", "DISABLE_PROMPT_CACHING": ""}
+ENV_BIN = shutil.which("env") or "/usr/bin/env"
 SLAYER_ENV_ALLOW = ("PATH", "HOME", "USER", "LANG", "LC_ALL", "LC_CTYPE", "TZ", "TMPDIR")
 CLAUDE_JSON = {"hasCompletedOnboarding": True, "hasTrustDialogAccepted": True, "mcpServers": {}}
 SUBMIT_SCHEMA = {
@@ -138,11 +140,13 @@ class ClaudeAgent:
 
     def build_options(self, inp: AgentInput, config_dir: Path, collector: AnswerCollector) -> ClaudeAgentOptions:
         cmd = inp.env.slayer_command
+        env = slayer_server_env(os.environ)
+        # The CLI hands its whole environment to stdio servers, so `env -i` is what enforces the allow-list.
         slayer = {
             "type": "stdio",
-            "command": cmd[0],
-            "args": [*cmd[1:], "mcp", "--storage", str(inp.env.store_dir)],
-            "env": slayer_server_env(os.environ),
+            "command": ENV_BIN,
+            "args": ["-i", *(f"{k}={v}" for k, v in env.items()), *cmd, "mcp", "--storage", str(inp.env.store_dir)],
+            "env": env,
         }
         bench = collector.bench_server(inp.profile, inp.env.trial_dir / "sandbox")
         return ClaudeAgentOptions(

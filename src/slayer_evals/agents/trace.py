@@ -15,12 +15,26 @@ def tool_name(name: str) -> str:
     return name.split("__", 2)[2] if name.startswith("mcp__") and name.count("__") >= 2 else name
 
 
+def _unwrap(text: str) -> str:
+    """The CLI hands a tool's structured content back as `{"result": "<text>"}`; return the tool's own text."""
+    if not text.startswith('{"result"'):
+        return text
+    try:
+        payload = json.loads(text)
+    except ValueError:
+        return text
+    if isinstance(payload, dict) and set(payload) == {"result"} and isinstance(payload["result"], str):
+        return payload["result"]
+    return text
+
+
 def result_text(content: Any) -> str:
     if content is None:
         return ""
     if isinstance(content, str):
-        return content
-    return "\n".join(str(c.get("text", "")) for c in content if isinstance(c, dict) and c.get("type", "text") == "text")
+        return _unwrap(content)
+    texts = [str(c.get("text", "")) for c in content if isinstance(c, dict) and c.get("type", "text") == "text"]
+    return "\n".join(_unwrap(t) for t in texts)
 
 
 def _usage(raw: dict[str, Any] | None) -> tuple[int, int, int, int]:

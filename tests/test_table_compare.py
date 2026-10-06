@@ -118,3 +118,53 @@ def test_empty_compare_uses_all_truth_columns():
     truth = Table(columns=["k", "v"], rows=[["a", 1]])
     assert match_tables(truth, res(["x.k", "x.v"], [["a", 1]]), Compare()).ok
     assert not match_tables(truth, res(["x.k", "x.v"], [["a", 2]]), Compare()).ok
+
+
+def test_columns_matched_by_values():
+    truth = Table(columns=["region", "revenue"], rows=[["North", 10.0], ["South", 20.0], [None, 5.0]])
+    result = res(["orders.customers.regions.name", "orders.rev"], [["South", 20.0], [None, 5.0], ["North", 10.0]])
+    m = match_tables(truth, result, Compare(keys=["region"], values=["revenue"]))
+    assert m.ok, m.reason
+    assert m.columns == {"region": "orders.customers.regions.name", "revenue": "orders.rev"}
+    assert "matched by values" in m.reason
+
+
+def test_name_matches_are_recorded():
+    m = match_tables(TRUTH, TRUTH, CMP)
+    assert m.columns == {"region": "region", "city": "city", "region_total": "region_total"}
+
+
+def test_value_match_prefers_closest_names():
+    truth = Table(columns=["k", "revenue", "cost"], rows=[["a", 1.0, 1.0], ["b", 2.0, 2.0]])
+    result = res(["k", "x.cost_total", "x.revenue_total"], [["a", 1.0, 1.0], ["b", 2.0, 2.0]])
+    m = match_tables(truth, result, Compare(keys=["k"], values=["revenue", "cost"]))
+    assert m.ok
+    assert m.columns == {"k": "k", "revenue": "x.revenue_total", "cost": "x.cost_total"}
+
+
+def test_value_match_respects_row_alignment():
+    truth = Table(columns=["k", "v"], rows=[["a", 1.0], ["b", 2.0]])
+    swapped = res(["key", "val"], [["a", 2.0], ["b", 1.0]])
+    m = match_tables(truth, swapped, Compare(keys=["k"], values=["v"]))
+    assert not m.ok
+
+
+def test_value_match_failure_names_columns():
+    truth = Table(columns=["k", "v"], rows=[["a", 1.0]])
+    m = match_tables(truth, res(["k", "other"], [["a", 9.0]]), Compare(keys=["k"], values=["v"]))
+    assert not m.ok
+    assert "'v'" in m.reason
+    assert m.columns == {}
+
+
+def test_value_match_does_not_reuse_a_name_matched_column():
+    truth = Table(columns=["v", "w"], rows=[["a", "a"]])
+    m = match_tables(truth, res(["v"], [["a"]]), Compare(keys=["v", "w"]))
+    assert not m.ok
+
+
+def test_iso_month_equals_first_of_month():
+    truth = Table(columns=["month", "rev"], rows=[[dt.date(2025, 1, 1), 1.0], ["2025-02-01T00:00:00", 2.0]])
+    result = res(["month", "rev"], [["2025-01", 1.0], ["2025-02", 2.0]])
+    assert match_tables(truth, result, Compare(keys=["month"], values=["rev"])).ok
+    assert not match_tables(truth, res(["month", "rev"], [["2025-01", 1.0], ["2025-03", 2.0]]), Compare()).ok

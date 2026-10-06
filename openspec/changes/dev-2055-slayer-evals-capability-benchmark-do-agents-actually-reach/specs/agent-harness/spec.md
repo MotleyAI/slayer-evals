@@ -27,7 +27,8 @@ no settings sources, and only the MCP servers its profile declares; after connec
 server is loaded and abort the trial otherwise. The SLayer MCP server SHALL run as `slayer mcp` over stdio on the
 trial's store copy with a sanitized environment (an allow-list; no Claude or Anthropic credentials). Telemetry and
 non-essential traffic SHALL be disabled and the prompt-caching mode pinned. The system prompt SHALL be minimal,
-generic and identical across tasks: it MUST NOT mention SLayer features or tasks.
+generic and identical across tasks: it MUST NOT mention SLayer features or tasks; it SHALL tell the agent to request
+`query` results as JSON so numbers are exact.
 
 #### Scenario: Leaked server aborts
 - **WHEN** after connecting the session reports an MCP server the profile did not declare
