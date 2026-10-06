@@ -54,9 +54,9 @@
 
 ## 11. Baseline and README
 
-- [ ] 11.1 Run the full baseline (all tasks, both profiles, Opus 5.5, N=1, `--subscription-auth --env-file /home/james/GitHub/SLayer/.env.agents`) and commit `results/baseline/` (report, results, normalized traces); verify the report regenerates byte-identically from the committed results
-- [ ] 11.2 Write a welcoming README: what the benchmark measures and why, covered-row table, five-minute quickstart (incl. `claude setup-token` and the env file), reading the report, the baseline summary (labelled a single-trial snapshot), plugging in your own agent, adding a task, why Q19 and Q22 are skipped, link to the comparison post, licence; verify every command in the quickstart runs as written
+- [x] 11.1 Run the full baseline (all tasks, both profiles, Opus 5.5, N=1, `--subscription-auth --env-file /home/james/GitHub/SLayer/.env.agents`) and commit `results/baseline/` (report, results, normalized traces); verify the report regenerates byte-identically from the committed results
+- [x] 11.2 Write a welcoming README: what the benchmark measures and why, covered-row table, five-minute quickstart (incl. `claude setup-token` and the env file), reading the report, the baseline summary (labelled a single-trial snapshot), plugging in your own agent, adding a task, why Q19 and Q22 are skipped, link to the comparison post, licence; verify every command in the quickstart runs as written
 
 ## 12. Gates
 
-- [ ] 12.1 Run the full non-integration suite, ruff, basedpyright, `la-arch-check` and `openspec validate dev-2055-slayer-evals-capability-benchmark-do-agents-actually-reach --strict`; verify all pass
+- [x] 12.1 Run the full non-integration suite, ruff, basedpyright, `la-arch-check` and `openspec validate dev-2055-slayer-evals-capability-benchmark-do-agents-actually-reach --strict`; verify all pass
