@@ -1,12 +1,20 @@
 """Hermetic Claude session options, sanitized SLayer env, profiles and `submit_answer`."""
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 
-from slayer_evals.agents.claude import SLAYER_ENV_ALLOW, SYSTEM_PROMPT, AnswerCollector, ClaudeAgent, slayer_server_env
+from slayer_evals.agents.claude import (
+    JSON_RESULTS_SENTENCE,
+    SLAYER_ENV_ALLOW,
+    AnswerCollector,
+    ClaudeAgent,
+    slayer_server_env,
+)
 from slayer_evals.core import PROFILES, Profile, Submission
+from slayer_evals.dataset import BuiltDataset
 from slayer_evals.tasks import PROMPT_DENY_LIST
 from tests.fake_sdk import MODEL, make_input
 from tests.helpers import MCP_FIXTURES, call_sdk_tool, list_sdk_tools, servers_of
@@ -56,6 +64,14 @@ def test_credentials_passed_to_agent_env(tmp_path: Path):
 def test_profile_servers(tmp_path: Path):
     _, opts = options(tmp_path)
     assert set(servers_of(opts)) == {"slayer", "bench"}
+    _, with_py = options(tmp_path / "b", profile="slayer+python")
+    assert set(servers_of(with_py)) == {"slayer", "bench"}
+
+
+def test_no_slayer_in_the_raw_sql_profile(tmp_path: Path):
+    _, opts = options(tmp_path, profile="sql+python")
+    assert set(servers_of(opts)) == {"bench"}
+    assert not any(t.startswith("mcp__slayer") for t in opts.allowed_tools)
 
 
 def test_slayer_server_runs_on_trial_store(tmp_path: Path):
@@ -112,20 +128,32 @@ def test_slayer_server_env_is_allow_list():
 async def test_profile_tool_sets(tmp_path: Path):
     _, plain = options(tmp_path / "a")
     _, with_py = options(tmp_path / "b", profile="slayer+python")
+    _, raw = options(tmp_path / "c", profile="sql+python")
     assert await list_sdk_tools(servers_of(plain)["bench"]) == ["submit_answer"]
     assert await list_sdk_tools(servers_of(with_py)["bench"]) == ["python", "submit_answer"]
-    assert set(servers_of(with_py)) == {"slayer", "bench"}
+    assert await list_sdk_tools(servers_of(raw)["bench"]) == ["python", "sql", "submit_answer"]
 
 
-def test_system_prompt_generic_and_shared(tmp_path: Path):
-    _, a = options(tmp_path / "a")
-    _, b = options(tmp_path / "b", profile="slayer+python")
-    assert a.system_prompt == b.system_prompt == SYSTEM_PROMPT
-    low = SYSTEM_PROMPT.lower()
-    for kw in PROMPT_DENY_LIST:
-        assert kw.lower() not in low, kw
-    for word in ("partition", "rolling", "rank", "re-aggregat", "time shift", "Q1"):
-        assert word.lower() not in low, word
+def prompts(tmp_path: Path) -> dict[str, str]:
+    return {p: str(options(tmp_path / p.replace("+", "_"), profile=p)[1].system_prompt) for p in PROFILES}
+
+
+def test_system_prompt_per_profile(tmp_path: Path):
+    by = prompts(tmp_path)
+    assert by["slayer"] == by["slayer+python"]
+    assert JSON_RESULTS_SENTENCE in by["slayer"]
+    assert JSON_RESULTS_SENTENCE not in by["sql+python"]
+    assert 'format="json"' not in by["sql+python"]
+    assert by["slayer"].replace(JSON_RESULTS_SENTENCE, "").split() == by["sql+python"].split()
+
+
+def test_system_prompt_generic(tmp_path: Path):
+    for profile, prompt in prompts(tmp_path).items():
+        low = prompt.lower()
+        for kw in PROMPT_DENY_LIST:
+            assert kw.lower() not in low, (profile, kw)
+        for word in ("partition", "rolling", "rank", "re-aggregat", "time shift", "Q1", "slayer", "trap"):
+            assert word.lower() not in low, (profile, word)
 
 
 def test_prompt_is_not_in_system_prompt(tmp_path: Path):
@@ -178,7 +206,7 @@ async def test_first_submission_wins(tmp_path: Path):
 
 def test_every_slayer_tool_offered(tmp_path: Path):
     names = json.loads((MCP_FIXTURES / "tool_names.json").read_text())
-    for profile in PROFILES:
+    for profile in ("slayer", "slayer+python"):
         _, opts = options(tmp_path / profile.replace("+", "_"), profile=profile)
         offered = {f"mcp__slayer__{n}" for n in names}
         assert not offered & set(opts.disallowed_tools)
@@ -187,9 +215,46 @@ def test_every_slayer_tool_offered(tmp_path: Path):
             assert offered <= set(opts.allowed_tools) or "mcp__slayer" in opts.allowed_tools
 
 
-def test_system_prompt_asks_for_json_results():
-    assert 'format="json"' in SYSTEM_PROMPT
+def test_json_results_sentence_asks_for_json():
+    assert 'format="json"' in JSON_RESULTS_SENTENCE
 
 
-def test_system_prompt_names_the_submit_tool_exactly():
-    assert "mcp__bench__submit_answer" in SYSTEM_PROMPT
+def test_system_prompt_names_the_submit_tool_exactly(tmp_path: Path):
+    for profile, prompt in prompts(tmp_path).items():
+        assert "mcp__bench__submit_answer" in prompt, profile
+
+
+def raw_sql_bench(tmp_path: Path, built: BuiltDataset) -> tuple[Path, object]:
+    inp = make_input(tmp_path, profile="sql+python")
+    shutil.copy2(built.db_path, inp.env.db_path)
+    cfg = tmp_path / "cfg"
+    cfg.mkdir()
+    opts = ClaudeAgent(model=MODEL).build_options(inp, config_dir=cfg, collector=AnswerCollector())
+    return inp.env.db_path, servers_of(opts)["bench"]
+
+
+async def test_sql_tool_runs_on_the_trial_database(tmp_path: Path, built: BuiltDataset):
+    _, bench = raw_sql_bench(tmp_path, built)
+    is_error, text = await call_sdk_tool(bench, "sql", {"sql": "select count(*) as n from regions"})
+    assert not is_error, text
+    assert json.loads(text) == {"columns": ["n"], "rows": [[5]], "truncated": False}
+
+
+async def test_sql_tool_errors_are_tool_errors(tmp_path: Path, built: BuiltDataset):
+    _, bench = raw_sql_bench(tmp_path, built)
+    is_error, text = await call_sdk_tool(bench, "sql", {"sql": "select nope from regions"})
+    assert is_error
+    assert "nope" in text
+    is_error, _ = await call_sdk_tool(bench, "sql", {"sql": "select 1; select 2"})
+    assert is_error
+
+
+async def test_raw_sql_python_is_not_given_the_database(tmp_path: Path, built: BuiltDataset):
+    db_path, bench = raw_sql_bench(tmp_path, built)
+    code = "import os, json; print(json.dumps({'cwd': os.getcwd(), 'files': os.listdir('.'), 'env': dict(os.environ)}))"
+    is_error, text = await call_sdk_tool(bench, "python", {"code": code})
+    assert not is_error, text
+    seen = json.loads(text)
+    assert db_path.name not in seen["files"]
+    assert str(db_path) not in json.dumps(seen["env"])
+    assert Path(seen["cwd"]).resolve() != db_path.parent.resolve()

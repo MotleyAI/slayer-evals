@@ -109,5 +109,44 @@ def test_sql_preamble_skipped(name: str):
     assert with_sql == plain
 
 
+def test_columns_rows_object_parses():
+    text = json.dumps({"columns": ["region", "revenue"], "rows": [["North", 1.5], [None, 2]], "truncated": False})
+    p = ParsedResult.from_text(text)
+    assert p is not None
+    assert p.columns == ["region", "revenue"]
+    assert p.rows == [["North", 1.5], [None, 2]]
+    assert p.warnings == []
+
+
+def test_all_four_shapes_parse_alike():
+    columns, rows = ["region", "revenue"], [["North", 1.5], ["South", 2.0], [None, 3.0]]
+    records = [dict(zip(columns, r, strict=True)) for r in rows]
+    markdown = "| region | revenue |\n| --- | --- |\n| North | 1.5 |\n| South | 2.0 |\n|  | 3.0 |"
+    shapes = [
+        markdown,
+        json.dumps(records),
+        json.dumps({"data": records, "warnings": []}),
+        json.dumps({"columns": columns, "rows": rows, "truncated": False}),
+    ]
+    for text in shapes:
+        p = ParsedResult.from_text(text)
+        assert p is not None, text
+        assert p.columns == columns, text
+        assert p.rows == rows, text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        json.dumps({"columns": ["a"], "truncated": False}),
+        json.dumps({"columns": "a", "rows": [[1]]}),
+        json.dumps({"columns": ["a"], "rows": [1, 2]}),
+        json.dumps({"result": "x"}),
+    ],
+)
+def test_malformed_columns_rows_object_is_not_a_result(text: str):
+    assert ParsedResult.from_text(text) is None
+
+
 def test_sql_only_is_not_a_result():
     assert ParsedResult.from_text("SQL:\nSELECT 1\n\nQuery Plan:\nscan orders") is None

@@ -134,3 +134,31 @@ def test_other_json_results_kept():
     text = json.dumps({"result": "x", "other": 1})
     msgs = [tool_use("a", "mcp__slayer__inspect", {}), tool_result("a", text)]
     assert normalize_messages(msgs, end_reason="submitted").calls[0].result_text == text
+
+
+def test_sql_results_parsed():
+    payload = {"columns": ["region", "revenue"], "rows": [["North", 1.5]], "truncated": False}
+    msgs = [
+        tool_use("a", "mcp__bench__sql", {"sql": "select region, sum(amount) as revenue from orders_flat group by 1"}),
+        tool_result("a", json.dumps(payload)),
+        tool_use("b", "mcp__bench__sql", {"sql": "select nope from orders"}),
+        tool_result("b", 'Binder Error: Referenced column "nope" not found', is_error=True),
+    ]
+    ok, failed = normalize_messages(msgs, end_reason="submitted").calls
+    assert ok.tool == "sql"
+    assert ok.parsed is not None
+    assert ok.parsed.columns == ["region", "revenue"]
+    assert ok.parsed.rows == [["North", 1.5]]
+    assert failed.is_error
+    assert failed.parsed is None
+
+
+def test_python_output_not_parsed():
+    payload = {"columns": ["a"], "rows": [[1]], "truncated": False}
+    msgs = [tool_use("a", "mcp__bench__python", {"code": "print(...)"}), tool_result("a", json.dumps(payload))]
+    assert normalize_messages(msgs, end_reason="submitted").calls[0].parsed is None
+
+
+def test_profile_recorded():
+    trace = normalize_messages([], end_reason="error", profile="sql+python")
+    assert trace.profile == "sql+python"

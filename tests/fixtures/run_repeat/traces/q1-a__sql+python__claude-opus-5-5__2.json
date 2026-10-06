@@ -1,0 +1,75 @@
+{
+ "profile": "sql+python",
+ "calls": [
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select region, sum(amount) as v from orders_flat group by 1"
+   },
+   "result_text": "{\"columns\": [\"region\", \"v\"], \"rows\": [[\"North\", 1.0]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "region",
+     "v"
+    ],
+    "rows": [
+     [
+      "North",
+      1.0
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select region, count(*) as n from orders_flat group by 1"
+   },
+   "result_text": "{\"columns\": [\"region\", \"v\"], \"rows\": [[\"North\", 1.0]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "region",
+     "v"
+    ],
+    "rows": [
+     [
+      "North",
+      1.0
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "python",
+   "args": {
+    "code": "print(1)"
+   },
+   "result_text": "1",
+   "is_error": false,
+   "parsed": null,
+   "audit": {
+    "sandbox_dir": "/tmp/sb",
+    "allowed_prefixes": [],
+    "events": []
+   }
+  }
+ ],
+ "usage": {
+  "input_tokens": 1000,
+  "output_tokens": 100,
+  "cache_read_tokens": 4000,
+  "cache_write_tokens": 200,
+  "partial": false
+ },
+ "cost_usd": 0.25,
+ "duration_s": 30.0,
+ "turns": 5,
+ "end_reason": "submitted",
+ "error": null
+}

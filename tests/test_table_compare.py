@@ -168,3 +168,29 @@ def test_iso_month_equals_first_of_month():
     result = res(["month", "rev"], [["2025-01", 1.0], ["2025-02", 2.0]])
     assert match_tables(truth, result, Compare(keys=["month"], values=["rev"])).ok
     assert not match_tables(truth, res(["month", "rev"], [["2025-01", 1.0], ["2025-03", 2.0]]), Compare()).ok
+
+
+def test_null_as_zero_in_values():
+    truth = Table(columns=["month", "rev"], rows=[["2024-08-01", None], ["2024-09-01", 5.0]])
+    result = res(["month", "rev"], [["2024-08-01", 0], ["2024-09-01", 5.0]])
+    assert not match_tables(truth, result, Compare(keys=["month"], values=["rev"])).ok
+    assert match_tables(truth, result, Compare(keys=["month"], values=["rev"], null_as_zero=True)).ok
+
+
+def test_null_as_zero_both_ways():
+    truth = Table(columns=["month", "n"], rows=[["2024-08-01", 0]])
+    result = res(["month", "n"], [["2024-08-01", None]])
+    assert not match_tables(truth, result, Compare(keys=["month"], values=["n"])).ok
+    assert match_tables(truth, result, Compare(keys=["month"], values=["n"], null_as_zero=True)).ok
+
+
+def test_null_as_zero_leaves_keys_alone():
+    truth = Table(columns=["k", "v"], rows=[[None, 1.0]])
+    result = res(["k", "v"], [[0, 1.0]])
+    assert not match_tables(truth, result, Compare(keys=["k"], values=["v"], null_as_zero=True)).ok
+
+
+def test_null_as_zero_does_not_equate_other_values():
+    truth = Table(columns=["k", "v"], rows=[["a", None]])
+    result = res(["k", "v"], [["a", 1.0]])
+    assert not match_tables(truth, result, Compare(keys=["k"], values=["v"], null_as_zero=True)).ok

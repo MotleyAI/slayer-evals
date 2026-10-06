@@ -18,7 +18,7 @@ from typing import cast
 
 import duckdb
 
-from slayer_evals.core import AgentInput, AgentOutcome, EndReason, ParsedResult, Submission, ToolCall, Trace
+from slayer_evals.core import AgentInput, AgentOutcome, EndReason, ParsedResult, Profile, Submission, ToolCall, Trace
 
 STATE_ENV = "FAKE_AGENT_STATE"
 MARKER = "leak_marker.yaml"
@@ -54,7 +54,7 @@ def _attempt(inp: AgentInput, model: str) -> int:
     return n
 
 
-def _answer(value: float) -> AgentOutcome:
+def _answer(value: float, profile: Profile) -> AgentOutcome:
     query = {"source_model": "orders", "measures": [{"formula": "sum(amount)", "name": "v"}]}
     call = ToolCall(
         tool="query",
@@ -64,7 +64,7 @@ def _answer(value: float) -> AgentOutcome:
     )
     return AgentOutcome(
         submission=Submission(columns=["v"], rows=[[value]], message=""),
-        trace=Trace(calls=[call], turns=2, end_reason="submitted"),
+        trace=Trace(profile=profile, calls=[call], turns=2, end_reason="submitted"),
     )
 
 
@@ -110,13 +110,14 @@ class ScriptedAgent:
         tag = hashlib.sha256(f"{inp.prompt}|{inp.profile}|{self.model}|{attempt}".encode()).hexdigest()[:16]
         (_state_dir() / f"run-{tag}.json").write_text(json.dumps(record))
         if "END" in d:
-            return AgentOutcome(submission=None, trace=Trace(calls=[], end_reason=cast(EndReason, d["END"])))
+            trace = Trace(profile=inp.profile, calls=[], end_reason=cast(EndReason, d["END"]))
+            return AgentOutcome(submission=None, trace=trace)
         value = float(d.get("ANSWER", "0"))
         if "CHECK_MARKER" in d:
             value = 1.0 if saw_marker else 0.0
         if attempt < int(d.get("PASS_FROM_ATTEMPT", "1")):
             value += 1.0
-        return _answer(value)
+        return _answer(value, inp.profile)
 
 
 def recorded_runs(state: Path) -> list[dict]:
