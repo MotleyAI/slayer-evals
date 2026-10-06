@@ -1,7 +1,7 @@
-"""Store manifest, verdicts, per-trial results and run metadata."""
+"""Verdicts, per-trial results and run metadata."""
 
 import datetime as dt
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -9,26 +9,6 @@ from slayer_evals.core.trace import EndReason, Profile, Usage
 
 RunMode = Literal["repeat", "until-pass"]
 AuthMode = Literal["subscription", "api-key"]
-
-
-class SavedMeasure(BaseModel):
-    model: str
-    name: str
-    formula: str
-
-
-class SavedQuery(BaseModel):
-    name: str
-    query: dict[str, Any] | list[dict[str, Any]]
-
-
-class StoreManifest(BaseModel):
-    """What the agent's store starts with, for expanding saved measures and queries during grading."""
-
-    datasource: str
-    models: list[str] = Field(default_factory=list)
-    measures: list[SavedMeasure] = Field(default_factory=list)
-    queries: list[SavedQuery] = Field(default_factory=list)
 
 
 class TraceFlags(BaseModel):

@@ -38,13 +38,12 @@ buckets.
 The build SHALL produce a SLayer store containing a DuckDB datasource named `bench` pointing at the built database,
 with custom granularities `fiscal_year` (12 months starting April) and `quarter_hour` (15 minutes); a model per table
 and for `orders_flat`, with joins along the foreign keys; the saved measures, query-backed models and saved queries the
-tasks rely on; and SLayer's help memories as `slayer mcp` seeds them. The build SHALL also emit a manifest of the
-store's models, saved measures (name → formula) and saved queries for the grader.
+tasks rely on; and SLayer's help memories as `slayer mcp` seeds them.
 
 #### Scenario: Store loads and answers
 - **WHEN** a SLayer MCP server is started on a copy of the store template
 - **THEN** `list_datasources` lists `bench`, `models_summary` lists every model, and a `query` on `orders` returns rows
 
-#### Scenario: Manifest matches the store
+#### Scenario: Saved measure and saved query present
 - **WHEN** the store template is built
-- **THEN** every saved measure and saved query in the manifest exists in the store with the same definition, and vice versa
+- **THEN** model `orders` has the saved measure `aov` and the query-backed model `monthly_rev` exists

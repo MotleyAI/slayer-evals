@@ -4,7 +4,6 @@ from slayer_evals.dataset.generator import DEFAULT_SEED, build_database
 from slayer_evals.dataset.store import (
     DATASOURCE,
     DB_FILE,
-    MANIFEST_FILE,
     STORE_DIR,
     BuiltDataset,
     build_dataset,
@@ -15,7 +14,6 @@ __all__ = [
     "DATASOURCE",
     "DB_FILE",
     "DEFAULT_SEED",
-    "MANIFEST_FILE",
     "STORE_DIR",
     "BuiltDataset",
     "build_database",

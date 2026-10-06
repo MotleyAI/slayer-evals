@@ -11,12 +11,12 @@
 
 ## 3. Core schemas
 
-- [x] 3.1 Implement `core` pydantic models (task, compare, expectations, store manifest, submission, tool call, trace, usage, verdict, trial result, run metadata); verify JSON round-trip tests pass
+- [x] 3.1 Implement `core` pydantic models (task, compare, expectations, submission, tool call, trace, usage, verdict, trial result, run metadata); verify JSON round-trip tests pass
 
 ## 4. Dataset
 
 - [x] 4.1 Implement the seeded generator and DuckDB build with the probe schema and planted edge cases; verify the determinism, different-seed, schema and edge-case invariant tests pass
-- [x] 4.2 Implement the store template (datasource `bench` with `fiscal_year` and `quarter_hour`, models adapted from the probe suite, saved measures and queries, help memories) and the manifest; verify a SLayer MCP server on a copy lists the datasource and models and answers a query, and the manifest test passes
+- [x] 4.2 Implement the store template (datasource `bench` with `fiscal_year` and `quarter_hour`, models adapted from the probe suite, saved measures and queries, help memories); verify a SLayer MCP server on a copy lists the datasource and models and answers a query
 
 ## 5. Tasks
 

@@ -10,9 +10,6 @@ from mcp.types import CallToolRequest, CallToolRequestParams, ListToolsRequest
 from slayer_evals.core import (
     ParsedResult,
     ResultWarning,
-    SavedMeasure,
-    SavedQuery,
-    StoreManifest,
     Submission,
     Table,
     Task,
@@ -80,24 +77,6 @@ def trace_of(*calls: ToolCall) -> Trace:
 
 def submission_of(table: Table, message: str = "") -> Submission:
     return Submission(columns=list(table.columns), rows=[list(r) for r in table.rows], message=message)
-
-
-def manifest_with_aov() -> StoreManifest:
-    return StoreManifest(
-        datasource="bench",
-        models=["orders", "customers", "regions", "monthly_rev"],
-        measures=[SavedMeasure(model="orders", name="aov", formula="sum(amount) / count(*)")],
-        queries=[
-            SavedQuery(
-                name="monthly_rev",
-                query={
-                    "source_model": "orders",
-                    "time_dimensions": [{"dimension": "order_date", "granularity": "month"}],
-                    "measures": [{"formula": "sum(amount)", "name": "rev"}],
-                },
-            )
-        ],
-    )
 
 
 def servers_of(options: Any) -> dict[str, Any]:

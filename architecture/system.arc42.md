@@ -27,7 +27,6 @@ flowchart TD
   cli --> report
   cli --> runner
   cli --> tasks
-  dataset --> core
   grading --> core
   report --> core
   runner --> agents

@@ -27,8 +27,8 @@ check, telemetry env, pinned prompt caching, explicit auth mode, one spawned pro
 ### Architecture: eight precise nodes under `python` (root package `slayer_evals`, source root `src`)
 | Node | Owns | Imports |
 |---|---|---|
-| `core` | pydantic schemas: task, store manifest, submission, trace, verdict, trial result | — |
-| `dataset` | seeded generator, DuckDB build, store template, manifest | core |
+| `core` | pydantic schemas: task, submission, trace, verdict, trial result | — |
+| `dataset` | seeded generator, DuckDB build, store template | core |
 | `tasks` | task YAML loading and validation, truth computation, truth snapshots | core |
 | `grading` | table comparison, verdict, trace flags | core |
 | `agents` | adapter protocol, Claude SDK adapter, `submit_answer`, Python sandbox, trace normalization | core |

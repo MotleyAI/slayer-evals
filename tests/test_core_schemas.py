@@ -18,7 +18,7 @@ from slayer_evals.core import (
     Usage,
     Verdict,
 )
-from tests.helpers import make_task, manifest_with_aov
+from tests.helpers import make_task
 
 
 def _trace() -> Trace:
@@ -71,11 +71,6 @@ def test_task_round_trip():
         xfail={"issue": "DEV-2058", "reason": "relative dates need a pinned clock"},
     )
     assert type(task).model_validate_json(task.model_dump_json()) == task
-
-
-def test_manifest_round_trip():
-    m = manifest_with_aov()
-    assert type(m).model_validate_json(m.model_dump_json()) == m
 
 
 def test_verdict_passed_is_correct_and_single_query():

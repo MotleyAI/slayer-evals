@@ -11,7 +11,7 @@ import pytest
 
 from slayer_evals.cli import main
 from slayer_evals.core import Table, TrialResult
-from slayer_evals.dataset import DB_FILE, MANIFEST_FILE, STORE_DIR, BuiltDataset
+from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset
 from slayer_evals.tasks import write_snapshots
 from tests.fake_agents import STATE_ENV
 from tests.helpers import REPO, write_task
@@ -22,7 +22,7 @@ FAKE = "tests.fake_agents:ScriptedAgent"
 def test_build(tmp_path: Path):
     out = tmp_path / "data"
     assert main(["build", "--out", str(out)]) == 0
-    for name in (DB_FILE, STORE_DIR, MANIFEST_FILE):
+    for name in (DB_FILE, STORE_DIR):
         assert (out / name).exists()
 
 

@@ -33,7 +33,7 @@ def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="slayer-evals", description="Do agents actually reach for SLayer's DSL?")
     sub = p.add_subparsers(dest="command", required=True)
 
-    b = sub.add_parser("build", help="build the database, the SLayer store template and its manifest")
+    b = sub.add_parser("build", help="build the database and the SLayer store template")
     b.add_argument("--out", type=Path, default=Path("data"))
     b.add_argument("--seed", type=int, default=DEFAULT_SEED)
 
