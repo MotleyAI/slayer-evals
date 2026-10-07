@@ -1,6 +1,8 @@
-"""Seeded generator for the benchmark database: the probe dataset's schema at realistic size, plus planted edge cases."""
+"""Seeded generator for the benchmark database: the probe dataset's schema at realistic size, the benchmark's own
+tables, and planted edge cases."""
 
 import datetime as dt
+import itertools
 import random
 from pathlib import Path
 from typing import Any
@@ -57,6 +59,48 @@ FROM orders o
 LEFT JOIN customers c ON o.customer_id = c.id
 LEFT JOIN regions r ON c.region_id = r.id;
 """
+# The benchmark's own tables, created after the probe tables so those stay exactly as before.
+EXTRA_SCHEMA = """
+CREATE TABLE products (id INTEGER PRIMARY KEY, name VARCHAR, category VARCHAR, list_price DOUBLE);
+CREATE TABLE order_items (
+  id INTEGER PRIMARY KEY, order_id INTEGER REFERENCES orders (id), product_id INTEGER REFERENCES products (id),
+  quantity INTEGER, line_amount DOUBLE
+);
+CREATE TABLE campaigns (id INTEGER PRIMARY KEY, name VARCHAR, channel VARCHAR, start_date DATE);
+CREATE TABLE campaign_members (
+  campaign_id INTEGER REFERENCES campaigns (id), customer_id INTEGER REFERENCES customers (id), joined_date DATE,
+  PRIMARY KEY (campaign_id, customer_id)
+);
+CREATE TABLE cities (
+  city VARCHAR, region_id INTEGER REFERENCES regions (id), population INTEGER, size_class VARCHAR,
+  PRIMARY KEY (city, region_id)
+);
+"""
+CATEGORIES = ["Books", "Garden", "Kitchen", "Toys", "Tools"]
+N_PRODUCTS = 20
+ITEM_COUNTS = ([1, 2, 3, 4], [0.35, 0.3, 0.2, 0.15])
+CAMPAIGNS = [
+    (1, "Spring Mailer", "email", dt.date(2023, 3, 1)),
+    (2, "Summer Social", "social", dt.date(2023, 6, 1)),
+    (3, "Search Push", "search", dt.date(2024, 2, 1)),
+    (4, "Autumn Mailer", "email", dt.date(2024, 9, 1)),
+    (5, "Holiday Mailer", "email", dt.date(2024, 11, 15)),
+    (6, "New Year Social", "social", dt.date(2025, 1, 5)),
+]
+CAMPAIGN_SIZE = (25, 45)
+# (city, region_id, population); the South's Oslo is a village, the North's the capital.
+CITY_ROWS = [
+    ("Oslo", 1, 700_000),
+    ("Bergen", 1, 290_000),
+    ("Trondheim", 1, 210_000),
+    ("Rome", 2, 2_800_000),
+    ("Naples", 2, 900_000),
+    ("Oslo", 2, 3_000),
+    ("Vienna", 3, 1_900_000),
+    ("Prague", 3, 1_300_000),
+    ("Lisbon", 4, 545_000),
+    ("Porto", 4, 230_000),
+]
 
 # Planted rows use ids from 9001 up, so generated ids never collide with them.
 NO_ORDERS_CUSTOMER = 9001
@@ -142,13 +186,58 @@ def _events(seed: int) -> list[tuple[Any, ...]]:
     return rows + PLANTED_EVENTS
 
 
+def _products(seed: int) -> list[tuple[Any, ...]]:
+    rng = _rng(seed, "products")
+    rows = []
+    for pid in range(1, N_PRODUCTS + 1):
+        category = CATEGORIES[(pid - 1) % len(CATEGORIES)]
+        rows.append((pid, f"{category} item {pid}", category, round(rng.uniform(5, 120), 2)))
+    return rows
+
+
+def _split_cents(rng: random.Random, cents: int, parts: int) -> list[int]:
+    """`cents` split into `parts` positive amounts; the last part takes the remainder."""
+    parts = min(parts, cents) or 1
+    cuts = sorted(rng.sample(range(1, cents), parts - 1)) if parts > 1 else []
+    bounds = [0, *cuts, cents]
+    return [b - a for a, b in itertools.pairwise(bounds)]
+
+
+def _order_items(seed: int, orders: list[tuple[Any, ...]]) -> list[tuple[Any, ...]]:
+    rng = _rng(seed, "order_items")
+    rows = []
+    for order_id, _, amount, _, _ in sorted(orders, key=lambda o: o[0]):
+        n = rng.choices(ITEM_COUNTS[0], weights=ITEM_COUNTS[1])[0]
+        for cents in _split_cents(rng, round(amount * 100), n):
+            product = rng.randrange(1, N_PRODUCTS + 1)
+            rows.append((len(rows) + 1, order_id, product, rng.randint(1, 3), cents / 100))
+    return rows
+
+
+def _campaign_members(seed: int) -> list[tuple[Any, ...]]:
+    rng = _rng(seed, "campaign_members")
+    rows = []
+    for campaign_id, _, _, start in CAMPAIGNS:
+        members = rng.sample(range(1, N_CUSTOMERS + 1), rng.randint(*CAMPAIGN_SIZE))
+        for customer in sorted(members):
+            rows.append((campaign_id, customer, start + dt.timedelta(days=rng.randint(0, 30))))
+    return rows
+
+
+def _cities() -> list[tuple[Any, ...]]:
+    def size(population: int) -> str:
+        return "large" if population >= 500_000 else "medium" if population >= 100_000 else "small"
+
+    return [(city, region, population, size(population)) for city, region, population in CITY_ROWS]
+
+
 def build_database(path: Path, seed: int = DEFAULT_SEED) -> Path:
     """Write the benchmark database to `path` (replacing it) and return the path."""
     path.unlink(missing_ok=True)
     orders = _orders(seed)
     con = duckdb.connect(str(path))
     try:
-        for stmt in (s.strip() for s in SCHEMA.split(";")):
+        for stmt in (s.strip() for s in (SCHEMA + EXTRA_SCHEMA).split(";")):
             if stmt:
                 con.execute(stmt)
         con.executemany("INSERT INTO regions VALUES (?, ?)", REGIONS)
@@ -156,6 +245,11 @@ def build_database(path: Path, seed: int = DEFAULT_SEED) -> Path:
         con.executemany("INSERT INTO orders VALUES (?, ?, ?, ?, ?)", orders)
         con.executemany("INSERT INTO returns VALUES (?, ?, ?, ?)", _returns(seed, orders))
         con.executemany("INSERT INTO events VALUES (?, ?, ?)", _events(seed))
+        con.executemany("INSERT INTO products VALUES (?, ?, ?, ?)", _products(seed))
+        con.executemany("INSERT INTO order_items VALUES (?, ?, ?, ?, ?)", _order_items(seed, orders))
+        con.executemany("INSERT INTO campaigns VALUES (?, ?, ?, ?)", CAMPAIGNS)
+        con.executemany("INSERT INTO campaign_members VALUES (?, ?, ?)", _campaign_members(seed))
+        con.executemany("INSERT INTO cities VALUES (?, ?, ?, ?)", _cities())
         con.execute("CHECKPOINT")
     finally:
         con.close()

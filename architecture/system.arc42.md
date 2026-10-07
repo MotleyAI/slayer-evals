@@ -2,11 +2,11 @@
 
 ## Purpose and context
 
-A capability benchmark for agents that use SLayer through its MCP server: it measures whether an agent answers
-analytics questions by reaching for SLayer's DSL (partitioned aggregates, transforms, multi-stage queries, …) rather
-than pulling raw rows and post-processing them. Tasks run against a seeded demo database; each trial is graded on
-correctness and on whether a single SLayer query's own result is the answer. Any agent can be benchmarked through
-one adapter.
+A capability benchmark for agents answering analytics questions over a seeded demo database: it measures whether an
+agent given SLayer's MCP server reaches for SLayer's DSL (partitioned aggregates, transforms, multi-stage queries, …)
+rather than pulling raw rows and post-processing them, and how it compares with an agent given direct SQL access,
+including on traps where naive SQL silently returns wrong numbers. Each trial is graded on correctness and on whether
+a single query's own result is the answer. Any agent can be benchmarked through one adapter.
 
 ## Building blocks
 
@@ -51,6 +51,8 @@ flowchart TD
 5. Reproducible data: the same seed yields the same tables, and truth comes from the built database, never typed by
    hand. [enforced: test:tests/test_dataset.py]
 6. Fix the surface, not the eval: prompts stay generic and capability-neutral. [review]
+7. Proven tasks: every task has a single SLayer query that answers it, and every trap a naive SQL query that misses it.
+   [enforced: test:tests/test_task_proofs.py]
 
 ## Rationale
 

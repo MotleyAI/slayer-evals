@@ -1,0 +1,11 @@
+name: order_items
+sql_table: order_items
+columns:
+  - {name: id, type: number, primary_key: true}
+  - {name: order_id, type: number}
+  - {name: product_id, type: number}
+  - {name: quantity, type: number}
+  - {name: line_amount, type: number}
+joins:
+  - {target_model: orders, join_pairs: [[order_id, id]], cardinality: many_to_one}
+  - {target_model: products, join_pairs: [[product_id, id]], cardinality: many_to_one}

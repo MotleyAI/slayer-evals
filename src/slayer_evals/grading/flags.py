@@ -1,4 +1,4 @@
-"""Informational trace flags: Python used, raw SQL handed to SLayer, model edits, SLayer errors, several queries."""
+"""Informational trace flags: Python used, raw SQL, model edits, query errors, several queries."""
 
 import json
 from typing import Any
@@ -6,7 +6,10 @@ from typing import Any
 from slayer_evals.core import ToolCall, TraceFlags
 
 PYTHON_TOOL = "python"
-BENCH_TOOLS = (PYTHON_TOOL, "submit_answer")
+SQL_TOOL = "sql"
+# Calls that neither query the data nor go to SLayer.
+NON_QUERY_TOOLS = (PYTHON_TOOL, "submit_answer")
+QUERY_TOOLS = ("query", SQL_TOOL)
 MODEL_TOOLS = ("create_model", "edit_model")
 _SQL_LIST_KEYS = ("add_filters", "filters")
 
@@ -48,6 +51,8 @@ def _query_has_sql(query: Any) -> bool:
 
 
 def _has_sql(call: ToolCall) -> bool:
+    if call.tool == SQL_TOOL:
+        return True
     if call.tool in MODEL_TOOLS:
         return (
             _model_has_sql(call.args)
@@ -58,11 +63,11 @@ def _has_sql(call: ToolCall) -> bool:
 
 
 def trace_flags(calls: list[ToolCall]) -> TraceFlags:
-    slayer = [c for c in calls if c.tool not in BENCH_TOOLS]
+    data = [c for c in calls if c.tool not in NON_QUERY_TOOLS]
     return TraceFlags(
         used_python=any(c.tool == PYTHON_TOOL for c in calls),
-        raw_sql=any(_has_sql(c) for c in slayer),
-        edited_models=any(c.tool in MODEL_TOOLS for c in slayer),
-        slayer_errors=any(c.is_error for c in slayer),
-        several_queries=sum(c.tool == "query" for c in slayer) > 1,
+        raw_sql=any(_has_sql(c) for c in data),
+        edited_models=any(c.tool in MODEL_TOOLS for c in data),
+        query_errors=any(c.is_error for c in data),
+        several_queries=sum(c.tool in QUERY_TOOLS for c in data) > 1,
     )

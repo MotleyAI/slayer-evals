@@ -1,0 +1,27 @@
+id: t-chasm
+covers: [Q6, chasm]
+prompt: >-
+  For each region that has customers, show the total amount ordered (the sum of order amounts) and the total amount
+  returned (the sum of return amounts) by its customers. Orders and returns whose customer is unknown or has no known
+  region form their own group.
+truth_sql: |
+  with o as (select r.name as region, sum(o.amount) as ordered
+             from orders o left join customers c on c.id = o.customer_id left join regions r on r.id = c.region_id
+             group by 1),
+       rt as (select r.name as region, sum(rt.amount) as returned
+              from returns rt left join customers c on c.id = rt.customer_id left join regions r on r.id = c.region_id
+              group by 1),
+       g as (select distinct r.name as region from customers c left join regions r on r.id = c.region_id)
+  select g.region, o.ordered, rt.returned
+  from g
+  left join o on o.region is not distinct from g.region
+  left join rt on rt.region is not distinct from g.region
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "sum(orders.amount)", "name": "ordered"}, {"formula": "sum(returns.amount)", "name": "returned"}]}}
+naive_sql: |
+  select r.name as region, sum(o.amount) as ordered, sum(rt.amount) as returned
+  from customers c
+  left join regions r on r.id = c.region_id
+  left join orders o on o.customer_id = c.id
+  left join returns rt on rt.customer_id = c.id
+  group by 1
+compare: {keys: [region], values: [ordered, returned]}

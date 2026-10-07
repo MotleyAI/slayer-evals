@@ -1,0 +1,12 @@
+id: q3-avg-city-revenue
+covers: [Q3]
+prompt: >-
+  For each region, what is the average revenue of its cities, where each city's revenue is the sum of its order
+  amounts and every city weighs the same regardless of size? Orders whose customer has no known region form their own
+  group.
+truth_sql: |
+  select region, avg(rev) as avg_city_revenue
+  from (select region, city, sum(amount) as rev from orders_flat group by 1, 2)
+  group by 1
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region"], "measures": [{"formula": "avg(sum(amount, partition_by=[region, city]))", "name": "avg_city_revenue"}]}}
+compare: {keys: [region], values: [avg_city_revenue]}

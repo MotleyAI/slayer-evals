@@ -1,5 +1,6 @@
 """Runner: selection, run modes, isolation, blind agents, SLayer override, run output."""
 
+import importlib.metadata
 import json
 import os
 import sys
@@ -14,7 +15,7 @@ import pytest
 from pydantic import ValidationError
 
 import slayer_evals.runner.run as run_module
-from slayer_evals.core import RunMetadata, TrialResult
+from slayer_evals.core import RunMetadata, Trace, TrialResult
 from slayer_evals.dataset import BuiltDataset
 from slayer_evals.runner import AuthError, RunConfig, run_benchmark, select_tasks
 from tests.fake_agents import SLEEPER_PID, STATE_ENV, TRANSCRIPT_TAG, recorded_runs
@@ -25,12 +26,16 @@ ENV = {"ANTHROPIC_API_KEY": "sk-ant-api-test"}
 SECRET_SQL = "select 7.0 as v -- secret truth marker"
 
 
-def task_doc(tid: str, row: str, prompt: str, truth: str = "select 7.0 as v", **kw: Any) -> dict[str, Any]:
+SLAYER_QUERY = {"query": {"source_model": "orders", "measures": [{"formula": "sum(amount)", "name": "v"}]}}
+
+
+def task_doc(tid: str, row: str | list[str], prompt: str, truth: str = "select 7.0 as v", **kw: Any) -> dict[str, Any]:
     return {
         "id": tid,
-        "row": row,
+        "covers": [row] if isinstance(row, str) else row,
         "prompt": prompt,
         "truth_sql": truth,
+        "slayer_query": SLAYER_QUERY,
         "compare": {"values": ["v"]},
         **kw,
     }
@@ -45,6 +50,7 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def config(tmp_path: Path, built: BuiltDataset, tasks_dir: Path, **kw: Any) -> RunConfig:
+    """A fake-agent run in `slayer` only, unless `profiles` is given (None: the default profiles)."""
     base: dict[str, Any] = {
         "tasks_dir": tasks_dir,
         "dataset_dir": built.dir,
@@ -55,6 +61,8 @@ def config(tmp_path: Path, built: BuiltDataset, tasks_dir: Path, **kw: Any) -> R
         "concurrency": 2,
     }
     base.update(kw)
+    if base["profiles"] is None:
+        del base["profiles"]
     return RunConfig(**base)
 
 
@@ -72,7 +80,7 @@ def tasks_dir_with(tmp_path: Path, *docs: dict[str, Any]) -> Path:
 
 def test_defaults():
     c = RunConfig()
-    assert c.profiles == ["slayer", "slayer+python"]
+    assert c.profiles == ["slayer", "slayer+python", "sql+python"]
     assert c.models == ["claude-opus-5-5"]
     assert c.n == 1
     assert c.mode == "repeat"
@@ -85,10 +93,21 @@ def test_defaults():
 
 
 def test_select_by_rows_and_ids():
-    tasks = [make_task(id="a", row="Q1"), make_task(id="b", row="Q4"), make_task(id="c", row="Q7")]
+    tasks = [make_task(id="a", covers=["Q1"]), make_task(id="b", covers=["Q4"]), make_task(id="c", covers=["Q7"])]
     assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q1", "Q4"]))] == ["a", "b"]
     assert [t.id for t in select_tasks(tasks, RunConfig(task_ids=["c"]))] == ["c"]
     assert [t.id for t in select_tasks(tasks, RunConfig())] == ["a", "b", "c"]
+
+
+def test_select_by_any_covered_row():
+    tasks = [
+        make_task(id="combo", covers=["Q2", "Q4"]),
+        make_task(id="plain", covers=["Q1"]),
+        make_task(id="trap", covers=["Q7", "fan_out"]),
+    ]
+    assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q4"]))] == ["combo"]
+    assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q2", "Q1"]))] == ["combo", "plain"]
+    assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q7"]))] == ["trap"]
 
 
 @pytest.mark.parametrize("model", ["a/b", "..", ".hidden", "a__b", ""])
@@ -102,17 +121,72 @@ def test_model_names_must_be_path_safe(model: str):
     [(RunConfig(task_ids=["a", "typo"]), "typo"), (RunConfig(rows=["Q1", "Q99"]), "Q99")],
 )
 def test_select_rejects_unknown_ids_and_rows(cfg: RunConfig, unknown: str):
-    tasks = [make_task(id="a", row="Q1"), make_task(id="b", row="Q4")]
+    tasks = [make_task(id="a", covers=["Q1"]), make_task(id="b", covers=["Q4"])]
     with pytest.raises(ValueError, match=unknown):
         select_tasks(tasks, cfg)
 
 
 def test_row_filter_run(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(
-        tmp_path, task_doc("a", "Q1", "ANSWER 7"), task_doc("b", "Q4", "ANSWER 7"), task_doc("c", "Q7", "ANSWER 7")
+        tmp_path,
+        task_doc("a", "Q1", "ANSWER 7"),
+        task_doc("b", ["Q2", "Q4"], "ANSWER 7"),
+        task_doc("c", "Q7", "ANSWER 7"),
     )
     run_dir = run_benchmark(config(tmp_path, built, td, rows=["Q1", "Q4"]), environ=ENV)
-    assert sorted(r.task_id for r in results(run_dir)) == ["a", "b"]
+    rs = results(run_dir)
+    assert sorted(r.task_id for r in rs) == ["a", "b"]
+    assert {r.task_id: r.covers for r in rs} == {"a": ["Q1"], "b": ["Q2", "Q4"]}
+
+
+def test_default_profiles_run(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"))
+    run_dir = run_benchmark(config(tmp_path, built, td, profiles=None), environ=ENV)
+    assert sorted(r.profile for r in results(run_dir)) == ["slayer", "slayer+python", "sql+python"]
+    assert sorted(r["input"]["profile"] for r in recorded_runs(env)) == ["slayer", "slayer+python", "sql+python"]
+    md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
+    assert md.profiles == ["slayer", "slayer+python", "sql+python"]
+
+
+def saved_task(tasks_dir_parent: Path) -> Path:
+    return tasks_dir_with(
+        tasks_dir_parent,
+        task_doc("q23-saved", "Q23", "ANSWER 7", uses_saved=["monthly_rev"]),
+        task_doc("plain", "Q1", "ANSWER 7"),
+    )
+
+
+def test_saved_definition_task_auto_fails_in_raw_sql(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = saved_task(tmp_path)
+    run_dir = run_benchmark(config(tmp_path, built, td, profiles=["slayer", "sql+python"], n=2), environ=ENV)
+    rs = results(run_dir)
+    auto = [r for r in rs if r.task_id == "q23-saved" and r.profile == "sql+python"]
+    assert len(auto) == 2
+    for r in auto:
+        assert r.end_reason == "auto_fail"
+        assert r.verdict is not None
+        assert not r.verdict.correct
+        assert not r.verdict.single_query
+        assert any("monthly_rev" in reason for reason in r.verdict.correct_reasons)
+        stem = f"{r.task_id}__{r.profile}__{r.model}__{r.trial}"
+        assert not (run_dir / "transcripts" / f"{stem}.jsonl").exists()
+        trace = Trace.model_validate_json((run_dir / "traces" / f"{stem}.json").read_text())
+        assert trace.profile == "sql+python"
+        assert trace.end_reason == "auto_fail"
+        assert trace.calls == []
+    started = Counter((r["input"]["prompt"], r["input"]["profile"]) for r in recorded_runs(env))
+    assert started == {("ANSWER 7", "slayer"): 4, ("ANSWER 7", "sql+python"): 2}
+    others = [r for r in rs if not (r.task_id == "q23-saved" and r.profile == "sql+python")]
+    assert len(others) == 6
+    assert all(r.end_reason == "submitted" and r.passed for r in others)
+
+
+def test_auto_fail_runs_once_in_until_pass(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = saved_task(tmp_path)
+    cfg = config(tmp_path, built, td, profiles=["sql+python"], n=3, mode="until-pass", task_ids=["q23-saved"])
+    rs = results(run_benchmark(cfg, environ=ENV))
+    assert [(r.trial, r.end_reason) for r in rs] == [(1, "auto_fail")]
+    assert recorded_runs(env) == []
 
 
 def test_repeat_runs_n_times(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -206,7 +280,25 @@ def test_agent_sees_only_the_prompt(tmp_path: Path, built: BuiltDataset, env: Pa
     assert set(rec["input"]) == {"prompt", "profile", "env"}
     assert rec["input"]["prompt"] == "ANSWER 7"
     blob = json.dumps(rec)
-    for leak in ("secret truth marker", "secret_fn_marker", "Q1", '"row"'):
+    for leak in ("secret truth marker", "secret_fn_marker", "Q1", '"row"', '"covers"', "slayer_query"):
+        assert leak not in blob
+
+
+def test_agent_sees_nothing_of_a_trap(tmp_path: Path, built: BuiltDataset, env: Path):
+    trap = task_doc(
+        "trap",
+        ["Q6", "chasm"],
+        "ANSWER 7",
+        truth=SECRET_SQL,
+        naive_sql="select 8.0 as v -- secret naive marker",
+        slayer_query={"query": {"source_model": "secret_model_marker"}},
+        compare={"values": ["v"], "null_as_zero": True},
+    )
+    run_benchmark(config(tmp_path, built, tasks_dir_with(tmp_path, trap), profiles=["sql+python"]), environ=ENV)
+    (rec,) = recorded_runs(env)
+    assert set(rec["input"]) == {"prompt", "profile", "env"}
+    blob = json.dumps(rec)
+    for leak in ("secret naive marker", "secret_model_marker", "secret truth marker", "chasm", "Q6", "null_as_zero"):
         assert leak not in blob
 
 
@@ -291,7 +383,7 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
     run_dir = run_benchmark(config(tmp_path, built, td, n=1), environ=ENV)
     assert run_dir.parent == tmp_path / "runs"
     md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
-    assert md.slayer_version == "1.0.2"
+    assert md.slayer_version == importlib.metadata.version("motley-slayer")
     assert md.sdk_version == claude_agent_sdk.__version__
     assert md.models == ["claude-opus-5-5"]
     assert md.mode == "repeat"
@@ -303,7 +395,7 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
     assert rs["x"].xfail == "DEV-2058"
     assert rs["a"].xfail is None
     for r in rs.values():
-        assert r.row in ("Q1", "Q20")
+        assert r.covers in (["Q1"], ["Q20"])
         assert r.end_reason == "submitted"
         assert r.verdict is not None
     for r in rs.values():

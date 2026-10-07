@@ -1,95 +1,112 @@
-# Baseline failures, compared
+# Baseline failures, by profile and pitfall
 
-Where Claude Opus 5.5 failed in the [committed baseline](../results/baseline/report.md) (run 2026-10-06 13:47 UTC),
-compared across the two profiles and against the previous baseline (12:38 UTC the same day, same code under test).
-Every task ran once per profile, so a single flip between runs is noise; a failure in all four cells is a pattern.
+Where Claude Opus 5.5 failed in the [committed baseline](../results/baseline/report.md): every task once in each of
+the three profiles (`slayer`, `slayer+python`, `sql+python`), SLayer at commit `1653a91` (reported as 1.1.0, the first
+commit with the fix for a saved ratio measure plus a transform over it). It is a **single-trial snapshot**: one flip
+is noise, a failure across profiles is a pattern.
 
-A trial **passes** when its answer is correct *and* one SLayer query's own result contains it. The usual failure is
-a correct answer that the agent assembled itself, by combining queries, writing SQL, using Python or doing the
-arithmetic in its head.
+The two SLayer profiles ran first (2026-10-06 17:31 UTC). Their `sql+python` counterpart was then rerun (18:50 UTC)
+after the system prompt gained one sentence for every profile: *"Submit exact values without rounding, and use null
+as the label of a group whose key is unknown."* Without it the raw-SQL agent labelled the unknown-region group
+"Unknown", rounded to two decimals or added empty rows, and the strict grader marked 7 of its 17 traps wrong although
+it had avoided every one of those traps (10/17 correct before, 16/17 after). The SLayer profiles had only two such answers, so
+they were not rerun; their transcripts show the shorter prompt. `q12-net-revenue` failed in all three profiles the same
+way (agents counted orders without a customer with a discount of 0, which the truth leaves out); its prompt now says
+those orders are left out, and it was rerun in all three profiles (19:02 UTC), passing in each.
+
+✓ pass · ✗ correct answer, but not one query's own result · **✗c** wrong answer · auto: the task names a saved SLayer
+definition, so it fails in `sql+python` without running
 
 ## Headline
 
-| Profile | Correct | Single query | Passed | Previous baseline |
+| Suite | Profile | Trials | Correct | Single query | Passed |
+| --- | --- | --- | --- | --- | --- |
+| capability | `slayer` | 24 | 23 | 20 | 19 |
+| capability | `slayer+python` | 24 | 23 | 16 | 16 |
+| capability | `sql+python` | 24 (2 auto) | 20 | 17 | 17 |
+| combo | `slayer` | 11 | 11 | 4 | 4 |
+| combo | `slayer+python` | 11 | 11 | 4 | 4 |
+| combo | `sql+python` | 11 (1 auto) | 10 | 6 | 6 |
+| trap | `slayer` | 17 | **17** | 10 | 10 |
+| trap | `slayer+python` | 17 | 16 | 9 | 8 |
+| trap | `sql+python` | 17 | 16 | 16 | 15 |
+
+The relative-date task `q20-last-three-months` is xfail and not counted. **Correct** is the comparison across
+profiles; single query is much easier with raw SQL, where one statement can express nearly any answer.
+
+## Traps, by pitfall
+
+| Task | Pitfall | Row | `slayer` | `slayer+python` | `sql+python` |
+| --- | --- | --- | --- | --- | --- |
+| t-fan-out-items | fan_out | Q6 | ✓ | ✓ | **✗c** |
+| t-fan-out-credit | fan_out | Q8 | ✗ | ✗ | ✓ |
+| t-count-after-join | count_after_join | Q10 | ✓ | ✓ | ✓ |
+| t-chasm | chasm | Q6 | ✗ | ✗ | ✓ |
+| t-bridge-email | bridge | Q10 | ✓ | ✓ | ✓ |
+| t-city-size | non_unique_key | Q6 | ✓ | **✗c** | ✓ |
+| t-zero-regions | outer_join_filter | Q8 | ✗ | ✗ | ✓ |
+| t-never-returned | not_in_null | Q10 | ✓ | ✗ | ✓ |
+| t-orders-per-customer | count_outer_join | Q8 | ✓ | ✗ | ✓ |
+| t-ok-share | filtered_total | Q2 | ✓ | ✓ | ✓ |
+| t-orders-per-category | distinct_reagg | Q1 | ✗ | ✗ | ✓ |
+| t-monthly-gaps | missing_periods | Q4 | ✓ | ✓ | ✓ |
+| t-prev-month | filter_before_window | Q4 | ✓ | ✓ | ✗ |
+| t-all-time-running | filter_before_window | Q4, Q15 | ✗ | ✓ | ✓ |
+| t-rolling-gap | rows_window_gap | Q11 | ✗ | ✗ | ✓ |
+| t-march-events | timestamp_bounds | Q20 | ✓ | ✓ | ✓ |
+| t-overall-aov | avg_of_avgs | Q1 | ✗ | ✗ | ✓ |
+
+No profile fell into a trap's naive SQL. Neither wrong trap answer is about the pitfall: on `t-fan-out-items`
+`sql+python` added an empty row for the region without customers, and on `t-city-size` `slayer+python` labelled the
+unknown group "(not in reference table)" (the SLayer profiles ran before the null-label sentence). Opus 5.5 writing
+raw SQL knows these pitfalls well; on this set the semantic layer's advantage is not correctness but that the SLayer agent
+never had to think about them.
+
+The SLayer agents' trap failures are all ✗: right answers assembled from several queries. On `t-chasm`,
+`t-fan-out-credit`, `t-overall-aov` and `t-orders-per-category` they queried each fact or grain separately and
+combined the results, where one query with cross-model measures or `partition_by=[]` would have done it; on
+`t-zero-regions` and `t-rolling-gap` they missed the one-query idioms (a conditional sum rooted at `regions`, a
+`window='3m'` aggregate) and pieced the months together.
+
+## Wrong answers outside the traps
+
+| Task | Row(s) | `slayer` | `slayer+python` | `sql+python` | Why |
+| --- | --- | --- | --- | --- | --- |
+| q3-avg-city-revenue | Q3 | **✗c** | ✗ | **✗c** | `slayer` labelled the unknown group; `sql+python` left the orders without a customer out of it (one city instead of two) |
+| q6-region-credit | Q6 | ✗ | **✗c** | ✓ | an extra, empty row for the region without customers |
+| q9-credit-by-status | Q9 | ✓ | ✓ | **✗c** | the raw-SQL agent explained the overlap but still submitted the (overlapping) totals |
+| q20-last-three-months (xfail) | Q20 | **✗c** | ✗ | **✗c** | "last three months" read from today's date, where the truth assumes January 2026 |
+
+## Not one query (✗), outside the traps
+
+| Task | Row(s) | `slayer` | `slayer+python` | `sql+python` |
 | --- | --- | --- | --- | --- |
-| `slayer` | 22/24 | 19/24 | **18/24** | 19/24 |
-| `slayer+python` | 22/24 | 18/24 | **17/24** | 17/24 |
+| q13-top-cities-count | Q13 | ✗ | ✗ | ✗ |
+| q11-rolling-customers | Q11 | ✗ | ✗ | ✓ |
+| q7-cumulative-change | Q7 | ✗ | ✗ | ✓ |
+| q14-top-customer-per-region | Q14 | ✓ | ✗ | ✓ |
+| q2-city-share | Q2 | ✓ | ✗ | ✓ |
+| q24-top-two-per-region | Q24 | ✓ | ✗ | ✗ |
+| q4-prior-year | Q4 | ✓ | ✓ | ✗ |
+| c-aov-change | Q17, Q4 | ✗ | ✗ | ✗ |
+| c-region-credit-rank | Q6, Q14 | ✗ | ✗ | ✗ |
+| c-top-growth-months | Q13, Q4 | ✗ | ✗ | ✗ |
+| c-region-month-share | Q2, Q4 | ✗ | ✗ | ✓ |
+| c-size-class-months | Q16, Q2, Q4 | ✗ | ✗ | ✓ |
+| c-top-two-q1-share | Q24, Q2, Q20 | ✓ | ✗ | ✗ |
+| c-spend-band-share | Q5, Q2 | ✗ | ✓ | ✓ |
+| c-top-customer-share | Q14, Q2 | ✗ | ✓ | ✓ |
+| c-net-region-tier | Q6, Q12, Q1 | ✓ | ✗ | ✓ |
 
-The relative-date task (Q20) is xfail and not counted. Two trials of this run hit API overload (HTTP 529) before
-their first turn and were re-run; both passed.
+The persistent patterns, as in the previous baseline:
 
-## Failure matrix
+- **Order by what you don't show (Q13).** Every profile projects the sort measure, so no query's result has
+  exactly the asked-for columns; SLayer's `order` on an unselected measure is never reached.
+- **Transforms over a date range (Q4, Q7, Q11).** The SLayer agents query an extra month (or all months) so that a
+  change or rolling value has its predecessor, then drop rows, instead of relying on `time_shift` / `change` /
+  `window=` reaching outside the range.
+- **Combos cost single-query passes in every profile:** 4/11 for both SLayer profiles, 6/10 for raw SQL. With two or
+  three capabilities in play, agents build the answer in steps.
 
-✓ pass · ✗ fail · **✗c** wrong answer (the others are correct answers that are not one query's result)
-
-| Task | Row | Intended SLayer idiom | `slayer` now | `slayer` before | `+python` now | `+python` before |
-| --- | --- | --- | --- | --- | --- | --- |
-| q11-rolling-customers | Q11 | `count_distinct(customer_id, window='90d')` | ✗ | ✗ | ✗ | ✗ |
-| q13-top-cities-count | Q13 | `order` on an unselected measure | ✗ | ✗ | ✗ | ✗ |
-| q7-cumulative-change | Q7 | `cumsum(change(sum(amount)))` | ✗ | ✗ | ✗ | ✗ |
-| q6-region-credit | Q6 | fan-out-safe `sum(customers.credit)` | **✗c** | ✗ | **✗c** | ✗ |
-| q12-net-revenue | Q12 | `sum(amount - customers.discount)` | **✗c** | **✗c** | **✗c** | **✗c** |
-| q14-top-customer-per-region | Q14 | `rank(...)` | ✓ | ✓ | ✗ | ✗ |
-| q3-avg-city-revenue | Q3 | `avg(sum(amount, partition_by=[city, region]))` | ✗ | ✓ | ✓ | ✓ |
-| q2-city-share | Q2 | `sum(amount) / sum(amount, partition_by=region)` | ✓ | ✓ | ✗ | ✓ |
-| q4-prior-year | Q4 | `time_shift(sum(amount), -1, 'year')` | ✓ | ✓ | ✓ | ✗ |
-
-The other 15 tasks passed in all four cells.
-
-## Persistent: the capability is never reached
-
-**Q11, rolling windows.** No trial used a rolling window. In `slayer` the agent wrote raw SQL through a `sql`-backed
-inline model; in `slayer+python` it ran twelve separate `count_distinct(customer_id)` queries, one 90-day date
-filter per month. Both answers were right. The `slayer` agent searched for *"rolling 90 day distinct customers
-window count_distinct"*, and `search` returned generic models, columns and the `help.models` / `help.intro`
-memories, nothing about windows. This is the clearest gap on the MCP surface.
-
-**Q13, ordering by a measure that is not shown.** All four trials put revenue into the query to order by it, then
-dropped the column when submitting. The agent never tried `order` on a measure it does not select, so the query
-returns three columns where the task asks for two.
-
-**Q7, deep composition.** The `slayer` agent did use `change(sum(amount))`, but widened the date range to get
-December 2024 as the base for January and then summed the changes itself. The `slayer+python` agent pulled monthly
-revenue and computed both steps in Python. Neither nested the transforms into one measure or limited the output to
-2025 inside the query.
-
-**Q14, ranking (`slayer+python` only).** With Python available, the agent pulled all 200 customer-by-region revenue
-rows, sorted, and picked each region's top customer itself. Without Python (`slayer`) it passed in both runs, in this
-run with one multi-stage query that keeps the rows where revenue equals `max(revenue, partition_by=region)` (not
-`rank`, but one SLayer query). Having an escape hatch made the agent skip the DSL here.
-
-## Persistent: wrong answers that read as task ambiguity
-
-These two need a call on the task rather than on SLayer: the agent's answer is defensible, and its own message
-states the alternative reading.
-
-**Q12, net revenue.** Some orders point to customer ids that do not exist in `customers`. The truth uses plain SQL
-subtraction, so `amount - NULL` drops those orders and the no-region group totals 627.83. Every trial treated the
-missing discount as 0 and submitted 1,143.30, in both runs. In this run a query in each trial already returned the
-truth's numbers, so `single_query` passes but `correct` fails, and both agents' messages give the 627.83 alternative. The prompt does not say
-how to treat orders without a known customer.
-
-**Q6, region credit.** Both trials in this run added an `Arctic` row (a region with no customers and no orders, with
-empty values), giving six rows where the truth has five; the truth starts from orders, so it never sees Arctic. The
-prompt says "for each region", which supports including it. In the previous baseline both trials left Arctic out,
-were correct, but still failed `single_query`: they queried orders and customers separately and joined the results
-by hand instead of one fan-out-safe query. Three of the four trials hit `MeasureNameCollidesWithColumnError` when
-naming a measure `credit` after the column it sums.
-
-## Run-to-run flips (noise at N = 1)
-
-| Task | Profile | Before → now | What happened in the failing trial |
-| --- | --- | --- | --- |
-| q3-avg-city-revenue | `slayer` | ✓ → ✗ | Pulled the 12 city totals and averaged them per region in its head (no Python in this profile); correct, but no re-aggregation query. |
-| q2-city-share | `slayer+python` | ✓ → ✗ | Pulled region × city revenue and computed both shares in Python. |
-| q4-prior-year | `slayer+python` | ✗ → ✓ | Before: used `time_shift` but returned 14 months and trimmed them itself. Now one query. |
-
-## What this suggests for the SLayer MCP surface
-
-- **Rolling windows are not discoverable.** `search` and the help memories never point to `window=`, even when the
-  agent asks for it almost by name (Q11).
-- **Ordering by an unselected measure is not discoverable** (Q13); every trial assumed the order column must be
-  selected.
-- **Limiting a transform's output range** (Q7, and Q4 before) is where the agent falls back to trimming rows itself.
-- **Python access lowers DSL use** on tasks the agent can otherwise do in SLayer (Q14, and Q2 this run).
-- **The measure/column name collision** (Q6) costs a turn each time; the error could suggest a free name.
+`slayer+python` passes less often than `slayer` (28 against 33 of 52): with Python available, the agent more often
+pulls partial results and finishes the work in pandas.

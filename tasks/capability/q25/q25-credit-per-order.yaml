@@ -1,0 +1,9 @@
+id: q25-credit-per-order
+covers: [Q25]
+prompt: >-
+  Across all orders that have a customer, what is the average of the ordering customer's credit limit, taken over the
+  orders (so a customer with many orders weighs more)?
+truth_sql: |
+  select avg(c.credit) as avg_credit from orders o join customers c on o.customer_id = c.id
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "customer_credit", "sql": "customers.credit", "type": "number"}]}, "measures": [{"formula": "avg(customer_credit)", "name": "avg_credit"}], "filters": ["customer_id is not null"]}}
+compare: {values: [avg_credit]}

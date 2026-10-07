@@ -1,0 +1,12 @@
+id: c-top-growth-months
+covers: [Q13, Q4]
+prompt: >-
+  Which three months of 2025 had the largest increase in revenue (the sum of order amounts) over the previous month?
+  List them largest increase first, showing only each month and its revenue, not the increase.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders group by 1),
+       c as (select month, revenue, revenue - lag(revenue) over (order by month) as increase from m)
+  select month, revenue from c where month >= date '2025-01-01'
+  order by increase desc limit 3
+slayer_query: {"query": {"source_model": "orders", "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": "2025"}], "measures": [{"formula": "sum(amount)", "name": "revenue"}], "order": [{"column": "change(sum(amount))", "direction": "desc"}], "limit": 3}}
+compare: {keys: [month], values: [revenue], ordered: true, columns_exact: true}

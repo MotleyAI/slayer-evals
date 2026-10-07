@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from slayer_evals.agents.claude import ClaudeAgent
-from slayer_evals.core import AgentOutcome, Submission
+from slayer_evals.core import PROFILES, AgentOutcome, Profile, Submission
 from tests.fake_sdk import (
     MODEL,
     CallLocal,
@@ -63,6 +65,39 @@ async def test_submitted(tmp_path: Path):
     assert out.trace.usage.cache_read_tokens == 5000
     assert not out.trace.usage.partial
     assert out.trace.cost_usd == 0.12
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+async def test_trace_carries_the_profile(tmp_path: Path, profile: Profile):
+    a, _ = agent(submitted_script())
+    out = await a.run(make_input(tmp_path, profile=profile))
+    assert out.trace.profile == profile
+
+
+async def test_slayer_reported_in_raw_sql_profile_aborts(tmp_path: Path):
+    a, made = agent(submitted_script(), servers=["bench", "slayer"])
+    out = await a.run(make_input(tmp_path, profile="sql+python"))
+    assert out.trace.end_reason == "error"
+    assert out.trace.error is not None
+    assert "slayer" in out.trace.error
+    assert out.submission is None
+    assert made[0].prompt is None
+
+
+async def test_raw_sql_profile_runs_with_only_bench(tmp_path: Path):
+    a, _ = agent(submitted_script(), servers=["bench"])
+    out = await a.run(make_input(tmp_path, profile="sql+python"))
+    assert out.trace.end_reason == "submitted"
+    assert out.submission == Submission(**ANSWER)
+
+
+async def test_session_line_names_no_slayer_server_in_raw_sql(tmp_path: Path):
+    a, _ = agent(submitted_script(), servers=["bench"])
+    inp = make_input(tmp_path, profile="sql+python")
+    await a.run(inp)
+    session = json.loads(inp.env.transcript_path.read_text().splitlines()[-1])
+    assert session["profile"] == "sql+python"
+    assert not session["slayer_server"]
 
 
 async def test_config_dir_is_fresh_and_removed(tmp_path: Path):

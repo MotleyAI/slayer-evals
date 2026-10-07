@@ -1,0 +1,17 @@
+id: t-rolling-gap
+covers: [Q11, rows_window_gap]
+prompt: >-
+  For each month from September to December 2024, show the revenue (the sum of order amounts) of the three calendar
+  months ending with that month.
+truth_sql: |
+  select m::date as month,
+         (select sum(amount) from orders o
+          where o.order_date >= m - interval 2 month and o.order_date < m + interval 1 month) as revenue_3m
+  from unnest(generate_series(date '2024-09-01', date '2024-12-01', interval 1 month)) t(m)
+slayer_query: {"query": {"source_model": "orders", "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": ["2024-09-01", "2024-12-31"]}], "measures": [{"formula": "sum(amount, window='3m')", "name": "revenue_3m"}]}}
+naive_sql: |
+  with m as (select date_trunc('month', order_date) as month, sum(amount) as revenue from orders group by 1)
+  select month, revenue_3m
+  from (select month, sum(revenue) over (order by month rows between 2 preceding and current row) as revenue_3m from m)
+  where month >= date '2024-09-01' and month < date '2025-01-01'
+compare: {keys: [month], values: [revenue_3m]}

@@ -8,7 +8,9 @@ import yaml
 from mcp.types import CallToolRequest, CallToolRequestParams, ListToolsRequest
 
 from slayer_evals.core import (
+    COVERED_ROWS,
     ParsedResult,
+    Profile,
     ResultWarning,
     Submission,
     Table,
@@ -19,6 +21,11 @@ from slayer_evals.core import (
 
 REPO = Path(__file__).resolve().parent.parent
 MCP_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "mcp"
+Q1_SLAYER_QUERY = {
+    "source_model": "orders_flat",
+    "dimensions": ["region", "city"],
+    "measures": [{"formula": "sum(amount, partition_by=region)", "name": "region_total"}],
+}
 
 
 def mcp_fixture(name: str) -> dict[str, Any]:
@@ -29,11 +36,14 @@ def mcp_fixture(name: str) -> dict[str, Any]:
 def make_task(**overrides: Any) -> Task:
     doc: dict[str, Any] = {
         "id": "q1-region-total",
-        "row": "Q1",
+        "covers": ["Q1"],
         "prompt": "Revenue per region and city, with each region's total revenue alongside.",
         "truth_sql": "select 1",
+        "slayer_query": {"query": Q1_SLAYER_QUERY},
         "compare": {"keys": ["region", "city"], "values": ["region_total"]},
     }
+    if any(c not in COVERED_ROWS for c in overrides.get("covers", [])) and "naive_sql" not in overrides:
+        doc["naive_sql"] = "select 1"
     doc.update(overrides)
     return Task.model_validate(doc)
 
@@ -63,6 +73,12 @@ def query_call(
     )
 
 
+def sql_call(sql: str, columns: list[str], rows: list[list[Any]], truncated: bool = False) -> ToolCall:
+    """A successful `sql` call whose parsed result is (columns, rows)."""
+    text = json.dumps({"columns": columns, "rows": rows, "truncated": truncated})
+    return ToolCall(tool="sql", args={"sql": sql}, result_text=text, parsed=ParsedResult(columns=columns, rows=rows))
+
+
 def error_call(tool: str, args: dict[str, Any], text: str) -> ToolCall:
     return ToolCall(tool=tool, args=args, result_text=text, is_error=True)
 
@@ -71,8 +87,8 @@ def plain_call(tool: str, args: dict[str, Any], text: str = "ok") -> ToolCall:
     return ToolCall(tool=tool, args=args, result_text=text)
 
 
-def trace_of(*calls: ToolCall) -> Trace:
-    return Trace(calls=list(calls))
+def trace_of(*calls: ToolCall, profile: Profile = "slayer") -> Trace:
+    return Trace(profile=profile, calls=list(calls))
 
 
 def submission_of(table: Table, message: str = "") -> Submission:

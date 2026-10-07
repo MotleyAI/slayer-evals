@@ -17,6 +17,7 @@ from tests.fake_agents import STATE_ENV
 from tests.helpers import REPO, write_task
 
 FAKE = "tests.fake_agents:ScriptedAgent"
+SLAYER_QUERY = {"query": {"source_model": "orders", "measures": [{"formula": "sum(amount)", "name": "v"}]}}
 
 
 def test_build(tmp_path: Path):
@@ -33,9 +34,10 @@ def _tasks(tmp_path: Path) -> Path:
         d,
         {
             "id": "a",
-            "row": "Q1",
+            "covers": ["Q1"],
             "prompt": "ANSWER 7",
             "truth_sql": "select 7.0 as v",
+            "slayer_query": SLAYER_QUERY,
             "compare": {"values": ["v"]},
         },
     )
@@ -104,9 +106,10 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
         d,
         {
             "id": "a-fast",
-            "row": "Q1",
+            "covers": ["Q1"],
             "prompt": "ANSWER 7",
             "truth_sql": "select 7.0 as v",
+            "slayer_query": SLAYER_QUERY,
             "compare": {"values": ["v"]},
         },
     )
@@ -114,9 +117,10 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
         d,
         {
             "id": "b-slow",
-            "row": "Q4",
+            "covers": ["Q4"],
             "prompt": "SLEEP 120\nANSWER 7",
             "truth_sql": "select 7.0 as v",
+            "slayer_query": SLAYER_QUERY,
             "compare": {"values": ["v"]},
         },
     )
@@ -164,6 +168,26 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
         proc.wait()
     lines = results[0].read_text().splitlines()
     assert [TrialResult.model_validate_json(x).task_id for x in lines] == ["a-fast"]
+
+
+def test_run_raw_sql_profile(tmp_path: Path, built: BuiltDataset, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(STATE_ENV, str(tmp_path / "state"))
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join([str(REPO), os.environ.get("PYTHONPATH", "")]))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api-test")
+    td = _tasks(tmp_path)
+    out = tmp_path / "runs"
+    args = ["run", "--api-key-auth", "--tasks-dir", str(td), "--dataset-dir", str(built.dir), "--out", str(out)]
+    assert main([*args, "--agent", FAKE, "--profiles", "sql+python"]) == 0
+    (results,) = out.glob("*/results.jsonl")
+    assert [TrialResult.model_validate_json(x).profile for x in results.read_text().splitlines()] == ["sql+python"]
+
+
+def test_run_help_mentions_covered_rows(capsys: pytest.CaptureFixture[str]):
+    with pytest.raises(SystemExit):
+        main(["run", "--help"])
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "sql+python" in help_text
+    assert "cover" in help_text.lower()
 
 
 def test_report_command(tmp_path: Path):

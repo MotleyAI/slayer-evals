@@ -1,0 +1,16 @@
+{
+ "profile": "sql+python",
+ "calls": [],
+ "usage": {
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "cache_read_tokens": 0,
+  "cache_write_tokens": 0,
+  "partial": false
+ },
+ "cost_usd": null,
+ "duration_s": null,
+ "turns": 0,
+ "end_reason": "auto_fail",
+ "error": null
+}

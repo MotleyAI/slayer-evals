@@ -1,0 +1,20 @@
+id: t-zero-regions
+covers: [Q8, outer_join_filter]
+prompt: >-
+  For each of our five regions, how many orders did its customers place in 2025? Show 0 for a region whose customers
+  placed none.
+truth_sql: |
+  select r.name as region, count(o.id) as orders
+  from regions r
+  left join customers c on c.region_id = r.id
+  left join orders o on o.customer_id = c.id and o.order_date >= date '2025-01-01'
+  group by 1
+slayer_query: {"query": {"source_model": "regions", "dimensions": ["name"], "measures": [{"formula": "sum(iif(customers.orders.order_date >= '2025-01-01', 1, 0))", "name": "orders"}]}}
+naive_sql: |
+  select r.name as region, count(o.id) as orders
+  from regions r
+  left join customers c on c.region_id = r.id
+  left join orders o on o.customer_id = c.id
+  where o.order_date >= date '2025-01-01'
+  group by 1
+compare: {keys: [region], values: [orders], null_as_zero: true}

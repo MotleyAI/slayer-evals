@@ -22,7 +22,7 @@ class SnapshotDriftError(AssertionError):
     pass
 
 
-def _json_value(v: Any) -> Any:
+def json_value(v: Any) -> Any:
     if isinstance(v, float) and math.isnan(v):
         return None
     if isinstance(v, decimal.Decimal):
@@ -42,7 +42,7 @@ def _run(con: duckdb.DuckDBPyConnection, task: Task) -> Table:
     try:
         cur = con.execute(task.truth_sql)
         columns = [d[0] for d in cur.description or []]
-        rows = [[_json_value(v) for v in r] for r in cur.fetchall()]
+        rows = [[json_value(v) for v in r] for r in cur.fetchall()]
     except duckdb.Error as exc:
         raise TruthError(f"task {task.id}: truth_sql failed: {exc}") from exc
     if not task.compare.ordered:

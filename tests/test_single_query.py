@@ -4,7 +4,7 @@ from typing import Any
 
 from slayer_evals.core import Table
 from slayer_evals.grading import grade
-from tests.helpers import error_call, make_task, query_call, submission_of, trace_of
+from tests.helpers import error_call, make_task, query_call, sql_call, submission_of, trace_of
 
 Q1_TRUTH = Table(
     columns=["region", "city", "region_total"],
@@ -47,6 +47,45 @@ def test_answer_combined_from_two_queries():
     assert any("no single query" in r for r in v.single_query_reasons)
 
 
+Q1_SQL = (
+    "select region, city, sum(sum(amount)) over (partition by region) as region_total from orders_flat group by 1, 2"
+)
+
+
+def test_one_sql_statement_returns_the_answer():
+    v = verdict(trace_of(sql_call(Q1_SQL, ["region", "city", "region_total"], Q1_TRUTH.rows), profile="sql+python"))
+    assert v.correct
+    assert v.single_query
+    assert v.passed
+
+
+def test_sql_and_query_calls_both_count():
+    wrong = query_call(Q1_QUERY, Q1_COLS, Q1_TRUTH.rows[:1])
+    right = sql_call(Q1_SQL, ["region", "city", "region_total"], Q1_TRUTH.rows)
+    assert verdict(trace_of(wrong, right)).single_query
+
+
+def test_failed_sql_does_not_count():
+    bad = sql_call(Q1_SQL, ["region", "city", "region_total"], Q1_TRUTH.rows).model_copy(update={"is_error": True})
+    v = verdict(trace_of(bad, profile="sql+python"))
+    assert v.correct
+    assert not v.single_query
+
+
+def test_sql_answer_combined_from_two_statements():
+    per_city = sql_call("select ...", ["region", "city", "rev"], [["North", "Oslo", 370.0]])
+    per_region = sql_call("select ...", ["region", "rev"], [["North", 705.0], ["South", 890.0]])
+    v = verdict(trace_of(per_city, per_region, profile="sql+python"))
+    assert v.correct
+    assert not v.single_query
+
+
+def test_python_output_is_not_a_query():
+    table = sql_call("", ["region", "city", "region_total"], Q1_TRUTH.rows)
+    py = table.model_copy(update={"tool": "python", "args": {"code": "print(df.to_json())"}})
+    assert not verdict(trace_of(py, profile="sql+python")).single_query
+
+
 def test_wrong_query_result():
     rows = [list(r) for r in Q1_TRUTH.rows]
     rows[0][2] = 1.0
@@ -78,7 +117,7 @@ GRAN_ERR = (
 
 
 def refusal(**expect: Any):
-    return make_task(id="q18", row="Q18", compare={}, expect={**Q18_EXPECT, **expect})
+    return make_task(id="q18", covers=["Q18"], compare={}, expect={**Q18_EXPECT, **expect})
 
 
 def test_refusal_surfaced():
@@ -111,7 +150,7 @@ def test_error_kind_list():
 
 def test_warning_kind_list():
     task = make_task(
-        id="q9", row="Q9", compare={}, expect={"warning": ["broadcast", "associated"], "message_any": ["overlap"]}
+        id="q9", covers=["Q9"], compare={}, expect={"warning": ["broadcast", "associated"], "message_any": ["overlap"]}
     )
     q = {
         "source_model": "orders",
@@ -127,3 +166,50 @@ def test_warning_kind_list():
     v2 = grade(task, EMPTY, sub, trace_of(silent))
     assert not v2.correct
     assert not v2.single_query
+
+
+WARN_TASK = {
+    "id": "q9",
+    "covers": ["Q9"],
+    "compare": {},
+    "expect": {"warning": ["broadcast", "associated"], "message_any": ["overlap", "double count"]},
+}
+
+
+def test_raw_sql_refusal():
+    task = make_task(**WARN_TASK)
+    explored = sql_call("select status, sum(credit) from orders_flat group by 1", ["status", "v"], [["ok", 1.0]])
+    trace = trace_of(explored, profile="sql+python")
+    v = grade(task, EMPTY, submission_of(EMPTY, message="Credit limits overlap across statuses."), trace)
+    assert v.correct
+    assert v.single_query
+    assert v.passed
+
+
+def test_raw_sql_refusal_without_any_call():
+    task = make_task(**WARN_TASK)
+    v = grade(task, EMPTY, submission_of(EMPTY, message="The totals would overlap."), trace_of(profile="sql+python"))
+    assert v.correct
+    assert v.single_query
+
+
+def test_raw_sql_refusal_with_rows_fails():
+    task = make_task(**WARN_TASK)
+    answered = Table(columns=["status", "credit"], rows=[["ok", 1.0]])
+    v = grade(task, EMPTY, submission_of(answered, message="These overlap."), trace_of(profile="sql+python"))
+    assert not v.correct
+    assert not v.single_query
+
+
+def test_raw_sql_refusal_without_phrase_fails():
+    task = make_task(**WARN_TASK)
+    v = grade(task, EMPTY, submission_of(EMPTY, message="No data."), trace_of(profile="sql+python"))
+    assert not v.correct
+    assert not v.single_query
+
+
+def test_slayer_refusal_still_needs_the_warning():
+    task = make_task(**WARN_TASK)
+    v = grade(task, EMPTY, submission_of(EMPTY, message="These overlap."), trace_of(profile="slayer"))
+    assert not v.correct
+    assert not v.single_query

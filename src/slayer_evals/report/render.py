@@ -1,4 +1,4 @@
-"""The markdown report of a run directory: metadata, per-row and per-task tables, xfails, totals, failure digests."""
+"""The markdown report of a run directory: suite, pitfall, per-row and per-task tables, xfails, totals, failures."""
 
 import json
 import re
@@ -6,7 +6,17 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from slayer_evals.core import ALL_ROWS, UNCOVERED_ROWS, RunMetadata, Trace, TrialResult, trial_stem
+from slayer_evals.core import (
+    ALL_ROWS,
+    COVERED_ROWS,
+    PITFALLS,
+    UNCOVERED_ROWS,
+    RunMetadata,
+    Suite,
+    Trace,
+    TrialResult,
+    trial_stem,
+)
 
 REPORT_FILE = "report.md"
 RESULTS_FILE = "results.jsonl"
@@ -40,12 +50,20 @@ ROW_TITLES = {
     "Q24": "Nested / hierarchical results",
     "Q25": "Explicit aggregate locality",
 }
-BENCH_TOOLS = ("submit_answer", "python")
+SUITES: tuple[Suite, ...] = ("capability", "combo", "trap")
+NON_QUERY_TOOLS = ("submit_answer", "python")
 _ERROR_RE = re.compile(r"Error executing tool [\w.-]+: ([A-Za-z_][\w.]*):")
 
 
 def stem(r: TrialResult) -> str:
     return trial_stem(r.task_id, r.profile, r.model, r.trial)
+
+
+def suite_of(covers: list[str]) -> Suite:
+    """The suite a task's `covers` puts it in (as `Task.suite`)."""
+    if any(c in PITFALLS for c in covers):
+        return "trap"
+    return "combo" if sum(c in COVERED_ROWS for c in covers) >= 2 else "capability"
 
 
 def load_results(run_dir: Path) -> list[TrialResult]:
@@ -65,7 +83,7 @@ FLAGS = (
     ("used_python", "Python"),
     ("raw_sql", "Raw SQL"),
     ("edited_models", "Model edits"),
-    ("slayer_errors", "SLayer errors"),
+    ("query_errors", "Query errors"),
     ("several_queries", "Several queries"),
 )
 
@@ -86,7 +104,7 @@ def _row_table(results: list[TrialResult]) -> list[str]:
         if row in UNCOVERED_ROWS:
             rows.append([row, title, "not covered", "", *blank])
             continue
-        rs = [r for r in results if r.row == row]
+        rs = [r for r in results if row in r.covers]
         if not rs:
             rows.append([row, title, 0, 0, *blank])
             continue
@@ -110,13 +128,20 @@ def _task_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
         rows = []
         for tid, rs in tasks.items():
             k, n = sum(r.passed for r in rs), len(rs)
-            rows.append([tid, rs[0].row, f"{k}/{n}", f"{(k / n) ** md.n:.3f}"])
-        return _table(["Task", "Row", "Pass rate", f"pass^{md.n}"], rows)
+            rows.append([tid, suite_of(rs[0].covers), _covers(rs[0]), f"{k}/{n}", f"{(k / n) ** md.n:.3f}"])
+        return _table(["Task", "Suite", "Covers", "Pass rate", f"pass^{md.n}"], rows)
     rows = [
-        [tid, rs[0].row, "yes" if rs[0].passed else "no", "yes" if any(r.passed for r in rs) else "no", len(rs)]
+        [
+            tid,
+            suite_of(rs[0].covers),
+            _covers(rs[0]),
+            "yes" if rs[0].passed else "no",
+            "yes" if any(r.passed for r in rs) else "no",
+            len(rs),
+        ]
         for tid, rs in tasks.items()
     ]
-    return _table(["Task", "Row", "First try", "Eventual", "Attempts"], rows)
+    return _table(["Task", "Suite", "Covers", "First try", "Eventual", "Attempts"], rows)
 
 
 def _section(results: list[TrialResult], md: RunMetadata, profile: str, model: str) -> list[str]:
@@ -124,10 +149,66 @@ def _section(results: list[TrialResult], md: RunMetadata, profile: str, model: s
     out = [f"## `{profile}` · `{model}`", ""]
     if not any(r.profile == profile and r.model == model for r in results):
         return [*out, "No trials.", ""]
+    out += ["A task counts under every row it covers, so a multi-row task adds to several rows.", ""]
     out += _row_table(scored) + [""]
     if scored:
         out += _task_table(scored, md) + [""]
     return out
+
+
+def _covers(r: TrialResult) -> str:
+    return ", ".join(r.covers)
+
+
+def _scored(results: list[TrialResult]) -> list[TrialResult]:
+    return [r for r in results if r.xfail is None]
+
+
+def _suite_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
+    rows = []
+    for suite in SUITES:
+        for profile in md.profiles:
+            for model in md.models:
+                rs = [r for r in results if suite_of(r.covers) == suite and r.profile == profile and r.model == model]
+                counts = [_count(rs, f) for f in ("correct", "single_query", "passed")]
+                rows.append([suite, f"`{profile}`", f"`{model}`", len(rs), *counts])
+    return _table(["Suite", "Profile", "Model", "Trials", "Correct", "Single query", "Passed"], rows)
+
+
+def _pitfall_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
+    rows = []
+    for pitfall in PITFALLS:
+        if not any(pitfall in r.covers for r in results):
+            continue
+        for profile in md.profiles:
+            for model in md.models:
+                rs = [r for r in results if pitfall in r.covers and r.profile == profile and r.model == model]
+                rows.append([pitfall, f"`{profile}`", f"`{model}`", len(rs), _count(rs, "correct")])
+    if not rows:
+        return []
+    return [
+        "### Traps by pitfall",
+        "",
+        *_table(["Pitfall", "Profile", "Model", "Trials", "Correct"], rows),
+        "",
+    ]
+
+
+def _headline(results: list[TrialResult], md: RunMetadata) -> list[str]:
+    return [
+        "## Results by suite",
+        "",
+        (
+            "**Correct** is the cross-profile comparison: every profile can reach a correct answer. "
+            "**Single query** is not equally hard across profiles, since one raw SQL statement can express almost "
+            "any answer, while SLayer needs its DSL to do the same in one query. Expected failures (xfail) are "
+            "left out."
+        ),
+        "",
+        *_suite_table(results, md),
+        "",
+        *_pitfall_table(results, md),
+    ]
 
 
 def _xfail_section(results: list[TrialResult]) -> list[str]:
@@ -184,13 +265,21 @@ def _query_digest(args: dict[str, Any]) -> str:
     return " ; ".join(parts) or json.dumps(args)
 
 
+def _what(tool: str, args: dict[str, Any]) -> str:
+    if tool == "query":
+        return _query_digest(args)
+    if tool == "sql" and isinstance(args.get("sql"), str):
+        return " ".join(args["sql"].split())
+    return json.dumps(args, separators=(",", ":"))
+
+
 def call_digest(trace: Trace) -> list[str]:
-    """One line per SLayer call: what was asked and what came back."""
+    """One line per SLayer or `sql` call: what was asked and what came back."""
     lines = []
     for i, c in enumerate(trace.calls, start=1):
-        if c.tool in BENCH_TOOLS:
+        if c.tool in NON_QUERY_TOOLS:
             continue
-        what = _query_digest(c.args) if c.tool == "query" else json.dumps(c.args, separators=(",", ":"))
+        what = _what(c.tool, c.args)
         if c.is_error:
             m = _ERROR_RE.search(c.result_text)
             got = f"error {m.group(1)}" if m else "error"
@@ -214,7 +303,8 @@ def _failures(run_dir: Path, results: list[TrialResult]) -> list[str]:
         return [*out, "None.", ""]
     for r in sorted(failed, key=lambda r: (r.task_id, r.profile, r.model, r.trial)):
         tag = f" · xfail {r.xfail}" if r.xfail else ""
-        out.append(f"- **{r.task_id}** ({r.row}) · {r.profile} · {r.model} · trial {r.trial} · {r.end_reason}{tag}")
+        head = f"- **{r.task_id}** ({_covers(r)}) · {r.profile} · {r.model} · trial {r.trial} · {r.end_reason}{tag}"
+        out.append(head)
         v = r.verdict
         if v is None:
             out.append("  - no verdict")
@@ -233,7 +323,7 @@ def _failures(run_dir: Path, results: list[TrialResult]) -> list[str]:
             if trace.error:
                 out.append(f"  - error: {trace.error}")
             digest = call_digest(trace)
-            out += [f"  - {line}" for line in digest] or ["  - no SLayer calls"]
+            out += [f"  - {line}" for line in digest] or ["  - no query calls"]
     return [*out, ""]
 
 
@@ -266,12 +356,13 @@ def render_report(run_dir: Path) -> str:
     out += [
         (
             "A trial passes when its answer is **correct** (the submitted table matches the truth) and is a "
-            "**single query**'s result (one SLayer query's own result matches the truth, with no combining or "
-            "post-processing). The flag columns count trials that used Python, handed SLayer raw SQL, edited models, "
-            "hit SLayer errors or ran several queries; they do not affect passing."
+            "**single query**'s result (the own result of one SLayer query or one SQL statement matches the truth, "
+            "with no combining or post-processing). The flag columns count trials that used Python, used raw SQL, "
+            "edited models, hit query errors or ran several queries; they do not affect passing."
         ),
         "",
     ]
+    out += _headline(_scored(results), md)
     for profile in md.profiles:
         for model in md.models:
             out += _section(results, md, profile, model)

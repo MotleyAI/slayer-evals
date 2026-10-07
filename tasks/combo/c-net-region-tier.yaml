@@ -1,0 +1,13 @@
+id: c-net-region-tier
+covers: [Q6, Q12, Q1]
+prompt: >-
+  For each region and customer tier, sum over the orders the order amount minus the ordering customer's discount
+  value, and on the same rows show that net total for the whole region. Leave out orders without a customer; customers
+  without a known region form their own group.
+truth_sql: |
+  select region, tier, sum(amount - discount) as net_revenue,
+         sum(sum(amount - discount)) over (partition by region) as region_net_revenue
+  from orders_flat where customer_id is not null
+  group by 1, 2
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name", "customers.tier"], "measures": [{"formula": "sum(amount - customers.discount)", "name": "net_revenue"}, {"formula": "sum(amount - customers.discount, partition_by=customers.regions.name)", "name": "region_net_revenue"}], "filters": ["customer_id is not null"]}}
+compare: {keys: [region, tier], values: [net_revenue, region_net_revenue]}

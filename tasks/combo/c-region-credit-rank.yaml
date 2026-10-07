@@ -1,0 +1,14 @@
+id: c-region-credit-rank
+covers: [Q6, Q14]
+prompt: >-
+  Rank the regions by revenue (the sum of order amounts), 1 for the highest, and show each region's revenue, its rank
+  and the sum of the credit limits of all its customers, including customers who never ordered. Leave out orders whose
+  customer has no known region.
+truth_sql: |
+  with o as (select region, sum(amount) as revenue from orders_flat where region is not null group by 1),
+       c as (select r.name as region, sum(c.credit) as total_credit
+             from customers c join regions r on r.id = c.region_id group by 1)
+  select o.region, o.revenue, rank() over (order by o.revenue desc) as revenue_rank, c.total_credit
+  from o left join c using (region)
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "rank(sum(amount), direction='desc')", "name": "revenue_rank"}, {"formula": "sum(customers.credit)", "name": "total_credit"}], "filters": ["customers.regions.name is not null"]}}
+compare: {keys: [region], values: [revenue, revenue_rank, total_credit]}

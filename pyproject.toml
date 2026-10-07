@@ -11,7 +11,7 @@ packages = [{include = "slayer_evals", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-motley-slayer = "1.0.2"
+motley-slayer = {git = "https://github.com/MotleyAI/slayer.git", rev = "1653a918c62bb58fbc1a920c10246fc16e9b5894"}
 claude-agent-sdk = "0.2.163"
 duckdb = ">=1.0"
 pydantic = ">=2.0"

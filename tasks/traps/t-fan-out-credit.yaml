@@ -1,0 +1,22 @@
+id: t-fan-out-credit
+covers: [Q8, fan_out]
+prompt: >-
+  For each region that has customers, show the number of its customers, the sum of their credit limits and the number
+  of orders they placed. Every customer counts, including those who never placed an order. Customers without a known
+  region form their own group, which also gets the orders that have no customer.
+truth_sql: |
+  with c as (select r.name as region, count(*) as customers, sum(c.credit) as total_credit
+             from customers c left join regions r on r.id = c.region_id group by 1),
+       o as (select r.name as region, count(*) as orders
+             from orders o left join customers c on c.id = o.customer_id left join regions r on r.id = c.region_id
+             group by 1)
+  select c.region, c.customers, c.total_credit, coalesce(o.orders, 0) as orders
+  from c left join o on o.region is not distinct from c.region
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count(*)", "name": "customers"}, {"formula": "sum(credit)", "name": "total_credit"}, {"formula": "count(orders.id)", "name": "orders"}]}}
+naive_sql: |
+  select r.name as region, count(distinct c.id) as customers, sum(c.credit) as total_credit, count(o.id) as orders
+  from customers c
+  left join regions r on r.id = c.region_id
+  left join orders o on o.customer_id = c.id
+  group by 1
+compare: {keys: [region], values: [customers, total_credit, orders]}

@@ -1,0 +1,19 @@
+id: t-monthly-gaps
+covers: [Q4, missing_periods]
+prompt: >-
+  For each of the twelve months of 2024, show the revenue (the sum of order amounts, 0 for a month without orders)
+  and the running total of revenue since the start of 2024.
+truth_sql: |
+  with m as (select unnest(generate_series(date '2024-01-01', date '2024-12-01', interval 1 month))::date as month),
+       r as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders group by 1)
+  select m.month, coalesce(r.revenue, 0) as revenue,
+         sum(coalesce(r.revenue, 0)) over (order by m.month) as running_total
+  from m left join r using (month)
+slayer_query: {"query": {"time_dimensions": [{"dimension": "time_spine.timestamp", "granularity": "month", "date_range": ["2024-01-01", "2024-12-31"]}], "measures": [{"formula": "sum(orders.amount)", "name": "revenue"}, {"formula": "cumsum(sum(orders.amount))", "name": "running_total"}]}}
+naive_sql: |
+  select date_trunc('month', order_date) as month, sum(amount) as revenue,
+         sum(sum(amount)) over (order by date_trunc('month', order_date)) as running_total
+  from orders
+  where order_date >= date '2024-01-01' and order_date < date '2025-01-01'
+  group by 1
+compare: {keys: [month], values: [revenue, running_total], null_as_zero: true}

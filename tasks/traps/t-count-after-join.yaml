@@ -1,0 +1,15 @@
+id: t-count-after-join
+covers: [Q10, count_after_join]
+prompt: >-
+  For each customer tier, how many customers have at least one order with status 'bad'?
+truth_sql: |
+  select tier, count(*) as customers from customers
+  where id in (select customer_id from orders where status = 'bad')
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tier"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["orders.status == 'bad'"]}}
+naive_sql: |
+  select c.tier, count(*) as customers
+  from customers c join orders o on o.customer_id = c.id
+  where o.status = 'bad'
+  group by 1
+compare: {keys: [tier], values: [customers]}

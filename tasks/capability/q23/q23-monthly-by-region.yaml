@@ -1,0 +1,12 @@
+id: q23-monthly-by-region
+covers: [Q23]
+prompt: >-
+  Take the saved monthly revenue query (monthly_rev) and break its numbers down by region for the months of the first
+  quarter of 2025. Orders whose customer has no known region form their own group.
+truth_sql: |
+  select date_trunc('month', order_date)::date as month, region, sum(amount) as revenue from orders_flat
+  where order_date >= date '2025-01-01' and order_date < date '2025-04-01'
+  group by 1, 2
+slayer_query: {"query": "monthly_rev", "refine": {"dimensions": ["customers.regions.name"], "filters": ["order_date in '2025-Q1'"]}}
+uses_saved: ["monthly_rev"]
+compare: {keys: [month, region], values: [revenue]}

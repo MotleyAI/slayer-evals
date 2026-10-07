@@ -1,17 +1,18 @@
 {
- "slayer_version": "1.0.2",
+ "slayer_version": "1.1.0",
  "sdk_version": "0.2.163",
  "models": [
   "claude-opus-5-5"
  ],
  "profiles": [
   "slayer",
-  "slayer+python"
+  "slayer+python",
+  "sql+python"
  ],
  "mode": "repeat",
  "n": 1,
  "max_turns": 60,
  "timeout_s": 900.0,
  "auth_mode": "subscription",
- "started_at": "2026-10-06T13:47:13Z"
+ "started_at": "2026-10-06T17:31:52Z"
 }

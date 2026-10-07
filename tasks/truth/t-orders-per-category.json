@@ -1,0 +1,34 @@
+{
+ "columns": [
+  "category",
+  "orders",
+  "total_orders"
+ ],
+ "rows": [
+  [
+   "Books",
+   1840,
+   5016
+  ],
+  [
+   "Garden",
+   1784,
+   5016
+  ],
+  [
+   "Kitchen",
+   1817,
+   5016
+  ],
+  [
+   "Tools",
+   1830,
+   5016
+  ],
+  [
+   "Toys",
+   1842,
+   5016
+  ]
+ ]
+}

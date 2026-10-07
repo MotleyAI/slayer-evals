@@ -1,0 +1,15 @@
+id: c-top-customer-share
+covers: [Q14, Q2]
+prompt: >-
+  For each region, which customer (by customer id) has the highest revenue (the sum of their order amounts), and what
+  share (between 0 and 1) of the region's revenue does that customer account for? Leave out customers without a
+  region.
+truth_sql: |
+  with cr as (select region, customer_id, sum(amount) as revenue from orders_flat where region is not null group by 1, 2)
+  select region, customer_id, share_of_region from (
+    select region, customer_id, revenue / sum(revenue) over (partition by region) as share_of_region,
+           rank() over (partition by region order by revenue desc) as rk
+    from cr)
+  where rk = 1
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region", "customer_id"], "measures": [{"formula": "sum(amount) / sum(amount, partition_by=region)", "name": "share_of_region"}], "filters": ["region is not null", "rank(sum(amount), partition_by=region, direction='desc') == 1"]}}
+compare: {keys: [region, customer_id], values: [share_of_region]}

@@ -16,6 +16,7 @@ from slayer_evals.tasks import (
     TaskFormatError,
     TruthError,
     check_coverage,
+    check_layout,
     check_prompts,
     check_snapshots,
     check_truth_sizes,
@@ -30,7 +31,9 @@ def _csv(value: str) -> list[str]:
 
 
 def _parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="slayer-evals", description="Do agents actually reach for SLayer's DSL?")
+    p = argparse.ArgumentParser(
+        prog="slayer-evals", description="Do agents reach for SLayer's DSL, and does it beat raw SQL on correctness?"
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     b = sub.add_parser("build", help="build the database and the SLayer store template")
@@ -52,8 +55,13 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--out", type=Path, default=Path("runs"))
     r.add_argument("--agent", default=RunConfig().agent, help="module:Class of the agent adapter")
     r.add_argument("--tasks", type=_csv, default=[], help="comma-separated task ids")
-    r.add_argument("--rows", type=_csv, default=[], help="comma-separated rows, e.g. Q1,Q4")
-    r.add_argument("--profiles", type=_csv, default=RunConfig().profiles)
+    r.add_argument("--rows", type=_csv, default=[], help="comma-separated rows, e.g. Q1,Q4: tasks covering any of them")
+    r.add_argument(
+        "--profiles",
+        type=_csv,
+        default=RunConfig().profiles,
+        help=f"comma-separated, from {', '.join(RunConfig().profiles)}",
+    )
     r.add_argument("--models", type=_csv, default=[DEFAULT_MODEL])
     r.add_argument("--trials", type=int, default=1, help="N: trials per task (repeat) or the attempt cap (until-pass)")
     r.add_argument("--mode", choices=["repeat", "until-pass"], default="repeat")
@@ -83,7 +91,7 @@ def _truth(args: argparse.Namespace) -> int:
         print(f"wrote {len(truths)} truth snapshots to {snapshot_dir}")
     else:
         check_snapshots(truths, snapshot_dir)
-    problems = check_coverage(tasks) + check_prompts(tasks) + check_truth_sizes(truths)
+    problems = check_coverage(tasks) + check_layout(args.tasks_dir) + check_prompts(tasks) + check_truth_sizes(truths)
     for problem in problems:
         print(f"warning: {problem}", file=sys.stderr)
     print(f"{len(tasks)} tasks, snapshots {'written' if args.write else 'up to date'}")

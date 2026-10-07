@@ -14,7 +14,19 @@ from slayer.storage.yaml_storage import YAMLStorage
 from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset, build_dataset, load_built
 
 SLAYER = str(Path(sys.executable).parent / "slayer")
-MODELS = {"regions", "customers", "orders", "returns", "events", "orders_flat"}
+MODELS = {
+    "regions",
+    "customers",
+    "orders",
+    "returns",
+    "events",
+    "orders_flat",
+    "products",
+    "order_items",
+    "campaigns",
+    "campaign_members",
+    "cities",
+}
 
 
 def text_of(res: CallToolResult) -> str:
@@ -60,6 +72,38 @@ async def test_models_and_joins(built: BuiltDataset):
     returns = await storage.get_model("returns", data_source="bench")
     assert returns is not None
     assert "customers" in {j.target_model for j in returns.joins}
+
+
+async def test_new_models_join_along_their_keys(built: BuiltDataset):
+    storage = YAMLStorage(base_dir=str(built.store_dir))
+
+    async def targets(name: str) -> set[str]:
+        model = await storage.get_model(name, data_source="bench")
+        assert model is not None, name
+        return {j.target_model for j in model.joins}
+
+    assert {"orders", "products"} <= await targets("order_items")
+    assert {"campaigns", "customers"} <= await targets("campaign_members")
+    assert "regions" in await targets("cities")
+
+
+async def test_customers_join_cities_on_city_and_region(built: BuiltDataset):
+    storage = YAMLStorage(base_dir=str(built.store_dir))
+    customers = await storage.get_model("customers", data_source="bench")
+    assert customers is not None
+    (join,) = [j for j in customers.joins if j.target_model == "cities"]
+    assert sorted(map(tuple, join.join_pairs)) == [("city", "city"), ("region_id", "region_id")]
+    assert join.cardinality is not None
+    assert join.cardinality.value == "many_to_one"
+
+
+async def test_every_join_declares_its_cardinality(built: BuiltDataset):
+    storage = YAMLStorage(base_dir=str(built.store_dir))
+    for name in sorted(MODELS):
+        model = await storage.get_model(name, data_source="bench")
+        assert model is not None, name
+        for j in model.joins:
+            assert j.cardinality is not None, (name, j.target_model)
 
 
 async def test_saved_measure_and_query(built: BuiltDataset):

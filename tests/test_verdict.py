@@ -9,7 +9,7 @@ import pytest
 
 from slayer_evals.core import Submission, Table, Trace
 from slayer_evals.grading import grade
-from tests.helpers import REPO, make_task, query_call, submission_of, trace_of
+from tests.helpers import REPO, make_task, query_call, sql_call, submission_of, trace_of
 
 TRUTH = Table(columns=["region", "city", "region_total"], rows=[["North", "Oslo", 705.0], ["South", "Rome", 890.0]])
 COLS = ["orders_flat.region", "orders_flat.city", "orders_flat.region_total"]
@@ -120,3 +120,48 @@ def test_single_query_matched_by_values():
     assert v.single_query, v.single_query_reasons
     assert v.single_query_columns["region_total"] == "orders.rt"
     assert any("matched by values" in r for r in v.single_query_reasons)
+
+
+SAVED_TASK = {"id": "q23", "covers": ["Q23"], "uses_saved": ["monthly_rev"]}
+
+
+def _saved_reasons(v) -> bool:
+    return any("monthly_rev" in r for r in v.correct_reasons) and any(
+        "monthly_rev" in r for r in v.single_query_reasons
+    )
+
+
+def test_saved_definition_auto_fails_raw_sql():
+    task = make_task(**SAVED_TASK)
+    perfect = trace_of(sql_call("select ...", TRUTH.columns, TRUTH.rows), profile="sql+python")
+    v = grade(task, TRUTH, submission_of(TRUTH), perfect)
+    assert (v.correct, v.single_query) == (False, False)
+    assert _saved_reasons(v)
+
+
+def test_saved_definition_auto_fail_trace():
+    task = make_task(**SAVED_TASK)
+    v = grade(task, TRUTH, None, Trace(profile="sql+python", end_reason="auto_fail"))
+    assert (v.correct, v.single_query) == (False, False)
+    assert _saved_reasons(v)
+
+
+def test_saved_definition_refusal_auto_fails_raw_sql():
+    task = make_task(
+        id="q18",
+        covers=["Q18"],
+        compare={},
+        uses_saved=["monthly_rev"],
+        expect={"error": "TimeDimensionColumnError", "message_any": ["bucketed"]},
+    )
+    empty = Table(columns=[], rows=[])
+    v = grade(task, empty, submission_of(empty, message="It is already bucketed."), trace_of(profile="sql+python"))
+    assert (v.correct, v.single_query) == (False, False)
+    assert _saved_reasons(v)
+
+
+def test_saved_definition_fine_in_slayer_profiles():
+    task = make_task(**SAVED_TASK)
+    for profile in ("slayer", "slayer+python"):
+        trace = trace_of(query_call(QUERY, COLS, TRUTH.rows), profile=profile)
+        assert grade(task, TRUTH, submission_of(TRUTH), trace).passed, profile

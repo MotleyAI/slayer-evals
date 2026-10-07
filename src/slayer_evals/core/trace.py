@@ -7,9 +7,9 @@ from pydantic import BaseModel, Field
 
 from slayer_evals.core.table import ParsedResult
 
-Profile = Literal["slayer", "slayer+python"]
-PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python")
-EndReason = Literal["submitted", "max_turns", "timeout", "error"]
+Profile = Literal["slayer", "slayer+python", "sql+python"]
+PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python", "sql+python")
+EndReason = Literal["submitted", "max_turns", "timeout", "error", "auto_fail"]
 
 
 class Submission(BaseModel):
@@ -47,6 +47,7 @@ class Usage(BaseModel):
 
 
 class Trace(BaseModel):
+    profile: Profile
     calls: list[ToolCall] = Field(default_factory=list)
     usage: Usage = Field(default_factory=Usage)
     cost_usd: float | None = None

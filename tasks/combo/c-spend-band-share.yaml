@@ -1,0 +1,13 @@
+id: c-spend-band-share
+covers: [Q5, Q2]
+prompt: >-
+  Split revenue between orders from high-spend customers and all other orders, and show each group's share (between 0
+  and 1) of total revenue. A customer is high-spend when their total revenue (the sum of all their order amounts) is
+  above 2000. Label the two groups 'high' and 'other'; orders without a customer belong to 'other'.
+truth_sql: |
+  with c as (select customer_id, sum(amount) as total from orders where customer_id is not null group by 1),
+       b as (select case when c.total > 2000 then 'high' else 'other' end as band, sum(o.amount) as revenue
+             from orders o left join c on o.customer_id = c.customer_id group by 1)
+  select band, revenue, revenue / sum(revenue) over () as share_of_total from b
+slayer_query: {"query": {"source_model": "orders", "dimensions": [{"expression": "iif(sum(amount, partition_by=customer_id) > 2000, 'high', 'other')", "name": "band"}], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=[])", "name": "share_of_total"}]}}
+compare: {keys: [band], values: [revenue, share_of_total]}

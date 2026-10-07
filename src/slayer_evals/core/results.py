@@ -17,7 +17,7 @@ class TraceFlags(BaseModel):
     used_python: bool = False
     raw_sql: bool = False
     edited_models: bool = False
-    slayer_errors: bool = False
+    query_errors: bool = False
     several_queries: bool = False
 
 
@@ -38,7 +38,7 @@ class Verdict(BaseModel):
 
 class TrialResult(BaseModel):
     task_id: str
-    row: str
+    covers: list[str]
     profile: Profile
     model: str
     trial: int

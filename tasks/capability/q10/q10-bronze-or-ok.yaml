@@ -1,0 +1,9 @@
+id: q10-bronze-or-ok
+covers: [Q10]
+prompt: >-
+  How many customers are either in the bronze tier or have at least one order with status 'ok'?
+truth_sql: |
+  select count(*) as customers from customers
+  where tier = 'bronze' or id in (select customer_id from orders where status = 'ok')
+slayer_query: {"query": {"source_model": "customers", "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["tier == 'bronze' or orders.status == 'ok'"]}}
+compare: {values: [customers]}

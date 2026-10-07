@@ -1,0 +1,19 @@
+id: t-city-size
+covers: [Q6, non_unique_key]
+prompt: >-
+  Using the size class the city reference table gives each customer's city, show the revenue (the sum of order
+  amounts) per size class. Orders whose customer's city is missing from the reference table form their own group.
+truth_sql: |
+  select ci.size_class, sum(o.amount) as revenue
+  from orders o
+  left join customers c on c.id = o.customer_id
+  left join cities ci on ci.city = c.city and ci.region_id = c.region_id
+  group by 1
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.cities.size_class"], "measures": [{"formula": "sum(amount)", "name": "revenue"}]}}
+naive_sql: |
+  select ci.size_class, sum(o.amount) as revenue
+  from orders o
+  left join customers c on c.id = o.customer_id
+  left join cities ci on ci.city = c.city
+  group by 1
+compare: {keys: [size_class], values: [revenue]}

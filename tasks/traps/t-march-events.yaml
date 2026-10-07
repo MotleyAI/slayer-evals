@@ -1,0 +1,12 @@
+id: t-march-events
+covers: [Q20, timestamp_bounds]
+prompt: >-
+  How many events were recorded in March 2025, and what was their total amount?
+truth_sql: |
+  select count(*) as events, sum(amount) as total_amount from events
+  where event_ts >= timestamp '2025-03-01' and event_ts < timestamp '2025-04-01'
+slayer_query: {"query": {"source_model": "events", "measures": [{"formula": "count(*)", "name": "events"}, {"formula": "sum(amount)", "name": "total_amount"}], "filters": ["event_ts in '2025-03'"]}}
+naive_sql: |
+  select count(*) as events, sum(amount) as total_amount from events
+  where event_ts between '2025-03-01' and '2025-03-31'
+compare: {values: [events, total_amount]}

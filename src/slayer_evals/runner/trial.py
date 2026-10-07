@@ -20,7 +20,8 @@ def run_trial(spec: TrialSpec) -> AgentOutcome:
     try:
         return asyncio.run(load_agent(spec.agent, spec.model).run(spec.input))
     except Exception as exc:  # noqa: BLE001 - report the failure as a trial outcome rather than a crashed process
-        return AgentOutcome(submission=None, trace=Trace(end_reason="error", error=f"{type(exc).__name__}: {exc}"))
+        error = f"{type(exc).__name__}: {exc}"
+        return AgentOutcome(submission=None, trace=Trace(profile=spec.input.profile, end_reason="error", error=error))
 
 
 def main(argv: list[str]) -> int:

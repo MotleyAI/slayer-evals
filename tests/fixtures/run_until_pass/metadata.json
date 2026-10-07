@@ -6,7 +6,8 @@
  ],
  "profiles": [
   "slayer",
-  "slayer+python"
+  "slayer+python",
+  "sql+python"
  ],
  "mode": "until-pass",
  "n": 3,

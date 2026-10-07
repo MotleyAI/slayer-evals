@@ -1,0 +1,13 @@
+id: q14-top-customer-per-region
+covers: [Q14]
+prompt: >-
+  For each region, which customer (by customer id) has the highest revenue (the sum of their order amounts), and what
+  is that revenue? Leave out customers without a region.
+truth_sql: |
+  select region, customer_id, revenue from (
+    select region, customer_id, sum(amount) as revenue,
+           rank() over (partition by region order by sum(amount) desc) as rk
+    from orders_flat where region is not null and customer_id is not null group by 1, 2)
+  where rk = 1
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region", "customer_id"], "measures": [{"formula": "sum(amount)", "name": "revenue"}], "filters": ["region is not null", "customer_id is not null", "rank(sum(amount), partition_by=region, direction='desc') == 1"]}}
+compare: {keys: [region, customer_id], values: [revenue]}

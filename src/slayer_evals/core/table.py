@@ -1,4 +1,4 @@
-"""Tables, and SLayer `query` results parsed from markdown or either JSON shape."""
+"""Tables, and `query` / `sql` results parsed from markdown or one of the JSON shapes."""
 
 import json
 import re
@@ -36,7 +36,7 @@ class ParsedResult(Table):
 
     @classmethod
     def from_text(cls, text: str) -> "ParsedResult | None":
-        """A `query` tool result as a table, or None when the text is not one."""
+        """A `query` or `sql` tool result as a table, or None when the text is not one."""
         stripped = text.strip()
         if stripped.startswith("SQL:"):
             # `show_sql` puts the SQL first; the result follows the first blank line that starts a table.
@@ -61,12 +61,24 @@ def _rows_from_records(records: list[Any]) -> tuple[list[str], list[list[Any]]] 
     return columns, [[r.get(c) for c in columns] for r in records]
 
 
+def _from_columns_rows(columns: Any, rows: Any, truncated: Any) -> ParsedResult | None:
+    """The `sql` tool's `{columns, rows, truncated}` shape."""
+    if not isinstance(columns, list) or not all(isinstance(c, str) for c in columns):
+        return None
+    if not isinstance(rows, list) or not all(isinstance(r, list) for r in rows):
+        return None
+    warnings = [ResultWarning(kind="truncated")] if truncated is True else []
+    return ParsedResult(columns=columns, rows=rows, warnings=warnings)
+
+
 def _from_json(text: str) -> ParsedResult | None:
     try:
         payload = json.loads(text)
     except ValueError:
         return None
     warnings: list[ResultWarning] = []
+    if isinstance(payload, dict) and "columns" in payload:
+        return _from_columns_rows(payload.get("columns"), payload.get("rows"), payload.get("truncated"))
     if isinstance(payload, dict):
         if not isinstance(payload.get("data"), list):
             return None

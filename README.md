@@ -1,31 +1,66 @@
 # slayer-evals
 
-**Do agents actually reach for SLayer's DSL?**
+**Do agents actually reach for SLayer's DSL — and does it beat raw SQL on correctness?**
 
 [SLayer](https://github.com/MotleyAI/slayer) is a semantic layer whose query language can express partitioned
 aggregates, re-aggregation, time shifts and running totals, rolling windows, ranking, multi-stage queries, inline
 model extensions and more. An agent that talks to SLayer through its MCP server *could* answer an analytics question
 with one well-formed query — or it could pull raw rows and do the work by hand. This benchmark measures which one
 happens, so that every miss can be traced to SLayer's MCP surface (tool descriptions, help, error messages) and fixed
-there.
+there. It also runs the same questions through an agent that queries the database directly with SQL, including
+**traps** where the straightforward SQL silently returns wrong numbers, so the two approaches can be compared on
+correctness.
 
 It is a standalone, agent-agnostic harness: the built-in agent is a hermetic [Claude Agent
 SDK](https://pypi.org/project/claude-agent-sdk/) agent, and any other agent can be plugged in by writing one adapter.
 
 ## What a trial is scored on
 
-Each task is a business question about one seeded demo database, worded so that a single SLayer query using the
-row's capability answers it, with its truth computed by hand-written SQL. Every trial gets two verdicts:
+Each task is a business question about one seeded demo database, worded so that a single SLayer query answers it,
+with its truth computed by hand-written SQL. Every task also carries that reference SLayer query, and a test runs it
+to prove the task fair; every trap carries the naive SQL that falls into it, and the same test proves that SQL wrong.
+Every trial gets two verdicts:
 
 | Verdict | True when |
 | --- | --- |
-| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning) |
-| **single query** | one successful SLayer `query` call's own result matches the truth — no combining queries, no post-processing |
+| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning; in `sql+python`, an empty answer whose message names the problem) |
+| **single query** | the own result of one successful SLayer `query` call or one `sql` statement matches the truth — no combining queries, no post-processing |
 
-A trial passes when both hold. The report also counts informational flags per trial — used Python, handed SLayer raw
-SQL, edited models, hit SLayer errors, ran several queries — which do not affect passing; every trace and full session
-transcript is kept for finer diagnosis. The grader is pure and deterministic, and matches columns by name first and
-by values second, so agents may name their columns freely.
+A trial passes when both hold. **Correct is the comparison across profiles**: one raw SQL statement can express
+almost any answer, so single query is easier for the SQL agent than for the SLayer agents, which need the DSL to do
+the same in one query. The report also counts informational flags per trial — used Python, used raw SQL (the `sql`
+tool, or SQL handed to SLayer), edited models, hit query errors, ran several queries — which do not affect passing;
+every trace and full session transcript is kept for finer diagnosis. The grader is pure and deterministic, and matches
+columns by name first and by values second, so agents may name their columns freely.
+
+## Suites
+
+Tasks fall into three suites, by what they cover:
+
+* **capability** — one row of the feature matrix below each (`tasks/capability/`, 25 tasks).
+* **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 11 tasks).
+* **trap** — a row plus a *pitfall*: a question whose straightforward SQL silently returns wrong numbers
+  (`tasks/traps/`, 17 tasks).
+
+| Pitfall | The naive SQL… | Task(s) |
+| --- | --- | --- |
+| `fan_out` | sums a one-side amount after joining a many side | `t-fan-out-items`, `t-fan-out-credit` |
+| `count_after_join` | counts rows after a one-to-many join instead of entities | `t-count-after-join` |
+| `chasm` | joins two independent facts through their shared parent | `t-chasm` |
+| `bridge` | joins through a many-to-many membership table | `t-bridge-email` |
+| `non_unique_key` | joins on a column that is only part of the key | `t-city-size` |
+| `outer_join_filter` | filters the outer side of a left join in `WHERE` | `t-zero-regions` |
+| `not_in_null` | uses `NOT IN` over a list containing NULL | `t-never-returned` |
+| `count_outer_join` | counts `*` over a left join, so a missing child counts as one | `t-orders-per-customer` |
+| `filtered_total` | filters the numerator of a share but not its denominator | `t-ok-share` |
+| `distinct_reagg` | adds up distinct counts of overlapping groups | `t-orders-per-category` |
+| `missing_periods` | groups by month and silently drops an empty month | `t-monthly-gaps` |
+| `filter_before_window` | filters the dates before a running total or lag reads earlier months | `t-prev-month`, `t-all-time-running` |
+| `rows_window_gap` | uses a row-count window over a series with a missing month | `t-rolling-gap` |
+| `timestamp_bounds` | bounds a timestamp with `BETWEEN` two dates, losing the last day | `t-march-events` |
+| `avg_of_avgs` | averages per-group averages instead of the rows | `t-overall-aov` |
+
+Prompts state what the answer should contain but never the pitfall's mechanism.
 
 ## Covered rows
 
@@ -58,7 +93,8 @@ capabilities](https://motley.ai/blog-posts/four-open-source-semantic-layers-54-c
 | Q24 | Nested results (flattened) | `q24-top-two-per-region` |
 | Q25 | Explicit aggregate locality | `q25-credit-per-order` |
 
-Two rows are deliberately left out: **Q19** (the agent and API surface — every task already exercises it) and **Q22**
+Most rows are also covered by combo and trap tasks; the report counts a task under every row it covers. Two rows
+are deliberately left out: **Q19** (the agent and API surface — every task already exercises it) and **Q22**
 (nested source data — SLayer does not support it). Tasks marked `xfail` run but are reported separately until the
 linked issue is fixed: relative dates ("last three months") need SLayer's MCP server to pin "now".
 
@@ -79,7 +115,7 @@ Put a credential into an env file. With a Claude subscription, create a long-liv
 echo "CLAUDE_CODE_OAUTH_TOKEN=<the token>" > .env.agents
 ```
 
-(or `ANTHROPIC_API_KEY=<key>` for an API key). Then run one row in both profiles:
+(or `ANTHROPIC_API_KEY=<key>` for an API key). Then run the tasks covering one row in all three profiles:
 
 ```bash
 poetry run slayer-evals run --subscription-auth --env-file .env.agents --rows Q1
@@ -97,38 +133,55 @@ SLayer checkout.
 ## Profiles
 
 * **`slayer`** — the SLayer MCP server, verbatim, plus `submit_answer`.
-* **`slayer+python`** — the same plus a Python tool (pandas, numpy) running in a fresh subprocess with a sandboxed
-  working directory, a clean environment, CPU and memory limits, and an audit log of file opens.
+* **`slayer+python`** — the same plus a Python tool (pandas, numpy, duckdb) running in a fresh subprocess with a
+  sandboxed working directory, a clean environment, CPU and memory limits, and an audit log of file opens.
+* **`sql+python`** — no SLayer at all: a `sql` tool that runs one DuckDB statement per call on a read-only connection
+  to the trial's copy of the database (external access off and locked, 60 s timeout, at most 1,000 rows), plus
+  `submit_answer` and the same Python tool, which is not given the database. Tasks that name a saved SLayer definition
+  (such as the saved query `monthly_rev`) cannot be done without SLayer, so they fail in this profile without running
+  an agent (end reason `auto_fail`).
 
 Every session is hermetic: an empty Claude config directory, no built-in tools, no settings, only the profile's MCP
 servers (the trial aborts if any other server appears), and SLayer runs on its own copy of the database and store
-with an allow-listed environment. The system prompt is short and generic; it never mentions SLayer features.
+with an allow-listed environment. The system prompt is short and generic and identical across profiles, except that
+the SLayer profiles are asked to request `query` results as JSON; it never mentions SLayer features.
 
 ## Reading the report
 
-`report.md` starts with the run's metadata, then one section per profile and model: a table of rows Q1–Q25 with
-trial counts for each criterion, and a per-task table (pass rate k/N and pass^N for `repeat`; first-try pass, eventual
+`report.md` starts with the run's metadata and a headline table of suite by profile and model, then a table of trap
+pitfall by profile, then one section per profile and model: a table of rows Q1–Q25 with trial counts for each
+criterion (a multi-row task counts under each of its rows), and a per-task table (pass rate k/N and pass^N for `repeat`; first-try pass, eventual
 pass and attempts for `until-pass`). Expected failures, totals (tokens, cost, time) and a digest of every failed
-trial follow: which criteria failed, why, and one line per SLayer call the agent made. Regenerate a report offline
+trial follow: which criteria failed, why, and one line per SLayer or `sql` call the agent made. Regenerate a report offline
 with `poetry run slayer-evals report runs/<timestamp>`.
 
 ## Baseline
 
-`results/baseline/` holds a committed run of every task in both profiles with Claude Opus 5.5 — its
+`results/baseline/` holds a committed run of every task in all three profiles with Claude Opus 5.5 — its
 [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task ran
-once per profile, so individual rates are noisy; use `--trials` for stable numbers. Two trials that hit API overload
-(HTTP 529) before their first turn were re-run.
+once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
+`1653a91` of its main branch (reported as 1.1.0). The `sql+python` trials were rerun after the system prompt gained
+its exact-answers sentence; the SLayer profiles ran just before it. `q12-net-revenue` was rerun in all three profiles
+after its prompt was made explicit about orders without a customer.
 
-| Profile | Tasks scored | Correct | Single query | Passed |
-| --- | --- | --- | --- | --- |
-| `slayer` | 24 | 22 | 19 | 18 |
-| `slayer+python` | 24 | 22 | 18 | 17 |
+| Suite | Profile | Trials | Correct | Single query | Passed |
+| --- | --- | --- | --- | --- | --- |
+| capability | `slayer` | 24 | 23 | 20 | 19 |
+| capability | `slayer+python` | 24 | 23 | 16 | 16 |
+| capability | `sql+python` | 24 (2 auto-failed) | 20 | 17 | 17 |
+| combo | `slayer` | 11 | 11 | 4 | 4 |
+| combo | `slayer+python` | 11 | 11 | 4 | 4 |
+| combo | `sql+python` | 11 (1 auto-failed) | 10 | 6 | 6 |
+| trap | `slayer` | 17 | 17 | 10 | 10 |
+| trap | `slayer+python` | 17 | 16 | 9 | 8 |
+| trap | `sql+python` | 17 | 16 | 16 | 15 |
 
-(The relative-date task is xfail and not counted.) The agent got almost every answer right, but in about one task in
-five it reached the answer by combining queries, hand-written SQL or Python instead of one SLayer query — most
-often on rolling windows (Q11), ordering by an unshown measure (Q13), deep composition (Q7) and ranking (Q14).
-[docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by profile, against the previous
-baseline; the report lists each one with its SLayer calls.
+(The relative-date task is xfail and not counted.) **Correct** is the comparison: the SLayer agent answered every
+trap correctly, and so — on this set — did the raw-SQL agent, apart from one answer with an extra empty row; Opus 5.5
+avoids these pitfalls in SQL too. The SLayer agents' gap is single query: on traps and combos they often assembled the
+right answer from several queries instead of one, most persistently when ordering by an unshown measure (Q13), with
+transforms over a date range (Q4, Q7, Q11) and on combos. [docs/baseline-failures.md](docs/baseline-failures.md)
+breaks every failure down by profile and pitfall; the report lists each one with its SLayer and `sql` calls.
 
 ## Plugging in your own agent
 
@@ -142,27 +195,39 @@ poetry run slayer-evals run --api-key-auth --env-file .env.agents --agent my_pac
 ```
 
 `slayer_evals.agents.claude.ClaudeAgent` is the reference implementation; `slayer_evals.core.ParsedResult.from_text`
-parses SLayer's `query` output for your trace.
+parses SLayer's `query` output and the `sql` tool's output for your trace.
 
 ## Adding a task
 
-A task is one YAML file under `tasks/`:
+A task is one YAML file under the folder of its suite (`tasks/capability/`, `tasks/combo/` or `tasks/traps/`):
 
 ```yaml
-id: q1-region-total
-row: Q1
+id: t-chasm
+covers: [Q6, chasm]
 prompt: >-
-  For every region and city, show the city's revenue (the sum of order amounts) and, on the same row, the total
-  revenue of the region the city belongs to.
+  For each region that has customers, show the total amount ordered (the sum of order amounts) and the total amount
+  returned (the sum of return amounts) by its customers. ...
 truth_sql: |
-  select region, city, sum(amount) as revenue, sum(sum(amount)) over (partition by region) as region_total
-  from orders_flat group by 1, 2
-compare: {keys: [region, city], values: [revenue, region_total]}
+  with o as (...), rt as (...), g as (...)
+  select g.region, o.ordered, rt.returned from g left join o ... left join rt ...
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"],
+               "measures": [{"formula": "sum(orders.amount)", "name": "ordered"},
+                            {"formula": "sum(returns.amount)", "name": "returned"}]}}
+naive_sql: |
+  select r.name as region, sum(o.amount) as ordered, sum(rt.amount) as returned
+  from customers c left join regions r on ... left join orders o on ... left join returns rt on ...
+  group by 1
+compare: {keys: [region], values: [ordered, returned]}
 ```
 
-Prompts must stay capability-neutral (no DSL names — a test enforces a deny-list), yet worded so that one query
-using the row's capability answers them. `expect` turns the task into a refusal or warning task (one kind or a list),
-and `xfail` links an issue. Then regenerate and commit the truth snapshot:
+`covers` lists the rows (Q1–Q25 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
+`slayer_query` is the intended SLayer query, in the arguments of SLayer's MCP `query` tool; `naive_sql` (one statement
+or a list) is required on traps and forbidden elsewhere. `compare` sets the key and value columns, `tolerance`,
+`ordered`, `columns_exact` and `null_as_zero` (NULL equals 0 in value columns). `expect` turns the task into a refusal
+or warning task (one kind or a list), `uses_saved` names the saved SLayer definitions the prompt relies on, and `xfail`
+links an issue. Prompts must stay capability-neutral and must not hint at a pitfall (a test enforces a whole-word
+deny-list). `tests/test_task_proofs.py` runs every `slayer_query` and `naive_sql` on the built dataset. Then
+regenerate and commit the truth snapshot:
 
 ```bash
 poetry run slayer-evals truth --write

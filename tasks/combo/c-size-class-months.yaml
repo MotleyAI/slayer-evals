@@ -1,0 +1,16 @@
+id: c-size-class-months
+covers: [Q16, Q2, Q4]
+prompt: >-
+  Classify every order as 'big' when its amount is over 100 and 'small' otherwise, without changing the stored data
+  model. For each month of the first quarter of 2025 and each class, show the number of orders, the class's share
+  (between 0 and 1) of that month's orders, and the change in the class's number of orders from the previous month.
+truth_sql: |
+  with m as (select date_trunc('month', order_date)::date as month,
+                    case when amount > 100 then 'big' else 'small' end as size, count(*) as orders
+             from orders group by 1, 2)
+  select a.month, a.size, a.orders, a.orders / sum(a.orders) over (partition by a.month) as share_of_month,
+         a.orders - b.orders as orders_change
+  from m a left join m b on b.size = a.size and b.month = a.month - interval 1 month
+  where a.month between date '2025-01-01' and date '2025-03-01'
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "size", "sql": "CASE WHEN amount > 100 THEN 'big' ELSE 'small' END", "type": "string"}]}, "dimensions": ["size"], "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": ["2025-01-01", "2025-03-31"]}], "measures": [{"formula": "count(*)", "name": "orders"}, {"formula": "count(*) / count(*, partition_by=order_date)", "name": "share_of_month"}, {"formula": "change(count(*))", "name": "orders_change"}]}}
+compare: {keys: [month, size], values: [orders, share_of_month, orders_change]}
