@@ -162,7 +162,9 @@ def test_saved_definition_task_auto_fails_in_raw_sql(tmp_path: Path, built: Buil
     rs = results(run_dir)
     auto = [r for r in rs if r.task_id == "q23-saved" and r.profile == "sql+python"]
     assert len(auto) == 2
+    md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
     for r in auto:
+        assert r.slayer_version == md.slayer_version
         assert r.end_reason == "auto_fail"
         assert r.verdict is not None
         assert not r.verdict.correct
@@ -372,6 +374,7 @@ def test_local_slayer_override(tmp_path: Path, built: BuiltDataset, env: Path):
     assert all(r["input"]["env"]["slayer_command"] == command for r in recorded_runs(env))
     md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
     assert md.slayer_version == "9.9.9-local"
+    assert [r.slayer_version for r in results(run_dir)] == ["9.9.9-local", "9.9.9-local"]
 
 
 def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
@@ -392,6 +395,9 @@ def test_run_output(tmp_path: Path, built: BuiltDataset, env: Path):
     assert md.max_turns == 60
     assert md.timeout_s == 900
     rs = {r.task_id: r for r in results(run_dir)}
+    assert {r.slayer_version for r in rs.values()} == {md.slayer_version}
+    for line in (run_dir / "results.jsonl").read_text().splitlines():
+        assert json.loads(line)["slayer_version"] == md.slayer_version
     assert rs["x"].xfail == "DEV-2058"
     assert rs["a"].xfail is None
     for r in rs.values():

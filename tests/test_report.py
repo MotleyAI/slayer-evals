@@ -5,8 +5,10 @@ import re
 import shutil
 import socket
 from pathlib import Path
+from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from slayer_evals.report import render_report, write_report
 from tests.helpers import REPO
@@ -326,3 +328,57 @@ def test_regenerates_byte_identical_offline(tmp_path: Path, monkeypatch: pytest.
     second = write_report(run).read_bytes()
     assert first == second
     assert (run / "report.md").read_bytes() == first
+
+
+def run_with(tmp_path: Path, lines: list[dict[str, Any]]) -> Path:
+    """A copy of the `run_repeat` fixture holding only `lines` as its results."""
+    run = tmp_path / "run"
+    shutil.copytree(FIXTURES / "run_repeat", run)
+    (run / "results.jsonl").write_text("".join(json.dumps(x) + "\n" for x in lines))
+    return run
+
+
+def fixture_lines() -> list[dict[str, Any]]:
+    return [json.loads(x) for x in (FIXTURES / "run_repeat" / "results.jsonl").read_text().splitlines()]
+
+
+def slayer_cell(report: str) -> str:
+    rows = table_with(report, "Run")
+    (cell,) = [r[""] for r in rows if r["Run"] == "SLayer"]
+    return cell
+
+
+def test_slayer_version_comes_from_the_results_lines(tmp_path: Path):
+    lines = [{**x, "slayer_version": "1.7.0"} for x in fixture_lines()]
+    assert slayer_cell(render_report(run_with(tmp_path, lines))) == "1.7.0"
+
+
+def test_mixed_slayer_versions_listed_with_trial_counts(tmp_path: Path):
+    lines = fixture_lines()[:5]
+    versions = ["1.1.0", "1.1.0", "1.2.0", "1.1.0", "1.2.0"]
+    cell = slayer_cell(render_report(run_with(tmp_path, [{**x, "slayer_version": v} for x, v in zip(lines, versions)])))
+    assert re.search(r"1\.1\.0\D+3\b", cell), cell
+    assert re.search(r"1\.2\.0\D+2\b", cell), cell
+    assert cell.index("1.1.0") < cell.index("1.2.0")
+
+
+def test_results_line_without_slayer_version_rejected(tmp_path: Path):
+    lines = [{**x, "slayer_version": "1.7.0"} for x in fixture_lines()]
+    del lines[3]["slayer_version"]
+    with pytest.raises(ValidationError, match="slayer_version"):
+        render_report(run_with(tmp_path, lines))
+
+
+def test_new_rows_in_the_per_row_table(tmp_path: Path):
+    base = next(x for x in fixture_lines() if x["task_id"] == "q1-a" and x["profile"] == "slayer")
+    lines = [
+        {**base, "task_id": "q26-a", "covers": ["Q26"], "slayer_version": "1.7.0"},
+        {**base, "task_id": "q27-a", "covers": ["Q27"], "slayer_version": "1.7.0"},
+        {**base, "task_id": "t27-a", "covers": ["Q27", "null_element"], "slayer_version": "1.7.0"},
+    ]
+    report = render_report(run_with(tmp_path, lines))
+    q26 = row_counts(report, "slayer", "Q26")
+    q27 = row_counts(report, "slayer", "Q27")
+    assert (q26["Feature"], q26["Tasks"], q26["Trials"]) == ("Metrics without a join path", "1", "1")
+    assert (q27["Feature"], q27["Tasks"], q27["Trials"]) == ("List columns", "2", "2")
+    assert pitfall_counts(report, "null_element", "slayer") == ("1", "1")

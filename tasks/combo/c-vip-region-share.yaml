@@ -1,0 +1,13 @@
+id: c-vip-region-share
+covers: [Q27, Q2]
+prompt: >-
+  Consider only the orders of customers who carry the tag vip. For each region, show their revenue (the sum of order
+  amounts) and the region's share (between 0 and 1) of the total revenue of those customers. Customers without a known
+  region form their own group.
+truth_sql: |
+  with r as (select o.region, sum(o.amount) as revenue
+             from orders_flat o join customers c on c.id = o.customer_id
+             where list_contains(list_filter(c.tags, x -> x is not null), 'vip') group by 1)
+  select region, revenue, revenue / sum(revenue) over () as share_of_total from r
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=[])", "name": "share_of_total"}], "filters": ["contains(customers.tags, 'vip')"]}}
+compare: {keys: [region], values: [revenue, share_of_total]}

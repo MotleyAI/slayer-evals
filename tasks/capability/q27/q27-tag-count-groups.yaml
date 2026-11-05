@@ -1,0 +1,11 @@
+id: q27-tag-count-groups
+covers: [Q27]
+prompt: >-
+  Group the customers by how many tags they carry: for each number of tags, how many customers carry that many?
+  Customers whose tags are not on record form their own group.
+truth_sql: |
+  select len(list_filter(tags, x -> x is not null)) as tag_count, count(*) as customers
+  from customers
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": [{"expression": "length(tags)", "name": "tag_count"}], "measures": [{"formula": "count(*)", "name": "customers"}]}}
+compare: {keys: [tag_count], values: [customers]}

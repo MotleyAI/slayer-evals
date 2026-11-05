@@ -44,6 +44,11 @@ def test_coverage_missing_row():
     assert any("Q7" in p for p in problems)
 
 
+def test_coverage_missing_list_row():
+    problems = check_coverage([t for t in _full_set() if "Q27" not in t.covers])
+    assert any("Q27" in p for p in problems)
+
+
 def test_row_covered_only_by_a_combo_counts():
     tasks = [t for t in _full_set() if t.id != "t-Q12"]
     assert check_coverage(tasks) == []
@@ -83,6 +88,12 @@ def test_deny_list_covers_spec_keywords():
         "not in",
         "counted once",
         "count each",
+        "contains(",
+        "contains_any",
+        "contains_all",
+        "length(",
+        "collect(",
+        "unnest",
     )
     for kw in spec:
         assert kw in PROMPT_DENY_LIST, kw
@@ -111,6 +122,29 @@ def test_leaky_prompt_detected():
 def test_pitfall_hints_detected(prompt: str, keyword: str):
     problems = check_prompts([make_task(id="hinty", prompt=prompt)])
     assert any("hinty" in p and keyword in p for p in problems), problems
+
+
+@pytest.mark.parametrize(
+    "prompt, keyword",
+    [
+        ("Customers where contains(tags, 'vip').", "contains("),
+        ("Customers where contains_any of vip and eu holds.", "contains_any"),
+        ("Customers passing contains_all for vip and eu.", "contains_all"),
+        ("Customers grouped by length(tags).", "length("),
+        ("Collect(tags) for every region.", "collect("),
+        ("Unnest the tags and count the customers.", "unnest"),
+    ],
+)
+def test_list_syntax_detected(prompt: str, keyword: str):
+    problems = check_prompts([make_task(id="listy", prompt=prompt)])
+    assert any("listy" in p and keyword in p for p in problems), problems
+
+
+def test_list_words_in_prose_pass():
+    prose = make_task(
+        id="prose", prompt="Customers whose tag list contains vip, by length of stay, collected per region."
+    )
+    assert check_prompts([prose]) == []
 
 
 @pytest.mark.parametrize(
@@ -171,6 +205,8 @@ def test_row_markers():
     assert {"time_shift", "cumsum", "change"} <= set(ROW_MARKERS["Q4"])
     assert "window=" in ROW_MARKERS["Q11"]
     assert "rank(" in ROW_MARKERS["Q14"]
+    assert set(ROW_MARKERS["Q27"]) == {"contains", ".value", "length(", "collect("}
+    assert not ROW_MARKERS.get("Q26")
     assert set(ROW_MARKERS) <= set(COVERED_ROWS)
     for row in ("Q8", "Q9", "Q10", "Q18", "Q25"):
         assert not ROW_MARKERS.get(row), row
@@ -190,6 +226,10 @@ COMBOS = [
     {"Q6", "Q12", "Q1"},
     {"Q24", "Q2", "Q20"},
     {"Q16", "Q2", "Q4"},
+    {"Q27", "Q2"},
+    {"Q27", "Q4"},
+    {"Q27", "Q14", "Q15"},
+    {"Q27", "Q6"},
 ]
 TRAPS = Counter(
     {
@@ -208,8 +248,31 @@ TRAPS = Counter(
         "rows_window_gap": 1,
         "timestamp_bounds": 1,
         "avg_of_avgs": 1,
+        "count_after_unnest": 1,
+        "unnest_fan_out": 1,
+        "null_element": 1,
+        "same_element_and": 1,
     }
 )
+LIST_TASKS = {
+    "q27-vip-customers": ["Q27"],
+    "q27-vip-and-eu": ["Q27"],
+    "q27-vip-or-partner": ["Q27"],
+    "q27-customers-per-tag": ["Q27"],
+    "q27-region-distinct-tags": ["Q27"],
+    "q27-region-tag-set": ["Q27"],
+    "q27-tag-count-groups": ["Q27"],
+    "q27-category-ratings": ["Q27"],
+    "q26-events-per-customer": ["Q26"],
+    "c-vip-region-share": ["Q27", "Q2"],
+    "c-vip-monthly-change": ["Q27", "Q4"],
+    "c-top-customers-per-tag": ["Q27", "Q14", "Q15"],
+    "c-tier-credit-tags": ["Q27", "Q6"],
+    "t-vip-per-tier": ["Q27", "count_after_unnest"],
+    "t-tagged-credit": ["Q27", "unnest_fan_out"],
+    "t-without-vip": ["Q27", "null_element"],
+    "t-vip-and-eu-region": ["Q27", "same_element_and"],
+}
 
 
 @pytest.fixture(scope="module")
@@ -266,8 +329,17 @@ def test_committed_combo_catalogue(committed: list[Task]):
 
 def test_committed_trap_catalogue(committed: list[Task]):
     traps = [t for t in committed if t.suite == "trap"]
-    assert len(traps) >= 17
+    assert len(traps) >= 21
     kinds = Counter(c for t in traps for c in t.covers if c in PITFALLS)
     for kind, n in TRAPS.items():
         assert kinds[kind] >= n, kind
     assert all(t.naive_sql for t in traps)
+
+
+def test_committed_list_tasks(committed: list[Task]):
+    by_id = {t.id: t for t in committed}
+    assert {tid: by_id[tid].covers for tid in LIST_TASKS if tid in by_id} == LIST_TASKS
+
+
+def test_committed_suite_sizes(committed: list[Task]):
+    assert Counter(t.suite for t in committed) == {"capability": 34, "combo": 15, "trap": 21}

@@ -2,26 +2,26 @@
 
 - [x] 1.1 Replace the git dependency in `pyproject.toml` with `motley-slayer = "1.7.0"` from PyPI and update
   `poetry.lock`. Verify: `poetry install` succeeds and `importlib.metadata.version("motley-slayer")` is `1.7.0`.
-- [ ] 1.2 Pin compatibility gate, before any other change: run the full non-integration suite (including
+- [x] 1.2 Pin compatibility gate, before any other change: run the full non-integration suite (including
   `tests/test_task_proofs.py` over the committed tasks), ruff and basedpyright on 1.7.0. Verify: all green. A failing
   pre-existing test or reference is a suspected gap: STOP and ask the user, never adapt it silently.
 
 ## 2. Tests first (pr-tests stage)
 
-- [ ] 2.1 `tests/test_core_schemas.py` and `tests/test_task_format.py`:
+- [x] 2.1 `tests/test_core_schemas.py` and `tests/test_task_format.py`:
   - the row range is Q1–Q27;
   - Q26 and Q27 are accepted, and Q28 is rejected;
   - the four new pitfall kinds are accepted, and a trap covering `[Q27, null_element]` loads.
 
   Verify: the new tests fail before implementation.
-- [ ] 2.2 `tests/test_task_suite.py`:
+- [x] 2.2 `tests/test_task_suite.py`:
   - coverage fails without a Q27 task;
   - the Q27 marker check;
   - deny-list entries `contains(`, `contains_any`, `contains_all`, `length(`, `collect(` and `unnest`;
   - "contains" and "length" in prose pass.
 
   Verify: the new tests fail before implementation.
-- [ ] 2.3 `tests/test_table_compare.py`, for every scenario of the grading delta:
+- [x] 2.3 `tests/test_table_compare.py`, for every scenario of the grading delta:
   - list sets with order, repeats and NULL elements;
   - JSON and comma text against a list truth column;
   - text outside list columns stays text;
@@ -29,7 +29,7 @@
   - numeric elements within and outside tolerance.
 
   Verify: the new tests fail before implementation.
-- [ ] 2.4 `tests/test_dataset.py`:
+- [x] 2.4 `tests/test_dataset.py`:
   - the probe hash is computed over the probe columns, and `probe_table_hashes.json` stays unchanged;
   - the layout check covers the probe columns plus `customers.tags`;
   - list edge-case invariants for `customers.tags` and `products.ratings`: a repeated element, a NULL element next to
@@ -38,26 +38,26 @@
   - the store's list columns are usable.
 
   Verify: the new tests fail before implementation.
-- [ ] 2.5 `tests/test_runner.py` and `tests/test_report.py`:
+- [x] 2.5 `tests/test_runner.py` and `tests/test_report.py`:
   - every results line carries `slayer_version`;
   - a line without it fails loading;
   - the report lists mixed versions with their trial counts;
   - the per-row table has rows Q26 and Q27 with their names.
 
   Verify: the new tests fail before implementation.
-- [ ] 2.6 Write the 17 task files from the design's task table, each with a capability-neutral prompt, `truth_sql`
+- [x] 2.6 Write the 17 task files from the design's task table, each with a capability-neutral prompt, `truth_sql`
   spelling out the SLayer list semantics (non-NULL elements; NULL list ≠ empty list), `slayer_query`, `compare`, and
   `naive_sql` on traps. Verify: `test_task_format` loads them; the proofs fail only for lack of the dataset columns.
   The two task-specific shapes:
-  - `c-top-customers-per-tag` covers `[Q27, Q14, Q15]` with the two-stage reference (stage 1: `customers.tags.value`
-    and `customers.name`, `sum(amount)`, `to_many_handling: associate`; stage 2: `rank(..., partition_by=
+  - `c-top-customers-per-tag` covers `[Q27, Q14, Q15]` with the two-stage reference (stage 1: `customers.tags.value`,
+    `customers.id` and `customers.name` (names are not unique), `sum(amount)`, `to_many_handling: associate`; stage 2: `rank(..., partition_by=
     customers__tags__value, direction='desc') <= 2`; the stage-2 measure name must not equal a stage column). It
     carries a one-line comment naming DEV-1932 as the future single-stage fix.
   - `q27-region-tag-set` asks for every region, so Arctic gets `[]`, and its reference sources `regions` with
     `collect(customers.tags.value)`.
-- [ ] 2.7 Backfill `"slayer_version": "1.1.0"` into `tests/fixtures/run_repeat/results.jsonl` and
-  `tests/fixtures/run_until_pass/results.jsonl` (and any other committed results fixture). Verify: the fixtures load
-  once the field exists.
+- [x] 2.7 Backfill each fixture's own metadata version (`"slayer_version": "1.0.2"`) into
+  `tests/fixtures/run_repeat/results.jsonl` and `tests/fixtures/run_until_pass/results.jsonl` (and any other committed
+  results fixture). Verify: the fixtures load once the field exists.
 
 ## 3. Implementation (pr-implement stage)
 

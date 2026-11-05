@@ -173,6 +173,6 @@ prompt without deny-listed words, for example whether a customer whose tags are 
 
 ## Migration Plan
 
-- Backfill `"slayer_version": "1.1.0"` into every existing line of `results/baseline/results.jsonl` and into the test
-  fixtures' results files.
+- Backfill `"slayer_version": "1.1.0"` into every existing line of `results/baseline/results.jsonl`, and the test
+  fixtures' results files with `1.0.2`, the version their metadata records.
 - Regenerate the truth snapshots for the new tasks only. Existing snapshots must stay byte-identical.

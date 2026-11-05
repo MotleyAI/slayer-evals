@@ -228,6 +228,27 @@ def test_mislabelled_cover_detected():
     assert "Q14" in problems[0]
 
 
+def test_list_row_without_a_list_construct_detected():
+    plain = {"query": {"source_model": "customers", "measures": [{"formula": "count(*)", "name": "n"}]}}
+    task = make_task(id="no-list", covers=["Q27"], slayer_query=plain)
+    assert missing_markers(task) == ["Q27"]
+    assert any("no-list" in p and "Q27" in p for p in marker_problems(task))
+
+
+@pytest.mark.parametrize(
+    "construct",
+    [
+        {"filters": ["contains_any(tags, ['vip', 'eu'])"]},
+        {"filters": ["tags.value = 'vip'"]},
+        {"dimensions": [{"expression": "length(tags)", "name": "n_tags"}]},
+        {"measures": [{"formula": "collect(customers.tags.value)", "name": "tag_set"}]},
+    ],
+)
+def test_list_constructs_are_markers(construct: dict):
+    query = {"source_model": "customers", "measures": [{"formula": "count(*)", "name": "n"}], **construct}
+    assert missing_markers(make_task(id="listy", covers=["Q27"], slayer_query={"query": query})) == []
+
+
 def test_markers_found_anywhere_in_the_query():
     query = [
         {

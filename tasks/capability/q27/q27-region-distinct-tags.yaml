@@ -1,0 +1,12 @@
+id: q27-region-distinct-tags
+covers: [Q27]
+prompt: >-
+  For each region that has customers, how many different tags do its customers carry between them? Customers without a
+  known region form their own group.
+truth_sql: |
+  select r.name as region,
+         len(list_distinct(list_filter(flatten(list(coalesce(c.tags, []))), x -> x is not null))) as distinct_tags
+  from customers c left join regions r on r.id = c.region_id
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count_distinct(tags.value)", "name": "distinct_tags"}]}}
+compare: {keys: [region], values: [distinct_tags]}

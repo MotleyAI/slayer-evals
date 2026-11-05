@@ -1,0 +1,17 @@
+id: t-vip-and-eu-region
+covers: [Q27, same_element_and]
+prompt: >-
+  For each region, how many customers carry both the tag vip and the tag eu? Customers without a known region form
+  their own group.
+truth_sql: |
+  select r.name as region, count(*) as customers
+  from customers c left join regions r on r.id = c.region_id
+  where list_has_all(list_filter(c.tags, x -> x is not null), ['vip', 'eu'])
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["contains_all(tags, ['vip', 'eu'])"]}}
+naive_sql: |
+  select r.name as region, count(distinct c.id) as customers
+  from customers c cross join unnest(c.tags) as u(tag) left join regions r on r.id = c.region_id
+  where u.tag = 'vip' and u.tag = 'eu'
+  group by 1
+compare: {keys: [region], values: [customers]}
