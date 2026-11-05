@@ -1,8 +1,10 @@
 ## 1. SLayer pin
 
-- [ ] 1.1 Raise the `motley-slayer` rev in `pyproject.toml` to the SLayer main commit that contains merged DEV-2137 and
-  update `poetry.lock`. If DEV-2137 is not on SLayer main yet when this task starts, STOP and ask the user (the plan
-  assumes it is released). Verify: `poetry install` succeeds and `python -c "import slayer"` reports the new version.
+- [x] 1.1 Replace the git dependency in `pyproject.toml` with `motley-slayer = "1.7.0"` from PyPI and update
+  `poetry.lock`. Verify: `poetry install` succeeds and `importlib.metadata.version("motley-slayer")` is `1.7.0`.
+- [ ] 1.2 Pin compatibility gate, before any other change: run the full non-integration suite (including
+  `tests/test_task_proofs.py` over the committed tasks), ruff and basedpyright on 1.7.0. Verify: all green. A failing
+  pre-existing test or reference is a suspected gap: STOP and ask the user, never adapt it silently.
 
 ## 2. Tests first (pr-tests stage)
 
@@ -46,6 +48,13 @@
 - [ ] 2.6 Write the 17 task files from the design's task table, each with a capability-neutral prompt, `truth_sql`
   spelling out the SLayer list semantics (non-NULL elements; NULL list ≠ empty list), `slayer_query`, `compare`, and
   `naive_sql` on traps. Verify: `test_task_format` loads them; the proofs fail only for lack of the dataset columns.
+  The two task-specific shapes:
+  - `c-top-customers-per-tag` covers `[Q27, Q14, Q15]` with the two-stage reference (stage 1: `customers.tags.value`
+    and `customers.name`, `sum(amount)`, `to_many_handling: associate`; stage 2: `rank(..., partition_by=
+    customers__tags__value, direction='desc') <= 2`; the stage-2 measure name must not equal a stage column). It
+    carries a one-line comment naming DEV-1932 as the future single-stage fix.
+  - `q27-region-tag-set` asks for every region, so Arctic gets `[]`, and its reference sources `regions` with
+    `collect(customers.tags.value)`.
 - [ ] 2.7 Backfill `"slayer_version": "1.1.0"` into `tests/fixtures/run_repeat/results.jsonl` and
   `tests/fixtures/run_until_pass/results.jsonl` (and any other committed results fixture). Verify: the fixtures load
   once the field exists.
@@ -59,8 +68,9 @@
 
   Verify: 2.4 passes, and every pre-existing truth snapshot is byte-identical (`slayer-evals truth` without `--write`
   reports no drift for old tasks).
-- [ ] 3.2 Store models: `customers.yaml` gets `tags` (list of text), and `products.yaml` gets `ratings` (list of int),
-  spelled as merged DEV-2137 requires. Verify: the store-template list-column scenario passes.
+- [ ] 3.2 Store models: `customers.yaml` gets `tags` (`type: ARRAY`, `element_type: TEXT`), and `products.yaml` gets
+  `ratings` (`type: ARRAY`, `element_type: INT`), in uppercase because 1.7.0 rejects lowercase. Verify: the
+  store-template list-column scenario passes.
 - [ ] 3.3 `core/task.py`, `tasks/suite.py` and `report/render.py`: the row range, the pitfall kinds, the Q27 markers,
   the deny-list, and the Q26/Q27 row names. Verify: 2.1, 2.2 and the row part of 2.5 pass.
 - [ ] 3.4 `grading/tables.py`: list-cell normalization and matching per the grading delta (pure, imports only `core`).
@@ -69,12 +79,13 @@
   from the run's version, and the report's per-version trial counts. Verify: 2.5 passes.
 - [ ] 3.6 Regenerate the truth snapshots for the 17 new tasks (`poetry run slayer-evals truth --write`). Verify:
   `test_task_proofs.py` passes on the committed set, with every new reference matching and every new trap live, and
-  each truth has at most 20 rows. A reference query SLayer cannot express is a suspected gap: STOP and ask the user.
+  each truth has at most 20 rows. A reference query SLayer cannot express, or a pre-existing reference that fails on
+  1.7.0, is a suspected gap: STOP and ask the user.
 - [ ] 3.7 README:
   - suite counts: capability 34, combo 15, trap 21;
   - the pitfall table gains the four new rows;
   - Covered rows gains Q26 and Q27;
-  - the SLayer pin text.
+  - the SLayer pin text, naming SLayer 1.7.0.
 
   Verify: by reading it; the counts match `load_tasks`.
 - [ ] 3.8 Run the full non-integration suite, ruff and basedpyright. Verify: all green.

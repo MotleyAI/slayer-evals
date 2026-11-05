@@ -1,6 +1,6 @@
 ## Why
 
-SLayer now supports list (array) columns: `contains`, `contains_any`, `contains_all` and `length` over a list,
+SLayer 1.7.0 supports list (array) columns: `contains`, `contains_any`, `contains_all` and `length` over a list,
 element access through `L.value`, and the `collect` aggregation. The benchmark has no task that needs them. So nobody
 measures whether agents answer "how many customers have tag x" or "customers with both x and y" with one SLayer query,
 or whether naive SQL over lists silently returns wrong numbers. The matrix's row Q26 (metrics without a join path) is
@@ -14,12 +14,13 @@ also uncovered.
 - Rows Q1–Q27: Q26 "Metrics without a join path" and Q27 "List columns" become covered rows. Q27 gets row markers;
   the prompt deny-list gains the list DSL names.
 - Four new pitfall kinds: `count_after_unnest`, `unnest_fan_out`, `null_element` and `same_element_and`.
-- 17 new tasks: 8 Q27 capability tasks, 1 Q26 capability task, 4 Q27 combo tasks and 4 traps.
+- 17 new tasks: 8 Q27 capability tasks, 1 Q26 capability task, 4 Q27 combo tasks (one also covering Q14 and Q15) and
+  4 traps.
 - Grading: a list cell compares as the set of its non-NULL elements (numbers within tolerance); JSON-list or
   comma-separated text matches a list truth column.
 - Results: every results line carries its SLayer version; the report lists the versions when a results file mixes
   them. **BREAKING** for results files written before this change: they lack `slayer_version` until backfilled.
-- `motley-slayer` pin raised to the SLayer commit with list columns. The baseline gains the new tasks in all three
+- `motley-slayer` pinned to the PyPI release 1.7.0 (replacing the git rev). The baseline gains the new tasks in all three
   profiles, run on that pin; README and the baseline failure breakdown are updated.
 
 ## Capabilities
