@@ -67,9 +67,11 @@ class Runner:
         credentials: dict[str, str],
         slayer_command: list[str],
         run_dir: Path,
+        slayer_version: str,
     ):
         self.cfg, self.built, self.truths = cfg, built, truths
         self.credentials, self.slayer_command, self.run_dir = credentials, slayer_command, run_dir
+        self.slayer_version = slayer_version
         self.semaphore = asyncio.Semaphore(cfg.concurrency)
         self.results_path = run_dir / "results.jsonl"
 
@@ -156,6 +158,7 @@ class Runner:
             profile=combo.profile,
             model=combo.model,
             trial=trial,
+            slayer_version=self.slayer_version,
             verdict=verdict,
             end_reason=outcome.trace.end_reason,
             usage=outcome.trace.usage,
@@ -242,7 +245,7 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
             started_at=started,
         )
         (run_dir / "metadata.json").write_text(metadata.model_dump_json(indent=1) + "\n")
-        runner = Runner(cfg, built, truths, credentials, command, run_dir)
+        runner = Runner(cfg, built, truths, credentials, command, run_dir, version)
         combos = [Combo(t, p, m) for t in tasks for p in cfg.profiles for m in cfg.models]
         asyncio.run(runner.run(combos))
     write_report(run_dir)

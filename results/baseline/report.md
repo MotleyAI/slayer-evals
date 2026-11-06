@@ -113,6 +113,8 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q23 | Saved queries & refinement | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 1 |
 | Q24 | Nested / hierarchical results | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 0 | 2 | 2 |
 | Q25 | Explicit aggregate locality | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 1 |
+| Q26 | Metrics without a join path | 0 | 0 |  |  |  |  |  |  |  |  |
+| Q27 | List columns | 0 | 0 |  |  |  |  |  |  |  |  |
 
 | Task | Suite | Covers | Pass rate | pass^1 |
 | --- | --- | --- | --- | --- |
@@ -200,6 +202,8 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q23 | Saved queries & refinement | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 0 | 0 | 1 |
 | Q24 | Nested / hierarchical results | 2 | 2 | 2 | 0 | 0 | 1 | 0 | 0 | 1 | 2 |
 | Q25 | Explicit aggregate locality | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 1 |
+| Q26 | Metrics without a join path | 0 | 0 |  |  |  |  |  |  |  |  |
+| Q27 | List columns | 0 | 0 |  |  |  |  |  |  |  |  |
 
 | Task | Suite | Covers | Pass rate | pass^1 |
 | --- | --- | --- | --- | --- |
@@ -287,6 +291,8 @@ A task counts under every row it covers, so a multi-row task adds to several row
 | Q23 | Saved queries & refinement | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Q24 | Nested / hierarchical results | 2 | 2 | 2 | 0 | 0 | 0 | 2 | 0 | 1 | 2 |
 | Q25 | Explicit aggregate locality | 1 | 1 | 1 | 1 | 1 | 0 | 1 | 0 | 0 | 1 |
+| Q26 | Metrics without a join path | 0 | 0 |  |  |  |  |  |  |  |  |
+| Q27 | List columns | 0 | 0 |  |  |  |  |  |  |  |  |
 
 | Task | Suite | Covers | Pass rate | pass^1 |
 | --- | --- | --- | --- | --- |

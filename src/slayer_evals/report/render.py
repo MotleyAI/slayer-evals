@@ -2,7 +2,7 @@
 
 import json
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +49,8 @@ ROW_TITLES = {
     "Q23": "Saved queries & refinement",
     "Q24": "Nested / hierarchical results",
     "Q25": "Explicit aggregate locality",
+    "Q26": "Metrics without a join path",
+    "Q27": "List columns",
 }
 SUITES: tuple[Suite, ...] = ("capability", "combo", "trap")
 NON_QUERY_TOOLS = ("submit_answer", "python")
@@ -327,10 +329,22 @@ def _failures(run_dir: Path, results: list[TrialResult]) -> list[str]:
     return [*out, ""]
 
 
+def _slayer_versions(results: list[TrialResult]) -> str:
+    """The results' SLayer version, or each version with its trial count when they differ."""
+    counts = Counter(r.slayer_version for r in results)
+    if len(counts) == 1:
+        return next(iter(counts))
+    return ", ".join(f"{v} ({n} trials)" for v, n in sorted(counts.items(), key=lambda vn: _version_key(vn[0])))
+
+
+def _version_key(version: str) -> tuple[tuple[int, int | str], ...]:
+    return tuple((0, int(p)) if p.isdigit() else (1, p) for p in re.split(r"[.\-+]", version))
+
+
 def _metadata(md: RunMetadata, results: list[TrialResult]) -> list[str]:
     mode = f"{md.mode}, N = {md.n}"
     rows = [
-        ["SLayer", md.slayer_version],
+        ["SLayer", _slayer_versions(results) if results else md.slayer_version],
         ["Agent SDK", md.sdk_version],
         ["Models", ", ".join(md.models)],
         ["Profiles", ", ".join(md.profiles)],

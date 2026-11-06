@@ -298,3 +298,11 @@ def test_ordered_rows_with_list_cells():
     cmp = Compare(keys=["k"], values=["tags"], ordered=True)
     assert match_tables(truth, res(["k", "tags"], [["a", ["y", "x"]], ["b", "z"]]), cmp).ok
     assert not match_tables(truth, res(["k", "tags"], [["b", ["z"]], ["a", ["x", "y"]]]), cmp).ok
+
+
+def test_second_assignment_tried_when_the_closest_names_fail():
+    truth = Table(columns=["k", "a", "b"], rows=[[1, 5.0, 6.0], [2, 6.0, 5.0]])
+    result = res(["k", "aa", "bb"], [[1, 6.0, 5.0], [2, 5.0, 6.0]])
+    m = match_tables(truth, result, Compare(keys=["k"], values=["a", "b"]))
+    assert m.ok, m.reason
+    assert m.columns == {"k": "k", "a": "bb", "b": "aa"}

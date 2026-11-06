@@ -37,10 +37,10 @@ columns by name first and by values second, so agents may name their columns fre
 
 Tasks fall into three suites, by what they cover:
 
-* **capability** — one row of the feature matrix below each (`tasks/capability/`, 25 tasks).
-* **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 11 tasks).
+* **capability** — one row of the feature matrix below each (`tasks/capability/`, 34 tasks).
+* **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 15 tasks).
 * **trap** — a row plus a *pitfall*: a question whose straightforward SQL silently returns wrong numbers
-  (`tasks/traps/`, 17 tasks).
+  (`tasks/traps/`, 21 tasks).
 
 | Pitfall | The naive SQL… | Task(s) |
 | --- | --- | --- |
@@ -59,6 +59,10 @@ Tasks fall into three suites, by what they cover:
 | `rows_window_gap` | uses a row-count window over a series with a missing month | `t-rolling-gap` |
 | `timestamp_bounds` | bounds a timestamp with `BETWEEN` two dates, losing the last day | `t-march-events` |
 | `avg_of_avgs` | averages per-group averages instead of the rows | `t-overall-aov` |
+| `count_after_unnest` | unnests a list, then counts rows, so an entity counts once per matching element | `t-vip-per-tier` |
+| `unnest_fan_out` | sums an entity-level amount after unnesting its list | `t-tagged-credit` |
+| `null_element` | uses `<> ALL` / `NOT IN` over a list holding a NULL element, which drops the row | `t-without-vip` |
+| `same_element_and` | requires two values of one unnested element (`tag = 'x' AND tag = 'y'`), which matches nothing | `t-vip-and-eu-region` |
 
 Prompts state what the answer should contain but never the pitfall's mechanism.
 
@@ -92,6 +96,8 @@ capabilities](https://motley.ai/blog-posts/four-open-source-semantic-layers-54-c
 | Q23 | Saved queries & refinement | `q23-monthly-by-region` |
 | Q24 | Nested results (flattened) | `q24-top-two-per-region` |
 | Q25 | Explicit aggregate locality | `q25-credit-per-order` |
+| Q26 | Metrics without a join path | `q26-events-per-customer` |
+| Q27 | List columns | `q27-vip-customers`, `q27-vip-and-eu`, `q27-vip-or-partner`, `q27-customers-per-tag`, `q27-region-distinct-tags`, `q27-region-tag-set`, `q27-tag-count-groups`, `q27-category-ratings` |
 
 Most rows are also covered by combo and trap tasks; the report counts a task under every row it covers. Two rows
 are deliberately left out: **Q19** (the agent and API surface — every task already exercises it) and **Q22**
@@ -149,7 +155,7 @@ the SLayer profiles are asked to request `query` results as JSON; it never menti
 ## Reading the report
 
 `report.md` starts with the run's metadata and a headline table of suite by profile and model, then a table of trap
-pitfall by profile, then one section per profile and model: a table of rows Q1–Q25 with trial counts for each
+pitfall by profile, then one section per profile and model: a table of rows Q1–Q27 with trial counts for each
 criterion (a multi-row task counts under each of its rows), and a per-task table (pass rate k/N and pass^N for `repeat`; first-try pass, eventual
 pass and attempts for `until-pass`). Expected failures, totals (tokens, cost, time) and a digest of every failed
 trial follow: which criteria failed, why, and one line per SLayer or `sql` call the agent made. Regenerate a report offline
@@ -159,8 +165,9 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 
 `results/baseline/` holds a committed run of every task in all three profiles with Claude Opus 5.5 — its
 [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task ran
-once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
-`1653a91` of its main branch (reported as 1.1.0). The `sql+python` trials were rerun after the system prompt gained
+once per profile, so individual rates are noisy; use `--trials` for stable numbers. The benchmark pins SLayer 1.7.0
+from PyPI; the baseline's earlier trials ran on commit `1653a91` of SLayer's main branch (reported as 1.1.0), and each
+results line records the version it ran on. The `sql+python` trials were rerun after the system prompt gained
 its exact-answers sentence; the SLayer profiles ran just before it. `q12-net-revenue` was rerun in all three profiles
 after its prompt was made explicit about orders without a customer.
 
@@ -220,7 +227,7 @@ naive_sql: |
 compare: {keys: [region], values: [ordered, returned]}
 ```
 
-`covers` lists the rows (Q1–Q25 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
+`covers` lists the rows (Q1–Q27 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
 `slayer_query` is the intended SLayer query, in the arguments of SLayer's MCP `query` tool; `naive_sql` (one statement
 or a list) is required on traps and forbidden elsewhere. `compare` sets the key and value columns, `tolerance`,
 `ordered`, `columns_exact` and `null_as_zero` (NULL equals 0 in value columns). `expect` turns the task into a refusal

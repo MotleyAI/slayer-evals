@@ -1,12 +1,15 @@
-"""Table comparison: column resolution, multiset or ordered rows, numeric tolerance, NULL/NaN/zero and date normalization."""
+"""Table comparison: column resolution, multiset or ordered rows, numeric tolerance, NULL/NaN/zero, date and list
+normalization."""
 
 import datetime as dt
 import decimal
 import difflib
 import itertools
+import json
 import math
 import re
-from typing import Any
+from collections.abc import Callable
+from typing import Any, Self
 
 from pydantic import BaseModel, Field
 
@@ -24,6 +27,16 @@ class MatchResult(BaseModel):
     columns: dict[str, str] = Field(default_factory=dict)
 
 
+class ListCell(tuple[Any, ...]):
+    """A list cell: its distinct normalized non-NULL elements, sorted."""
+
+    __slots__ = ()
+
+    def __new__(cls, elements: list[Any] | tuple[Any, ...]) -> Self:
+        distinct = {v: None for v in map(normalize, elements) if v is not None}
+        return super().__new__(cls, sorted(distinct, key=_sort_key))
+
+
 def _iso(value: dt.date) -> str:
     if isinstance(value, dt.datetime):
         if value.tzinfo is not None:
@@ -35,9 +48,12 @@ def _iso(value: dt.date) -> str:
 
 
 def normalize(value: Any) -> Any:
-    """A comparable form: None for NULL/NaN, floats for numbers and numeric strings, ISO text for dates."""
-    if value is None or isinstance(value, bool):
+    """A comparable form: None for NULL/NaN, floats for numbers and numeric strings, ISO text for dates, `ListCell` for
+    lists."""
+    if value is None or isinstance(value, (bool, ListCell)):
         return value
+    if isinstance(value, (list, tuple)):
+        return ListCell(value)
     if isinstance(value, (int, float, decimal.Decimal)):
         f = float(value)
         return None if math.isnan(f) else f
@@ -57,9 +73,28 @@ def normalize(value: Any) -> Any:
     return value
 
 
+def as_list(value: Any) -> Any:
+    """`value` normalized, reading JSON-list or comma-separated text as a list."""
+    if not isinstance(value, str):
+        return normalize(value)
+    text = value.strip()
+    if text.startswith("["):
+        try:
+            parsed = json.loads(text)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, list):
+            return ListCell(parsed)
+    return ListCell([p.strip() for p in text.split(",") if p.strip()])
+
+
 def _equal(a: Any, b: Any, tolerance: float) -> bool:
     if isinstance(a, float) and isinstance(b, float):
         return abs(a - b) <= tolerance * max(1.0, abs(a), abs(b))
+    if isinstance(a, ListCell) and isinstance(b, ListCell):
+        return all(any(_equal(x, y, tolerance) for y in b) for x in a) and all(
+            any(_equal(x, y, tolerance) for x in a) for y in b
+        )
     return a == b and type(a) is type(b)
 
 
@@ -86,6 +121,8 @@ def resolve_column(name: str, columns: list[str]) -> tuple[int | None, str | Non
 def _sort_key(v: Any) -> tuple[int, Any]:
     if v is None:
         return 0, 0
+    if isinstance(v, ListCell):
+        return 4, tuple(_sort_key(e) for e in v)
     if isinstance(v, bool):
         return 1, v
     if isinstance(v, float):
@@ -126,15 +163,11 @@ def _assignments(
     unmatched: list[str],
     free: list[int],
     want_cols: dict[str, list[Any]],
-    got_cols: dict[int, list[Any]],
+    got: Callable[[str, int], list[Any]],
     result: Table,
     compare: Compare,
 ) -> list[tuple[int, ...]]:
     """Injective assignments of unmatched truth columns to free result columns with equal values, closest names first."""
-
-    def got(n: str, i: int) -> list[Any]:
-        return _zeroed(got_cols[i]) if compare.null_as_zero and n in compare.values else got_cols[i]
-
     candidates = [[i for i in free if _same_values(want_cols[n], got(n, i), compare.tolerance)] for n in unmatched]
     found = [
         combo
@@ -178,19 +211,26 @@ def match_tables(truth: Table, result: Table, compare: Compare) -> MatchResult:
     if len(set(resolved.values())) < len(resolved):
         return MatchResult(ok=False, reason="two truth columns resolve to the same result column")
     want_cols = {n: [normalize(r[truth.columns.index(n)]) for r in truth.rows] for n in names}
+    list_names = {n for n, v in want_cols.items() if any(isinstance(c, ListCell) for c in v)}
     zero = {n for n in compare.values if compare.null_as_zero}
     want_cols = {n: _zeroed(v) if n in zero else v for n, v in want_cols.items()}
     got_cols = {i: [normalize(r[i]) for r in result.rows] for i in range(len(result.columns))}
+    got_lists = {i: [as_list(r[i]) for r in result.rows] for i in range(len(result.columns))} if list_names else {}
+
+    def result_column(n: str, i: int) -> list[Any]:
+        values = got_lists[i] if n in list_names else got_cols[i]
+        return _zeroed(values) if n in zero else values
+
     unmatched = [n for n in names if n not in resolved]
     free = [i for i in range(len(result.columns)) if i not in resolved.values()]
-    combos = _assignments(unmatched, free, want_cols, got_cols, result, compare) if unmatched else [()]
+    combos = _assignments(unmatched, free, want_cols, result_column, result, compare) if unmatched else [()]
     if not combos:
         return MatchResult(ok=False, reason=f"no result column has the values of {', '.join(map(repr, unmatched))}")
     want = [[want_cols[n][k] for n in names] for k in range(len(truth.rows))]
     first_problem = ""
     for combo in combos:
         index = {**resolved, **dict(zip(unmatched, combo, strict=True))}
-        cols = {n: _zeroed(got_cols[index[n]]) if n in zero else got_cols[index[n]] for n in names}
+        cols = {n: result_column(n, index[n]) for n in names}
         got = [[cols[n][k] for n in names] for k in range(len(result.rows))]
         problem = _rows_match(want, got, compare)
         if problem is None:

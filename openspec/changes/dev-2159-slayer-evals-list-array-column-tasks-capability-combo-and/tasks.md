@@ -61,27 +61,27 @@
 
 ## 3. Implementation (pr-implement stage)
 
-- [ ] 3.1 Generator:
+- [x] 3.1 Generator:
   - `customers.tags VARCHAR[]` from stream `customer_tags`;
   - `products.ratings INTEGER[]` from stream `product_ratings`;
   - deterministic witnesses on fixed existing ids.
 
   Verify: 2.4 passes, and every pre-existing truth snapshot is byte-identical (`slayer-evals truth` without `--write`
   reports no drift for old tasks).
-- [ ] 3.2 Store models: `customers.yaml` gets `tags` (`type: ARRAY`, `element_type: TEXT`), and `products.yaml` gets
+- [x] 3.2 Store models: `customers.yaml` gets `tags` (`type: ARRAY`, `element_type: TEXT`), and `products.yaml` gets
   `ratings` (`type: ARRAY`, `element_type: INT`), in uppercase because 1.7.0 rejects lowercase. Verify: the
   store-template list-column scenario passes.
-- [ ] 3.3 `core/task.py`, `tasks/suite.py` and `report/render.py`: the row range, the pitfall kinds, the Q27 markers,
+- [x] 3.3 `core/task.py`, `tasks/suite.py` and `report/render.py`: the row range, the pitfall kinds, the Q27 markers,
   the deny-list, and the Q26/Q27 row names. Verify: 2.1, 2.2 and the row part of 2.5 pass.
-- [ ] 3.4 `grading/tables.py`: list-cell normalization and matching per the grading delta (pure, imports only `core`).
+- [x] 3.4 `grading/tables.py`: list-cell normalization and matching per the grading delta (pure, imports only `core`).
   Verify: 2.3 passes.
-- [ ] 3.5 `core/results.py`, `runner/run.py` and `report/render.py`: the required `TrialResult.slayer_version` stamped
+- [x] 3.5 `core/results.py`, `runner/run.py` and `report/render.py`: the required `TrialResult.slayer_version` stamped
   from the run's version, and the report's per-version trial counts. Verify: 2.5 passes.
-- [ ] 3.6 Regenerate the truth snapshots for the 17 new tasks (`poetry run slayer-evals truth --write`). Verify:
+- [x] 3.6 Regenerate the truth snapshots for the 17 new tasks (`poetry run slayer-evals truth --write`). Verify:
   `test_task_proofs.py` passes on the committed set, with every new reference matching and every new trap live, and
   each truth has at most 20 rows. A reference query SLayer cannot express, or a pre-existing reference that fails on
   1.7.0, is a suspected gap: STOP and ask the user.
-- [ ] 3.7 README:
+- [x] 3.7 README:
   - suite counts: capability 34, combo 15, trap 21;
   - the pitfall table gains the four new rows;
   - Covered rows gains Q26 and Q27;
@@ -92,7 +92,7 @@
 
 ## 4. Baseline
 
-- [ ] 4.1 Backfill `"slayer_version": "1.1.0"` into every existing line of `results/baseline/results.jsonl`. Verify:
+- [x] 4.1 Backfill `"slayer_version": "1.1.0"` into every existing line of `results/baseline/results.jsonl`. Verify:
   `slayer-evals report results/baseline` loads it.
 - [ ] 4.2 Run the 17 new tasks in all three profiles, Opus 5.5, `repeat` N = 1, on the new pin. This needs the user's
   `.env.agents`; ask for the go-ahead before spending on agent runs. Merge their results lines and traces into

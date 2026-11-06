@@ -1,0 +1,40 @@
+{
+ "columns": [
+  "tag",
+  "customers"
+ ],
+ "rows": [
+  [
+   "alpine",
+   16
+  ],
+  [
+   "eu",
+   80
+  ],
+  [
+   "newsletter",
+   73
+  ],
+  [
+   "nordic",
+   24
+  ],
+  [
+   "partner",
+   61
+  ],
+  [
+   "trial",
+   28
+  ],
+  [
+   "vip",
+   83
+  ],
+  [
+   "wholesale",
+   10
+  ]
+ ]
+}

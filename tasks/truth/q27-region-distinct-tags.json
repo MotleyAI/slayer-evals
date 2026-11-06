@@ -1,0 +1,28 @@
+{
+ "columns": [
+  "region",
+  "distinct_tags"
+ ],
+ "rows": [
+  [
+   null,
+   2
+  ],
+  [
+   "East",
+   7
+  ],
+  [
+   "North",
+   7
+  ],
+  [
+   "South",
+   6
+  ],
+  [
+   "West",
+   6
+  ]
+ ]
+}

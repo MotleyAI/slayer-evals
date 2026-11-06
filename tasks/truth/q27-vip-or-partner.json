@@ -1,0 +1,28 @@
+{
+ "columns": [
+  "region",
+  "customers"
+ ],
+ "rows": [
+  [
+   null,
+   1
+  ],
+  [
+   "East",
+   18
+  ],
+  [
+   "North",
+   32
+  ],
+  [
+   "South",
+   39
+  ],
+  [
+   "West",
+   23
+  ]
+ ]
+}

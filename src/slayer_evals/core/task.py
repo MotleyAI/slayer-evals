@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal, get_args
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-ALL_ROWS = tuple(f"Q{i}" for i in range(1, 26))
+ALL_ROWS = tuple(f"Q{i}" for i in range(1, 28))
 UNCOVERED_ROWS = ("Q19", "Q22")
 COVERED_ROWS = tuple(r for r in ALL_ROWS if r not in UNCOVERED_ROWS)
 Pitfall = Literal[
@@ -24,6 +24,10 @@ Pitfall = Literal[
     "timestamp_bounds",
     "avg_of_avgs",
     "bucket_reaggregation",
+    "count_after_unnest",
+    "unnest_fan_out",
+    "null_element",
+    "same_element_and",
 ]
 PITFALLS: tuple[str, ...] = get_args(Pitfall)
 Suite = Literal["capability", "combo", "trap"]

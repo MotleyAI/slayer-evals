@@ -1,0 +1,28 @@
+{
+ "columns": [
+  "tier",
+  "customers",
+  "total_credit",
+  "distinct_tags"
+ ],
+ "rows": [
+  [
+   "bronze",
+   100,
+   56240.0,
+   7
+  ],
+  [
+   "gold",
+   43,
+   23300.0,
+   7
+  ],
+  [
+   "silver",
+   59,
+   32290.0,
+   6
+  ]
+ ]
+}

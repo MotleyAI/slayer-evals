@@ -365,8 +365,9 @@ def test_mixed_slayer_versions_listed_with_trial_counts(tmp_path: Path):
 def test_results_line_without_slayer_version_rejected(tmp_path: Path):
     lines = [{**x, "slayer_version": "1.7.0"} for x in fixture_lines()]
     del lines[3]["slayer_version"]
+    run_dir = run_with(tmp_path, lines)
     with pytest.raises(ValidationError, match="slayer_version"):
-        render_report(run_with(tmp_path, lines))
+        render_report(run_dir)
 
 
 def test_new_rows_in_the_per_row_table(tmp_path: Path):
