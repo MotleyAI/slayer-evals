@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from claude_agent_sdk import ClaudeSDKClient
 
-from slayer_evals.agents.claude import CLAUDE_JSON, AnswerCollector, ClaudeAgent
+from slayer_evals.agents.claude import CLAUDE_JSON, AnswerCollector, ClaudeAgent, settled_status
 from slayer_evals.runner import resolve_auth
 from tests.fake_motley import fake_motley
 from tests.fake_sdk import MODEL, MOTLEY_USER_ID, make_input
@@ -28,7 +28,7 @@ async def test_identity_header_reaches_motley(tmp_path: Path):
         client = ClaudeSDKClient(options=opts)
         await client.connect()
         try:
-            status = await client.get_mcp_status()
+            status = await settled_status(client, "motley")
         finally:
             await client.disconnect()
         by_method = server.user_ids_by_method()

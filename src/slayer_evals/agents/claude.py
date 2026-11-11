@@ -1,4 +1,5 @@
-"""The hermetic Claude Agent SDK agent: SLayer's MCP server verbatim or a raw `sql` tool, plus `submit_answer` and Python."""
+"""The hermetic Claude Agent SDK agent: SLayer's or Motley's MCP server verbatim, or a raw `sql` tool; plus `submit_answer`
+and Python."""
 
 import asyncio
 import contextlib
@@ -16,15 +17,19 @@ from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, ResultMessage,
 from slayer_evals.agents.sandbox import run_python
 from slayer_evals.agents.sql import SQL_DESCRIPTION, SQL_TOOL, run_sql
 from slayer_evals.agents.trace import PYTHON_TOOL, normalize_messages, transcript_line
-from slayer_evals.core import AgentInput, AgentOutcome, EndReason, Profile, PythonAudit, Submission
+from slayer_evals.core import PROFILE_SPECS, AgentInput, AgentOutcome, EndReason, Profile, PythonAudit, Submission
 
 SLAYER_SERVER = "slayer"
+MOTLEY_SERVER = "motley"
 BENCH_SERVER = "bench"
+USER_ID_HEADER = "X-Storyline-Dev-User-Id"
 SUBMIT_TOOL = "submit_answer"
 SUBMIT_FULL_NAME = f"mcp__{BENCH_SERVER}__{SUBMIT_TOOL}"
 TEARDOWN_TIMEOUT_S = 30.0
-SLAYER_PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python")
-PYTHON_PROFILES: tuple[Profile, ...] = ("slayer+python", "sql+python")
+# The CLI reports servers as they come up: wait this long for every declared one to settle.
+SERVER_SETTLE_S = 30.0
+SERVER_POLL_S = 0.25
+DATA_SERVERS = {"slayer": SLAYER_SERVER, "motley": MOTLEY_SERVER}
 EXACT_ANSWER_SENTENCE = (
     "Submit exact values without rounding, and use null as the label of a group whose key is unknown."
 )
@@ -73,18 +78,50 @@ PYTHON_DESCRIPTION = (
 )
 
 
-class LeakedServerError(RuntimeError):
+class ServerCheckError(RuntimeError):
     pass
 
 
 def system_prompt(profile: Profile) -> str:
-    """Identical across profiles except for the JSON-results sentence of the SLayer profiles."""
-    return f"{BASE_PROMPT} {JSON_RESULTS_SENTENCE}" if profile in SLAYER_PROFILES else BASE_PROMPT
+    """Identical across profiles except for the JSON-results sentence of the SLayer and Motley profiles."""
+    return BASE_PROMPT if PROFILE_SPECS[profile].surface == "sql" else f"{BASE_PROMPT} {JSON_RESULTS_SENTENCE}"
 
 
 def mcp_servers_of(profile: Profile) -> set[str]:
-    """The MCP servers a session in `profile` may load."""
-    return {SLAYER_SERVER, BENCH_SERVER} if profile in SLAYER_PROFILES else {BENCH_SERVER}
+    """The MCP servers a session in `profile` loads."""
+    data = DATA_SERVERS.get(PROFILE_SPECS[profile].surface)
+    return {BENCH_SERVER} if data is None else {data, BENCH_SERVER}
+
+
+def _reported(status: Any) -> dict[str, Any]:
+    return {s["name"]: s.get("status") for s in (status or {}).get("mcpServers", [])}
+
+
+async def settled_status(client: Any, profile: Profile) -> Any:
+    """The MCP status once every declared server is reported and none is pending, or when the settle time is up."""
+    declared = mcp_servers_of(profile)
+    deadline = time.monotonic() + SERVER_SETTLE_S
+    while True:
+        status = await client.get_mcp_status()
+        reported = _reported(status)
+        if (declared <= set(reported) and "pending" not in reported.values()) or time.monotonic() >= deadline:
+            return status
+        await asyncio.sleep(SERVER_POLL_S)
+
+
+def check_servers(profile: Profile, status: Any) -> None:
+    """Raise unless the reported MCP servers are exactly the declared ones, each connected."""
+    reported = _reported(status)
+    declared = mcp_servers_of(profile)
+    extra = sorted(set(reported) - declared)
+    if extra:
+        raise ServerCheckError(f"unexpected MCP server(s) loaded: {', '.join(extra)}")
+    missing = sorted(declared - set(reported))
+    if missing:
+        raise ServerCheckError(f"declared MCP server(s) missing (not reported): {', '.join(missing)}")
+    down = sorted(f"{n} ({st})" for n, st in reported.items() if st != "connected")
+    if down:
+        raise ServerCheckError(f"MCP server(s) not connected: {', '.join(down)}")
 
 
 def slayer_server_env(environ: Mapping[str, str]) -> dict[str, str]:
@@ -139,10 +176,11 @@ class AnswerCollector:
             run = await run_sql(str(args.get("sql", "")), db_path=db_path)
             return _text(run.text, is_error=not run.ok)
 
+        spec = PROFILE_SPECS[profile]
         tools = [submit_answer]
-        if profile in PYTHON_PROFILES:
+        if spec.python:
             tools.append(python)
-        if profile not in SLAYER_PROFILES:
+        if spec.surface == "sql":
             tools.append(sql)
         return create_sdk_mcp_server(BENCH_SERVER, tools=tools)
 
@@ -167,24 +205,30 @@ class ClaudeAgent:
         self.model = model
         self.client_factory = client_factory or (lambda options: ClaudeSDKClient(options=options))
 
-    def build_options(self, inp: AgentInput, config_dir: Path, collector: AnswerCollector) -> ClaudeAgentOptions:
-        cmd = inp.env.slayer_command
+    def _server(self, name: str, inp: AgentInput, collector: AnswerCollector) -> Any:
+        if name == BENCH_SERVER:
+            return collector.bench_server(inp.profile, inp.env.trial_dir / "sandbox", inp.env.db_path)
+        if name == MOTLEY_SERVER:
+            if not inp.env.motley_url or not inp.env.motley_user_id:
+                raise ValueError(f"profile {inp.profile} needs a Motley URL and user id in the trial environment")
+            return {"type": "http", "url": inp.env.motley_url, "headers": {USER_ID_HEADER: inp.env.motley_user_id}}
         env = slayer_server_env(os.environ)
         # The CLI hands its whole environment to stdio servers, so `env -i` is what enforces the allow-list.
-        slayer = {
+        args = ["-i", *(f"{k}={v}" for k, v in env.items()), *inp.env.slayer_command]
+        return {
             "type": "stdio",
             "command": ENV_BIN,
-            "args": ["-i", *(f"{k}={v}" for k, v in env.items()), *cmd, "mcp", "--storage", str(inp.env.store_dir)],
+            "args": [*args, "mcp", "--storage", str(inp.env.store_dir)],
             "env": env,
         }
-        bench = collector.bench_server(inp.profile, inp.env.trial_dir / "sandbox", inp.env.db_path)
-        servers = {SLAYER_SERVER: slayer, BENCH_SERVER: bench}
+
+    def build_options(self, inp: AgentInput, config_dir: Path, collector: AnswerCollector) -> ClaudeAgentOptions:
         names = sorted(mcp_servers_of(inp.profile))
         return ClaudeAgentOptions(
             tools=[],
             setting_sources=[],
             allowed_tools=[f"mcp__{n}" for n in names],
-            mcp_servers={n: servers[n] for n in names},  # pyright: ignore[reportArgumentType]
+            mcp_servers={n: self._server(n, inp, collector) for n in names},
             system_prompt=system_prompt(inp.profile),
             model=self.model,
             max_turns=inp.env.max_turns,
@@ -201,14 +245,11 @@ class ClaudeAgent:
         messages: list[Any],
         session: dict[str, Any],
     ) -> None:
-        """Connect, check for leaked servers, ask, and stream into `messages` and the transcript until the result."""
+        """Connect, check the loaded servers, ask, and stream into `messages` and the transcript until the result."""
         await client.connect()
-        status = await client.get_mcp_status()
+        status = await settled_status(client, inp.profile)
         session["mcp_status"] = status
-        servers = (status or {}).get("mcpServers", [])
-        extra = sorted({s["name"] for s in servers} - mcp_servers_of(inp.profile))
-        if extra:
-            raise LeakedServerError(f"unexpected MCP server(s) loaded: {', '.join(extra)}")
+        check_servers(inp.profile, status)
         await client.query(inp.prompt)
         interrupted = False
         async for msg in client.receive_response():
@@ -239,6 +280,9 @@ class ClaudeAgent:
             "max_turns": inp.env.max_turns,
             "timeout_s": inp.env.timeout_s,
             "slayer_server": {k: v for k, v in servers.get(SLAYER_SERVER, {}).items() if k != "env"},
+            "motley_server": (
+                {"url": inp.env.motley_url, "user_id": inp.env.motley_user_id} if MOTLEY_SERVER in servers else None
+            ),
             "mcp_status": session.get("mcp_status"),
             "end_reason": end_reason,
             "error": error,
@@ -265,7 +309,7 @@ class ClaudeAgent:
                 end_reason, error = _end_reason(result, collector.submission is not None)
             except TimeoutError:
                 end_reason = "submitted" if collector.submission is not None else "timeout"
-            except LeakedServerError as exc:
+            except ServerCheckError as exc:
                 error = str(exc)
             except Exception as exc:  # noqa: BLE001 - any SDK or transport failure ends the trial, keeping what streamed so far
                 end_reason = "submitted" if collector.submission is not None else "error"

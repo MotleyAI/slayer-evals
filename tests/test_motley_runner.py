@@ -184,8 +184,9 @@ def test_motley_profile_without_a_seed_command_refuses(
     tmp_path: Path, built: BuiltDataset, agent_state: Path, profiles: list[str]
 ):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
+    cfg = config(tmp_path, built, td, profiles=profiles)
     with pytest.raises(ValueError, match="--motley-seed-cmd"):
-        run_benchmark(config(tmp_path, built, td, profiles=profiles), environ=ENV)
+        run_benchmark(cfg, environ=ENV)
     assert recorded_runs(agent_state) == []
     assert all_results(tmp_path / "runs") == []
 

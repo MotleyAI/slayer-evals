@@ -6,9 +6,12 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from slayer_evals.agents import DEFAULT_AGENT
-from slayer_evals.core import PROFILES, AuthMode, Profile, RunMode, SafeName, Task
+from slayer_evals.core import DEFAULT_PROFILES, PROFILES, AuthMode, Profile, RunMode, SafeName, Task
 
 DEFAULT_MODEL = "claude-opus-5-5"
+DEFAULT_MOTLEY_URL = "http://localhost:8000/api/v1/mcp/"
+# Every profile a run can select.
+SELECTABLE_PROFILES = PROFILES
 
 
 def default_slayer_command() -> list[str]:
@@ -25,7 +28,7 @@ class RunConfig(BaseModel):
     env_file: Path | None = None
     task_ids: list[str] = Field(default_factory=list)
     rows: list[str] = Field(default_factory=list)
-    profiles: list[Profile] = Field(default_factory=lambda: list(PROFILES))
+    profiles: list[Profile] = Field(default_factory=lambda: list(DEFAULT_PROFILES))
     models: list[SafeName] = Field(default_factory=lambda: [DEFAULT_MODEL])
     n: int = Field(default=1, ge=1)
     mode: RunMode = "repeat"
@@ -33,6 +36,9 @@ class RunConfig(BaseModel):
     max_turns: int = 60
     timeout_s: float = 900.0
     slayer_command: list[str] | None = None
+    motley_url: str = DEFAULT_MOTLEY_URL
+    # Seeds one Motley org; called with `--user-id U --store S --db D` appended.
+    motley_seed_command: list[str] | None = None
 
 
 def select_tasks(tasks: list[Task], cfg: RunConfig) -> list[Task]:

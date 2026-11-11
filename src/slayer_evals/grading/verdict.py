@@ -1,12 +1,21 @@
 """The verdict: is the answer correct, and is it a single query's own result; a pure function of its inputs."""
 
-from slayer_evals.core import Expectation, Profile, Submission, Table, Task, ToolCall, Trace, TraceFlags, Verdict
-from slayer_evals.grading.errors import error_kind
+from slayer_evals.core import (
+    PROFILE_SPECS,
+    Expectation,
+    Submission,
+    Table,
+    Task,
+    ToolCall,
+    Trace,
+    TraceFlags,
+    Verdict,
+    error_kind,
+)
 from slayer_evals.grading.flags import QUERY_TOOLS, trace_flags
 from slayer_evals.grading.tables import match_tables
 
 NO_SUBMISSION = "no submission"
-RAW_SQL_PROFILE: Profile = "sql+python"
 
 
 def produced(call: ToolCall, expect: Expectation) -> bool:
@@ -52,8 +61,9 @@ def _raw_sql_refusal(expect: Expectation, submission: Submission, flags: TraceFl
 
 def grade(task: Task, truth: Table, submission: Submission | None, trace: Trace) -> Verdict:
     calls = trace.calls
-    flags = trace_flags(calls)
-    if task.uses_saved and trace.profile == RAW_SQL_PROFILE:
+    flags = trace_flags(calls, trace.profile)
+    raw_sql = PROFILE_SPECS[trace.profile].surface == "sql"
+    if task.uses_saved and raw_sql:
         return _failed(f"needs the saved SLayer definitions {', '.join(task.uses_saved)}", flags)
     if submission is None:
         return _failed(NO_SUBMISSION, flags)
@@ -70,7 +80,7 @@ def grade(task: Task, truth: Table, submission: Submission | None, trace: Trace)
             flags=flags,
         )
     expect = task.expect
-    if trace.profile == RAW_SQL_PROFILE:
+    if raw_sql:
         return _raw_sql_refusal(expect, submission, flags)
     kind = " or ".join(expect.kinds)
     phrase = next((p for p in expect.message_any if p.lower() in submission.message.lower()), None)

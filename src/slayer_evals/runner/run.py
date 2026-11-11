@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import datetime as dt
+import hashlib
 import importlib.metadata
 import os
 import shutil
@@ -13,11 +14,14 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
+import httpx
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamable_http_client
 
-from slayer_evals.agents import slayer_server_env
+from slayer_evals.agents import USER_ID_HEADER, slayer_server_env
 from slayer_evals.core import (
+    PROFILE_SPECS,
     AgentInput,
     AgentOutcome,
     Profile,
@@ -39,10 +43,119 @@ from slayer_evals.tasks import compute_truths, load_tasks
 
 # Extra wall-clock a trial process gets beyond the agent's own budget before it is killed.
 KILL_GRACE_S = 60.0
-# A task naming saved SLayer definitions fails in this profile without running an agent.
-RAW_SQL_PROFILE: Profile = "sql+python"
 VERSION_PROBE_TIMEOUT_S = 60.0
 TRANSCRIPT_FILE = "transcript.jsonl"
+SEED_TIMEOUT_S = 600.0
+MOTLEY_INIT_TIMEOUT_S = 60.0
+SEED_ERROR_TAIL = 2000
+WARM_UP = "warm-up"
+MISDIRECTED = 421
+
+
+def _child_env() -> dict[str, str]:
+    """The runner's environment without the Claude credentials."""
+    return {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS}
+
+
+class SeedError(RuntimeError):
+    pass
+
+
+class MotleyWarmUpError(RuntimeError):
+    """The Motley warm-up seed or `initialize` failed, so the run cannot start."""
+
+
+def motley_user_id(run_dir: Path, label: str) -> str:
+    """`se-<run dir name>-<12 hex>`, unique per absolute run directory and label (a trial stem or `warm-up`)."""
+    digest = hashlib.sha256(f"{run_dir.absolute()}|{label}".encode()).hexdigest()[:12]
+    return f"se-{run_dir.name}-{digest}"
+
+
+async def _drain(stream: asyncio.StreamReader, echo: bool) -> bytes:
+    chunks: list[bytes] = []
+    while chunk := await stream.read(65536):
+        chunks.append(chunk)
+        if echo:
+            sys.stderr.write(chunk.decode(errors="replace"))
+            sys.stderr.flush()
+    return b"".join(chunks)
+
+
+async def seed_org(
+    command: list[str], user_id: str, store: Path, db: Path, env: Mapping[str, str], echo: bool = False
+) -> None:
+    """Run the seed command in its own process group; raise `SeedError` with its stderr tail unless it succeeds."""
+    argv = [*command, "--user-id", user_id, "--store", str(store), "--db", str(db)]
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *argv,
+            env=dict(env),
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise SeedError(f"motley seed failed to start: {exc}") from exc
+    assert proc.stderr is not None
+    drain = asyncio.ensure_future(_drain(proc.stderr, echo))
+    problem: str | None = None
+    try:
+        await asyncio.wait_for(proc.wait(), timeout=SEED_TIMEOUT_S)
+        if proc.returncode != 0:
+            problem = f"motley seed failed (exit {proc.returncode})"
+    except TimeoutError:
+        problem = f"motley seed timed out after {SEED_TIMEOUT_S:g} s"
+    finally:
+        # Also stops whatever the seed started.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        await proc.wait()
+    stderr = (await drain).decode(errors="replace")
+    if problem is not None:
+        raise SeedError(f"{problem}: {stderr[-SEED_ERROR_TAIL:].strip()}")
+
+
+def _leaves(exc: BaseException) -> list[BaseException]:
+    if isinstance(exc, BaseExceptionGroup):
+        return [leaf for e in exc.exceptions for leaf in _leaves(e)]
+    return [exc]
+
+
+def _init_failure(url: str, exc: BaseException) -> str:
+    causes = []
+    for e in _leaves(exc):
+        if isinstance(e, TimeoutError):
+            causes.append(f"no answer within {MOTLEY_INIT_TIMEOUT_S:g} s")
+        else:
+            causes.append(f"{type(e).__name__}: {e}")
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code == MISDIRECTED:
+            causes.append("the --motley-url host must match the backend's public_base_url")
+    return f"cannot initialize the Motley MCP server at {url}: {'; '.join(causes)}"
+
+
+async def warm_up_motley(cfg: RunConfig, built: BuiltDataset, run_dir: Path, env: Mapping[str, str]) -> str:
+    """Seed the warm-up org, then `initialize` as its user; returns the server's `<name> <version>`."""
+    assert cfg.motley_seed_command is not None
+    user_id = motley_user_id(run_dir, WARM_UP)
+    try:
+        await seed_org(
+            cfg.motley_seed_command, user_id, built.store_dir.absolute(), built.db_path.absolute(), env, echo=True
+        )
+    except SeedError as exc:
+        raise MotleyWarmUpError(f"warm-up {exc}") from exc
+    try:
+        async with asyncio.timeout(MOTLEY_INIT_TIMEOUT_S):
+            http = httpx.AsyncClient(headers={USER_ID_HEADER: user_id}, timeout=MOTLEY_INIT_TIMEOUT_S)
+            async with (
+                http,
+                streamable_http_client(cfg.motley_url, http_client=http) as (read, write, _),
+                ClientSession(read, write) as session,
+            ):
+                init = await session.initialize()
+    except Exception as exc:
+        raise MotleyWarmUpError(_init_failure(cfg.motley_url, exc)) from exc
+    return f"{init.serverInfo.name} {init.serverInfo.version}"
 
 
 class Combo:
@@ -55,7 +168,12 @@ class Combo:
 
     @property
     def auto_fails(self) -> bool:
-        return bool(self.task.uses_saved) and self.profile == RAW_SQL_PROFILE
+        """A task naming saved SLayer definitions fails in raw SQL without running an agent."""
+        return bool(self.task.uses_saved) and PROFILE_SPECS[self.profile].surface == "sql"
+
+    @property
+    def motley(self) -> bool:
+        return PROFILE_SPECS[self.profile].surface == "motley"
 
 
 class Runner:
@@ -76,10 +194,7 @@ class Runner:
     def _stem(self, combo: Combo, trial: int) -> str:
         return trial_stem(combo.task.id, combo.profile, combo.model, trial)
 
-    def _child_env(self) -> dict[str, str]:
-        return {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS}
-
-    async def _run_agent(self, combo: Combo, trial_dir: Path) -> tuple[AgentOutcome, float]:
+    async def _run_agent(self, combo: Combo, trial_dir: Path, user_id: str | None) -> tuple[AgentOutcome, float]:
         env = TrialEnv(
             trial_dir=trial_dir,
             store_dir=trial_dir / STORE_DIR,
@@ -89,6 +204,8 @@ class Runner:
             max_turns=self.cfg.max_turns,
             timeout_s=self.cfg.timeout_s,
             transcript_path=trial_dir / TRANSCRIPT_FILE,
+            motley_url=self.cfg.motley_url if user_id else None,
+            motley_user_id=user_id,
         )
         inp = AgentInput(prompt=combo.task.prompt, profile=combo.profile, env=env)
         spec = TrialSpec(agent=self.cfg.agent, model=combo.model, input=inp)
@@ -100,7 +217,7 @@ class Runner:
                 "-m",
                 "slayer_evals.runner.trial",
                 str(outcome_path),
-                env=self._child_env(),
+                env=_child_env(),
                 stdin=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 start_new_session=True,
@@ -126,13 +243,27 @@ class Runner:
             return AgentOutcome.model_validate_json(outcome_path.read_text()), elapsed
 
     async def _run_isolated(self, combo: Combo, stem: str) -> tuple[AgentOutcome, float]:
-        """Run the agent in its own process on fresh copies of the database and store; keep its transcript."""
+        """Run the agent in its own process on fresh copies of the database and store (and its own Motley org)."""
         async with self.semaphore:
             trial_dir = Path(tempfile.mkdtemp(prefix="slayer-evals-trial-"))
             try:
                 shutil.copy2(self.built.db_path, trial_dir / DB_FILE)
                 shutil.copytree(self.built.store_dir, trial_dir / STORE_DIR)
-                outcome, elapsed = await self._run_agent(combo, trial_dir)
+                user_id = motley_user_id(self.run_dir, stem) if combo.motley else None
+                if user_id is not None:
+                    assert self.cfg.motley_seed_command is not None
+                    try:
+                        await seed_org(
+                            self.cfg.motley_seed_command,
+                            user_id,
+                            trial_dir / STORE_DIR,
+                            self.built.db_path.absolute(),
+                            _child_env(),
+                        )
+                    except SeedError as exc:
+                        trace = Trace(profile=combo.profile, end_reason="error", error=str(exc))
+                        return AgentOutcome(submission=None, trace=trace), 0.0
+                outcome, elapsed = await self._run_agent(combo, trial_dir, user_id)
                 transcript = trial_dir / TRANSCRIPT_FILE
                 if transcript.exists():
                     shutil.copy2(transcript, self.run_dir / "transcripts" / f"{stem}.jsonl")
@@ -161,7 +292,7 @@ class Runner:
             usage=outcome.trace.usage,
             cost_usd=outcome.trace.cost_usd,
             duration_s=outcome.trace.duration_s if outcome.trace.duration_s is not None else elapsed,
-            xfail=task.xfail.issue if task.xfail else None,
+            xfail=task.xfail.issue if task.xfail and task.xfail.applies_to(combo.profile) else None,
         )
         with self.results_path.open("a") as f:
             f.write(result.model_dump_json() + "\n")
@@ -212,6 +343,9 @@ def _run_dir(out_dir: Path, started: dt.datetime) -> Path:
 
 def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> Path:
     """Run the selected tasks; returns the run directory holding results, traces, transcripts and the report."""
+    motley = any(PROFILE_SPECS[p].surface == "motley" for p in cfg.profiles)
+    if motley and not cfg.motley_seed_command:
+        raise ValueError("the Motley profiles need a seed command (--motley-seed-cmd)")
     credentials = resolve_auth(cfg.auth_mode, cfg.env_file, os.environ if environ is None else environ)
     assert cfg.auth_mode is not None
     tasks = select_tasks(load_tasks(cfg.tasks_dir), cfg)
@@ -229,6 +363,13 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
         run_dir = _run_dir(cfg.out_dir, started)
         for sub in ("traces", "transcripts"):
             (run_dir / sub).mkdir()
+        server_info = None
+        if motley:
+            try:
+                server_info = asyncio.run(warm_up_motley(cfg, built, run_dir, _child_env()))
+            except BaseException:
+                shutil.rmtree(run_dir, ignore_errors=True)
+                raise
         metadata = RunMetadata(
             slayer_version=version,
             sdk_version=importlib.metadata.version("claude-agent-sdk"),
@@ -240,6 +381,8 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
             timeout_s=cfg.timeout_s,
             auth_mode=cfg.auth_mode,
             started_at=started,
+            motley_url=cfg.motley_url if motley else None,
+            motley_server_info=server_info,
         )
         (run_dir / "metadata.json").write_text(metadata.model_dump_json(indent=1) + "\n")
         runner = Runner(cfg, built, truths, credentials, command, run_dir)

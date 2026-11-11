@@ -9,3 +9,7 @@ expect:
   message_any: [broadcast, repeat, overlap, "same value", "same total", "same amount", "not attribut", "not additive",
                 "cannot be split", "can't be split", "counted in both", "counted in more than one", "double count",
                 "shouldn't be added", "should not be added", "fan out", "fans out"]
+xfail:
+  issue: DEV-1951
+  reason: Motley's query drops result warnings
+  profiles: [motley, motley+python]

@@ -65,3 +65,5 @@ class RunMetadata(BaseModel):
     timeout_s: float
     auth_mode: AuthMode
     started_at: dt.datetime
+    motley_url: str | None = None
+    motley_server_info: str | None = None
