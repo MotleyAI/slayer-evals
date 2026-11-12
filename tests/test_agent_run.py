@@ -1,6 +1,7 @@
 """ClaudeAgent.run against a scripted client: submission, leak abort, budgets, usage fallback."""
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -184,3 +185,67 @@ async def test_python_audit_reaches_trace(tmp_path: Path):
     assert py[0].audit is not None
     assert "/etc/hostname" in [e.path for e in py[0].audit.events]
     assert "hi" in py[0].result_text
+
+
+def checked(
+    servers: list[str] | None = None, statuses: dict[str, str] | None = None
+) -> tuple[ClaudeAgent, list[FakeClient]]:
+    made: list[FakeClient] = []
+
+    def factory(options):
+        client = FakeClient(options, submitted_script(), servers, statuses)
+        made.append(client)
+        return client
+
+    return ClaudeAgent(model=MODEL, client_factory=factory), made
+
+
+@pytest.mark.parametrize(
+    ("profile", "servers", "missing"),
+    [
+        ("motley", ["bench"], "motley"),
+        ("motley+python", ["bench"], "motley"),
+        ("motley", ["motley"], "bench"),
+        ("slayer", ["slayer"], "bench"),
+        ("slayer+python", ["bench"], "slayer"),
+        ("sql+python", [], "bench"),
+    ],
+)
+async def test_missing_declared_server_aborts(tmp_path: Path, profile: Profile, servers: list[str], missing: str):
+    a, made = checked(servers=servers)
+    out = await a.run(make_input(tmp_path, profile=profile))
+    assert out.trace.end_reason == "error"
+    assert out.trace.error is not None
+    assert missing in out.trace.error
+    assert re.search(r"missing|not reported", out.trace.error), out.trace.error
+    assert out.submission is None
+    assert made[0].prompt is None
+
+
+@pytest.mark.parametrize(
+    ("profile", "server", "status"),
+    [
+        ("motley", "motley", "failed"),
+        ("motley+python", "motley", "needs-auth"),
+        ("slayer", "slayer", "failed"),
+        ("slayer+python", "bench", "pending"),
+        ("sql+python", "bench", "failed"),
+    ],
+)
+async def test_unconnected_server_aborts(tmp_path: Path, profile: Profile, server: str, status: str):
+    a, made = checked(statuses={server: status})
+    out = await a.run(make_input(tmp_path, profile=profile))
+    assert out.trace.end_reason == "error"
+    assert out.trace.error is not None
+    assert server in out.trace.error
+    assert status in out.trace.error
+    assert out.submission is None
+    assert made[0].prompt is None
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+async def test_exactly_the_declared_servers_connected_runs(tmp_path: Path, profile: Profile):
+    a, made = checked()
+    out = await a.run(make_input(tmp_path, profile=profile))
+    assert out.trace.end_reason == "submitted", out.trace.error
+    assert made[0].prompt is not None

@@ -5,10 +5,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from slayer_evals.core.profiles import Profile
 from slayer_evals.core.table import ParsedResult
 
-Profile = Literal["slayer", "slayer+python", "sql+python"]
-PROFILES: tuple[Profile, ...] = ("slayer", "slayer+python", "sql+python")
 EndReason = Literal["submitted", "max_turns", "timeout", "error", "auto_fail"]
 
 
@@ -66,6 +65,8 @@ class TrialEnv(BaseModel):
     max_turns: int = 60
     timeout_s: float = 900.0
     transcript_path: Path
+    motley_url: str | None = None
+    motley_user_id: str | None = None
 
 
 class AgentInput(BaseModel):

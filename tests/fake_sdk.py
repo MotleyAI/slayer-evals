@@ -19,6 +19,8 @@ from slayer_evals.core import AgentInput, Profile, TrialEnv
 from tests.helpers import call_sdk_tool, servers_of
 
 MODEL = "claude-opus-5-5"
+MOTLEY_URL = "http://127.0.0.1:8000/api/v1/mcp/"
+MOTLEY_USER_ID = "se-20261111-143000-0123456789ab"
 
 
 def turn_usage(inp: int = 100, out: int = 10, read: int = 50, write: int = 5) -> dict[str, int]:
@@ -83,10 +85,17 @@ class Raise:
 
 
 class FakeClient:
-    def __init__(self, options: ClaudeAgentOptions, script: list[Any], servers: list[str] | None = None):
+    def __init__(
+        self,
+        options: ClaudeAgentOptions,
+        script: list[Any],
+        servers: list[str] | None = None,
+        statuses: dict[str, str] | None = None,
+    ):
         self.options = options
         self.script = script
         self.servers = servers
+        self.statuses = statuses or {}
         self.prompt: str | None = None
         self.interrupted = False
         self.connected = False
@@ -109,7 +118,7 @@ class FakeClient:
 
     async def get_mcp_status(self) -> dict[str, Any]:
         names = self.servers if self.servers is not None else list(servers_of(self.options))
-        return {"mcpServers": [{"name": n, "status": "connected"} for n in names]}
+        return {"mcpServers": [{"name": n, "status": self.statuses.get(n, "connected")} for n in names]}
 
     async def query(self, prompt: str, session_id: str = "default") -> None:
         self.prompt = prompt
@@ -131,9 +140,17 @@ class FakeClient:
                 yield step
 
 
-def make_input(tmp: Path, profile: Profile = "slayer", timeout_s: float = 60.0, max_turns: int = 60) -> AgentInput:
+def make_input(
+    tmp: Path,
+    profile: Profile = "slayer",
+    timeout_s: float = 60.0,
+    max_turns: int = 60,
+    motley_url: str = MOTLEY_URL,
+) -> AgentInput:
+    """A trial input; the Motley profiles also get a Motley URL and user id."""
     trial = tmp / "trial"
     (trial / "store").mkdir(parents=True, exist_ok=True)
+    motley = {"motley_url": motley_url, "motley_user_id": MOTLEY_USER_ID} if profile.startswith("motley") else {}
     return AgentInput(
         prompt="Revenue per region and city, with each region's total alongside.",
         profile=profile,
@@ -150,5 +167,6 @@ def make_input(tmp: Path, profile: Profile = "slayer", timeout_s: float = 60.0, 
             max_turns=max_turns,
             timeout_s=timeout_s,
             transcript_path=trial / "transcript.jsonl",
+            **motley,
         ),
     )

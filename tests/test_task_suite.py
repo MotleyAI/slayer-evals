@@ -271,3 +271,10 @@ def test_committed_trap_catalogue(committed: list[Task]):
     for kind, n in TRAPS.items():
         assert kinds[kind] >= n, kind
     assert all(t.naive_sql for t in traps)
+
+
+def test_q9_is_xfail_only_in_the_motley_profiles(committed: list[Task]):
+    (q9,) = [t for t in committed if t.id == "q9-credit-by-status"]
+    assert q9.xfail is not None
+    assert q9.xfail.issue == "DEV-1951"
+    assert q9.xfail.profiles == ["motley", "motley+python"]

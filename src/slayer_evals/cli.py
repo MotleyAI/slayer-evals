@@ -9,7 +9,14 @@ from pathlib import Path
 
 from slayer_evals.dataset import DEFAULT_SEED, BuiltDataset, build_dataset, load_built
 from slayer_evals.report import write_report
-from slayer_evals.runner import DEFAULT_MODEL, AuthError, RunConfig, run_benchmark
+from slayer_evals.runner import (
+    DEFAULT_MODEL,
+    SELECTABLE_PROFILES,
+    AuthError,
+    MotleyWarmUpError,
+    RunConfig,
+    run_benchmark,
+)
 from slayer_evals.tasks import (
     TRUTH_DIR,
     SnapshotDriftError,
@@ -60,7 +67,7 @@ def _parser() -> argparse.ArgumentParser:
         "--profiles",
         type=_csv,
         default=RunConfig().profiles,
-        help=f"comma-separated, from {', '.join(RunConfig().profiles)}",
+        help=f"comma-separated, from {', '.join(SELECTABLE_PROFILES)} (default: {', '.join(RunConfig().profiles)})",
     )
     r.add_argument("--models", type=_csv, default=[DEFAULT_MODEL])
     r.add_argument("--trials", type=int, default=1, help="N: trials per task (repeat) or the attempt cap (until-pass)")
@@ -69,6 +76,12 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--max-turns", type=int, default=60)
     r.add_argument("--timeout", type=float, default=900.0, help="wall-clock budget per trial, seconds")
     r.add_argument("--slayer-command", type=shlex.split, help="SLayer executable to test, e.g. a local checkout")
+    r.add_argument("--motley-url", default=RunConfig().motley_url, help="Motley MCP endpoint for the Motley profiles")
+    r.add_argument(
+        "--motley-seed-cmd",
+        type=shlex.split,
+        help="command that seeds one Motley org; --user-id, --store and --db are appended",
+    )
 
     rep = sub.add_parser("report", help="(re)generate report.md of a run directory")
     rep.add_argument("run_dir", type=Path)
@@ -116,6 +129,8 @@ def _run(args: argparse.Namespace) -> int:
         max_turns=args.max_turns,
         timeout_s=args.timeout,
         slayer_command=args.slayer_command,
+        motley_url=args.motley_url,
+        motley_seed_command=args.motley_seed_cmd,
     )
     run_dir = run_benchmark(cfg)
     print(f"run written to {run_dir} (report: {run_dir / 'report.md'})")
@@ -135,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
             return _run(args)
         print(f"wrote {write_report(args.run_dir)}")
         return 0
-    except (AuthError, TaskFormatError, TruthError, SnapshotDriftError, ValueError) as exc:
+    except (AuthError, TaskFormatError, TruthError, SnapshotDriftError, MotleyWarmUpError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

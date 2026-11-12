@@ -1,7 +1,6 @@
 """The markdown report of a run directory: suite, pitfall, per-row and per-task tables, xfails, totals, failures."""
 
 import json
-import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -10,11 +9,14 @@ from slayer_evals.core import (
     ALL_ROWS,
     COVERED_ROWS,
     PITFALLS,
+    PROFILE_SPECS,
     UNCOVERED_ROWS,
+    Profile,
     RunMetadata,
     Suite,
     Trace,
     TrialResult,
+    error_kind,
     trial_stem,
 )
 
@@ -52,7 +54,10 @@ ROW_TITLES = {
 }
 SUITES: tuple[Suite, ...] = ("capability", "combo", "trap")
 NON_QUERY_TOOLS = ("submit_answer", "python")
-_ERROR_RE = re.compile(r"Error executing tool [\w.-]+: ([A-Za-z_][\w.]*):")
+MOTLEY_NOTE = (
+    "Motley's `query` cannot run a saved query by name with `refine` yet (DEV-2260); "
+    "saved-query tasks are answered with one inline query."
+)
 
 
 def stem(r: TrialResult) -> str:
@@ -144,9 +149,11 @@ def _task_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
     return _table(["Task", "Suite", "Covers", "First try", "Eventual", "Attempts"], rows)
 
 
-def _section(results: list[TrialResult], md: RunMetadata, profile: str, model: str) -> list[str]:
+def _section(results: list[TrialResult], md: RunMetadata, profile: Profile, model: str) -> list[str]:
     scored = [r for r in results if r.profile == profile and r.model == model and r.xfail is None]
     out = [f"## `{profile}` · `{model}`", ""]
+    if PROFILE_SPECS[profile].surface == "motley":
+        out += [MOTLEY_NOTE, ""]
     if not any(r.profile == profile and r.model == model for r in results):
         return [*out, "No trials.", ""]
     out += ["A task counts under every row it covers, so a multi-row task adds to several rows.", ""]
@@ -281,8 +288,8 @@ def call_digest(trace: Trace) -> list[str]:
             continue
         what = _what(c.tool, c.args)
         if c.is_error:
-            m = _ERROR_RE.search(c.result_text)
-            got = f"error {m.group(1)}" if m else "error"
+            kind = error_kind(c.result_text)
+            got = f"error {kind}" if kind else "error"
         elif c.parsed is not None:
             got = f"{len(c.parsed.rows)} rows" + "".join(f", {w.kind} warning" for w in c.parsed.warnings)
         else:
@@ -340,6 +347,10 @@ def _metadata(md: RunMetadata, results: list[TrialResult]) -> list[str]:
         ["Started", md.started_at.strftime("%Y-%m-%d %H:%M UTC")],
         ["Trials", len(results)],
     ]
+    if md.motley_url is not None:
+        rows.append(["Motley MCP", md.motley_url])
+    if md.motley_server_info is not None:
+        rows.append(["MCP server info", md.motley_server_info])
     return _table(["Run", ""], rows)
 
 

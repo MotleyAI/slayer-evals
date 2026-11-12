@@ -28,6 +28,72 @@ Q1_SLAYER_QUERY = {
 }
 
 
+MOTLEY_ROW_LIMIT = 10000
+
+
+def motley_payload(
+    columns: list[str],
+    rows: list[list[Any]],
+    truncated: bool = False,
+    sql: str | None = None,
+    reminder: str | None = None,
+    history_url: str | None = None,
+) -> dict[str, Any]:
+    """A Motley `query` payload as storyline's `query_tools._response_to_payload` builds it."""
+    payload: dict[str, Any] = {
+        "columns": [
+            {"name": c, "role": "dimension", "type": "string", "title": c, "granularity": None, "aggregation": None}
+            for c in columns
+        ],
+        "rows": [dict(zip(columns, r, strict=True)) for r in rows],
+        "row_count": len(rows),
+        "truncated": truncated,
+    }
+    if truncated:
+        payload["hint"] = _motley_row_note(payload)
+    if history_url:
+        payload["history_url"] = history_url
+    if sql:
+        payload["sql"] = sql
+    if reminder:
+        payload["reminder"] = reminder
+    return payload
+
+
+def _motley_row_note(payload: dict[str, Any]) -> str:
+    if payload["truncated"]:
+        return (
+            f"truncated to {payload['row_count']} rows — more rows exist; pass a "
+            f"higher 'limit' tool argument (up to {MOTLEY_ROW_LIMIT}) to get them. "
+            "MCP clients often truncate or spill responses beyond ~1,000 rows, "
+            "so prefer aggregating server-side."
+        )
+    return f"{payload['row_count']} rows"
+
+
+def motley_json(columns: list[str], rows: list[list[Any]], **kw: Any) -> str:
+    """Motley's default `query` result text: the payload dumped with `indent=2`."""
+    return json.dumps(motley_payload(columns, rows, **kw), indent=2)
+
+
+def motley_markdown(columns: list[str], rows: list[list[Any]], **kw: Any) -> str:
+    """Motley's `format="markdown"` result, as storyline's `query_tools._render_markdown` renders it."""
+    payload = motley_payload(columns, rows, **kw)
+    names = [c["name"] for c in payload["columns"]]
+    lines = ["| " + " | ".join(names) + " |", "| " + " | ".join(["---"] * len(names)) + " |"]
+    for row in payload["rows"]:
+        lines.append("| " + " | ".join("" if row.get(n) is None else str(row.get(n)) for n in names) + " |")
+    if payload.get("sql"):
+        lines.append(f"\n```sql\n{payload['sql']}\n```")
+    note = _motley_row_note(payload)
+    if payload.get("history_url"):
+        note += f"; history: {payload['history_url']}"
+    lines.append(f"\n_({note})_")
+    if payload.get("reminder"):
+        lines.append(f"\n{payload['reminder']}")
+    return "\n".join(lines)
+
+
 def mcp_fixture(name: str) -> dict[str, Any]:
     """A response captured from a real `slayer mcp` (tool, args, is_error, text)."""
     return json.loads((MCP_FIXTURES / f"{name}.json").read_text())

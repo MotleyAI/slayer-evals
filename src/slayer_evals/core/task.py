@@ -4,6 +4,8 @@ from typing import Annotated, Any, Literal, get_args
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from slayer_evals.core.profiles import Profile
+
 ALL_ROWS = tuple(f"Q{i}" for i in range(1, 26))
 UNCOVERED_ROWS = ("Q19", "Q22")
 COVERED_ROWS = tuple(r for r in ALL_ROWS if r not in UNCOVERED_ROWS)
@@ -82,6 +84,11 @@ class Expectation(Strict):
 class XFail(Strict):
     issue: str
     reason: str
+    # Empty: every profile.
+    profiles: list[Profile] = Field(default_factory=list)
+
+    def applies_to(self, profile: Profile) -> bool:
+        return not self.profiles or profile in self.profiles
 
 
 class Task(Strict):

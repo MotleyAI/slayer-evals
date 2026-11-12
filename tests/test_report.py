@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from slayer_evals.core import Profile, ToolCall, Trace, TrialResult, Verdict
 from slayer_evals.report import render_report, write_report
 from tests.helpers import REPO
 
@@ -326,3 +327,75 @@ def test_regenerates_byte_identical_offline(tmp_path: Path, monkeypatch: pytest.
     second = write_report(run).read_bytes()
     assert first == second
     assert (run / "report.md").read_bytes() == first
+
+
+MOTLEY_URL = "http://localhost:8000/api/v1/mcp/"
+MOTLEY_NOTE = (
+    "Motley's `query` cannot run a saved query by name with `refine` yet (DEV-2260); "
+    "saved-query tasks are answered with one inline query."
+)
+BARE_ERROR = "TimeDimensionColumnError: A time dimension must reference a raw date column; 'month' is already bucketed."
+
+
+def _motley_result(profile: Profile, passed: bool) -> TrialResult:
+    verdict = Verdict(
+        correct=passed,
+        single_query=passed,
+        correct_reasons=["rows match" if passed else "message mentions none of ['bucketed']"],
+        single_query_reasons=["query #1 returns the answer" if passed else "no call returned TimeDimensionColumnError"],
+    )
+    return TrialResult(
+        task_id="q18-a", covers=["Q18"], profile=profile, model=MODEL, trial=1, verdict=verdict, end_reason="submitted"
+    )
+
+
+@pytest.fixture
+def motley_report(tmp_path: Path) -> str:
+    run = tmp_path / "run"
+    (run / "traces").mkdir(parents=True)
+    md = json.loads((FIXTURES / "run_repeat" / "metadata.json").read_text())
+    md.update(
+        models=[MODEL],
+        profiles=["slayer", "motley", "motley+python"],
+        n=1,
+        motley_url=MOTLEY_URL,
+        motley_server_info="motley 1.30.0",
+    )
+    (run / "metadata.json").write_text(json.dumps(md))
+    rs = [_motley_result("slayer", True), _motley_result("motley", True), _motley_result("motley+python", False)]
+    (run / "results.jsonl").write_text("".join(r.model_dump_json() + "\n" for r in rs))
+    failed = ToolCall(
+        tool="query",
+        args={"query": {"source_model": "orders", "time_dimensions": [{"dimension": "month", "granularity": "year"}]}},
+        result_text=BARE_ERROR,
+        is_error=True,
+    )
+    trace = Trace(profile="motley+python", calls=[failed])
+    (run / "traces" / f"q18-a__motley+python__{MODEL}__1.json").write_text(trace.model_dump_json())
+    return render_report(run)
+
+
+def test_motley_metadata_rows(motley_report: str):
+    rows = {r["Run"]: r[""] for r in table_with(motley_report, "Run")}
+    assert rows["Motley MCP"] == MOTLEY_URL
+    assert rows["MCP server info"] == "motley 1.30.0"
+
+
+def test_motley_sections_open_with_the_saved_query_note(motley_report: str):
+    for profile in ("motley", "motley+python"):
+        first = next(x for x in section(motley_report, profile).splitlines() if x.strip())
+        assert first == MOTLEY_NOTE, profile
+    assert MOTLEY_NOTE not in section(motley_report, "slayer")
+    assert motley_report.count(MOTLEY_NOTE) == 2
+
+
+def test_failed_motley_call_digest_names_the_bare_error_class(motley_report: str):
+    entry = failures(motley_report).split("**q18-a**", 1)[1]
+    assert "motley+python" in entry.split("\n", 1)[0]
+    assert "`query`" in entry
+    assert "error TimeDimensionColumnError" in entry
+
+
+def test_run_without_motley_has_no_motley_rows_or_note(repeat_report: str):
+    assert "Motley" not in repeat_report
+    assert "MCP server info" not in repeat_report

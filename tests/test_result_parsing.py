@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from slayer_evals.core import Compare, ParsedResult
-from slayer_evals.grading import error_kind, match_tables
+from slayer_evals.core import Compare, ParsedResult, error_kind
+from slayer_evals.grading import match_tables
 from tests.helpers import mcp_fixture
 
 PAIRS = [

@@ -1,4 +1,5 @@
 # Config for the la-* tools (github.com/MotleyAI/living-architecture).
+format: 0.4.0
 tracker: linear  # detected: Linear MCP + <user>/<key>-<slug> branch names
 openspec: true  # your answer
 architecture: true

@@ -1,5 +1,7 @@
 """Schemas shared by every node: tasks, tables, the agent seam, verdicts and results."""
 
+from slayer_evals.core.errors import error_kind
+from slayer_evals.core.profiles import DEFAULT_PROFILES, PROFILE_SPECS, PROFILES, Profile, ProfileSpec, Surface
 from slayer_evals.core.results import (
     AuthMode,
     RunMetadata,
@@ -24,12 +26,10 @@ from slayer_evals.core.task import (
     trial_stem,
 )
 from slayer_evals.core.trace import (
-    PROFILES,
     AgentInput,
     AgentOutcome,
     AuditEvent,
     EndReason,
-    Profile,
     PythonAudit,
     Submission,
     ToolCall,
@@ -41,8 +41,10 @@ from slayer_evals.core.trace import (
 __all__ = [
     "ALL_ROWS",
     "COVERED_ROWS",
+    "DEFAULT_PROFILES",
     "PITFALLS",
     "PROFILES",
+    "PROFILE_SPECS",
     "UNCOVERED_ROWS",
     "AgentInput",
     "AgentOutcome",
@@ -54,6 +56,7 @@ __all__ = [
     "ParsedResult",
     "Pitfall",
     "Profile",
+    "ProfileSpec",
     "PythonAudit",
     "ResultWarning",
     "RunMetadata",
@@ -61,6 +64,7 @@ __all__ = [
     "SafeName",
     "Submission",
     "Suite",
+    "Surface",
     "Table",
     "Task",
     "ToolCall",
@@ -71,5 +75,6 @@ __all__ = [
     "Usage",
     "Verdict",
     "XFail",
+    "error_kind",
     "trial_stem",
 ]

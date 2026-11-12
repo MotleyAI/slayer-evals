@@ -8,8 +8,8 @@ from pydantic import ValidationError
 from slayer_evals.core import (
     ALL_ROWS,
     COVERED_ROWS,
+    DEFAULT_PROFILES,
     PITFALLS,
-    PROFILES,
     AuditEvent,
     ParsedResult,
     PythonAudit,
@@ -94,8 +94,8 @@ def test_pitfalls_are_the_closed_list():
     assert not set(PITFALLS) & set(ALL_ROWS)
 
 
-def test_three_profiles():
-    assert PROFILES == ("slayer", "slayer+python", "sql+python")
+def test_three_default_profiles():
+    assert tuple(DEFAULT_PROFILES) == ("slayer", "slayer+python", "sql+python")
 
 
 def test_trace_round_trip():

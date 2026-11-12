@@ -140,11 +140,44 @@ SLayer checkout.
   `submit_answer` and the same Python tool, which is not given the database. Tasks that name a saved SLayer definition
   (such as the saved query `monthly_rev`) cannot be done without SLayer, so they fail in this profile without running
   an agent (end reason `auto_fail`).
+* **`motley`** and **`motley+python`** — Motley's MCP server, verbatim, plus `submit_answer` (and the Python tool).
+  Opt-in: see [Motley profiles](#motley-profiles).
 
-Every session is hermetic: an empty Claude config directory, no built-in tools, no settings, only the profile's MCP
-servers (the trial aborts if any other server appears), and SLayer runs on its own copy of the database and store
-with an allow-listed environment. The system prompt is short and generic and identical across profiles, except that
-the SLayer profiles are asked to request `query` results as JSON; it never mentions SLayer features.
+A run uses `slayer`, `slayer+python` and `sql+python` unless `--profiles` says otherwise.
+
+Every session is hermetic: an empty Claude config directory, no built-in tools, no settings, and exactly the profile's
+MCP servers, each connected (the trial aborts if any other server appears, or a declared one is missing or not
+connected). SLayer runs on its own copy of the database and store with an allow-listed environment. The system prompt
+is short and generic and identical across profiles, except that the SLayer and Motley profiles are asked to request
+`query` results as JSON; it never mentions SLayer or Motley features.
+
+## Motley profiles
+
+`motley` and `motley+python` connect the agent to a running Motley backend over HTTP, so one run can compare SLayer,
+Motley and raw SQL side by side:
+
+```bash
+poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset-dir data \
+  --profiles slayer,motley,motley+python \
+  --motley-url http://localhost:8000/api/v1/mcp/ \
+  --motley-seed-cmd "poetry -C /path/to/storyline/backend run python /path/to/storyline/backend/scripts/seed_eval_org.py"
+```
+
+* `--motley-url` is the backend's MCP endpoint (default `http://localhost:8000/api/v1/mcp/`). Its host must match
+  the backend's `public_base_url`, or the backend answers 421.
+* `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Before each Motley trial the runner
+  calls it with `--user-id <id> --store <the trial's store copy> --db <the dataset's bench.duckdb>`, so every trial
+  gets its own org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times out (600 s)
+  ends that trial with `error`.
+* The backend must be a dev backend with identity headers allowed (`environment.type: dev`,
+  `development.allow_identity_headers: true`). Storyline's `docs/eval_org_seed.md` describes the seed script and the
+  backend configuration.
+
+At start the run seeds a warm-up org, which fills the embedding cache, and runs an MCP `initialize` as that user; the
+run stops if either fails. The report records the Motley URL and the server name and version `initialize` reports.
+Two gaps on Motley's side show in its results: `q9-credit-by-status` is an expected failure in the Motley profiles
+until Motley's `query` returns result warnings, and Motley's `query` cannot yet run a saved query by name with
+`refine`, so saved-query tasks are answered with one inline query.
 
 ## Reading the report
 
