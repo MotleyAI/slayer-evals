@@ -1,5 +1,6 @@
 """Runs with the Motley profiles: user ids, per-trial org seeding, the warm-up, run metadata and scoped xfail."""
 
+import asyncio
 import hashlib
 import os
 import re
@@ -248,6 +249,20 @@ def test_seed_failure_ends_the_trial(tmp_path: Path, built: BuiltDataset, agent_
     assert NOISE_MARKER not in trace.error, "the error keeps only the tail of the seed's stderr"
     assert len(trace.error) < 10000
     assert recorded_runs(agent_state) == []
+
+
+async def _drained(chunks: list[bytes], keep: int) -> bytes:
+    reader = asyncio.StreamReader()
+    for chunk in chunks:
+        reader.feed_data(chunk)
+    reader.feed_eof()
+    return await run_module.drain_tail(reader, keep)
+
+
+@pytest.mark.parametrize("sizes", [[0], [10], [100_000, 5], [3, 70_000, 70_000, 9]])
+def test_drain_tail_keeps_only_the_last_bytes(sizes: list[int]):
+    chunks = [bytes([65 + i % 26]) * n for i, n in enumerate(sizes)]
+    assert asyncio.run(_drained(chunks, 1000)) == b"".join(chunks)[-1000:]
 
 
 def test_seed_runs_inside_the_concurrency_slot(

@@ -71,14 +71,16 @@ def motley_user_id(run_dir: Path, label: str) -> str:
     return f"se-{run_dir.name}-{digest}"
 
 
-async def _drain(stream: asyncio.StreamReader, echo: bool) -> bytes:
-    chunks: list[bytes] = []
+async def drain_tail(stream: asyncio.StreamReader, keep: int, echo: bool = False) -> bytes:
+    """Read `stream` to EOF, keeping only its last `keep` bytes."""
+    tail = bytearray()
     while chunk := await stream.read(65536):
-        chunks.append(chunk)
+        tail += chunk
+        del tail[:-keep]
         if echo:
             sys.stderr.write(chunk.decode(errors="replace"))
             sys.stderr.flush()
-    return b"".join(chunks)
+    return bytes(tail)
 
 
 async def seed_org(
@@ -98,7 +100,8 @@ async def seed_org(
     except OSError as exc:
         raise SeedError(f"motley seed failed to start: {exc}") from exc
     assert proc.stderr is not None
-    drain = asyncio.ensure_future(_drain(proc.stderr, echo))
+    # 4 bytes per character keeps at least `SEED_ERROR_TAIL` characters of UTF-8.
+    drain = asyncio.ensure_future(drain_tail(proc.stderr, 4 * SEED_ERROR_TAIL, echo))
     problem: str | None = None
     try:
         await asyncio.wait_for(proc.wait(), timeout=SEED_TIMEOUT_S)
