@@ -176,7 +176,7 @@ def test_user_ids_differ_across_trials_and_runs():
 def test_defaults():
     c = RunConfig()
     assert c.profiles == list(DEFAULT_PROFILES) == ["slayer", "slayer+python", "sql+python"]
-    assert c.motley_url == "http://localhost:8000/api/v1/mcp/"
+    assert c.motley_url == "http://localhost:8100/api/v1/mcp/"
     assert c.motley_seed_command is None
 
 
@@ -478,7 +478,7 @@ def test_cli_motley_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert main(["run", "--api-key-auth"]) == 0
     (cfg,) = seen
     assert cfg.profiles == ["slayer", "slayer+python", "sql+python"]
-    assert cfg.motley_url == "http://localhost:8000/api/v1/mcp/"
+    assert cfg.motley_url == "http://localhost:8100/api/v1/mcp/"
     assert cfg.motley_seed_command is None
 
 
@@ -527,7 +527,6 @@ def test_readme_documents_the_motley_profiles():
         "`motley+python`",
         "--motley-url",
         "--motley-seed-cmd",
-        "allow_identity_headers",
         "public_base_url",
         "eval_org_seed.md",
     ):
