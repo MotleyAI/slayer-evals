@@ -9,7 +9,7 @@ from slayer_evals.agents import DEFAULT_AGENT
 from slayer_evals.core import DEFAULT_PROFILES, PROFILES, AuthMode, Profile, RunMode, SafeName, Task
 
 DEFAULT_MODEL = "claude-opus-5-5"
-DEFAULT_MOTLEY_URL = "http://localhost:8000/api/v1/mcp/"
+DEFAULT_MOTLEY_URL = "http://localhost:8100/api/v1/mcp/"
 # Every profile a run can select.
 SELECTABLE_PROFILES = PROFILES
 

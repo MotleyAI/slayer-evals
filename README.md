@@ -159,19 +159,17 @@ Motley and raw SQL side by side:
 ```bash
 poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset-dir data \
   --profiles slayer,motley,motley+python \
-  --motley-url http://localhost:8000/api/v1/mcp/ \
-  --motley-seed-cmd "poetry -C /path/to/storyline/backend run python /path/to/storyline/backend/scripts/seed_eval_org.py"
+  --motley-seed-cmd "/path/to/storyline/backend/scripts/eval_backend.sh seed"
 ```
 
-* `--motley-url` is the backend's MCP endpoint (default `http://localhost:8000/api/v1/mcp/`). Its host must match
-  the backend's `public_base_url`, or the backend answers 421.
-* `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Before each Motley trial the runner
-  calls it with `--user-id <id> --store <the trial's store copy> --db <the dataset's bench.duckdb>`, so every trial
-  gets its own org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times out (600 s)
-  ends that trial with `error`.
-* The backend must be a dev backend with identity headers allowed (`environment.type: dev`,
-  `development.allow_identity_headers: true`). Storyline's `docs/eval_org_seed.md` describes the seed script and the
-  backend configuration.
+* `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Storyline's `eval_backend.sh seed`
+  first brings up a local eval backend on `127.0.0.1:8100` if it is down. Before each Motley trial the runner calls it
+  with `--user-id <id> --store <the trial's store copy> --db <the dataset's bench.duckdb>`, so every trial gets its own
+  org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times out (600 s) ends that
+  trial with `error`.
+* `--motley-url` is the backend's MCP endpoint (default `http://localhost:8100/api/v1/mcp/`, the eval backend's). Its
+  host must match the backend's `public_base_url`, or the backend answers 421.
+* Storyline's `docs/eval_org_seed.md` describes the eval backend and the seed.
 
 At start the run seeds a warm-up org, which fills the embedding cache, and runs an MCP `initialize` as that user; the
 run stops if either fails. The report records the Motley URL and the server name and version `initialize` reports.
