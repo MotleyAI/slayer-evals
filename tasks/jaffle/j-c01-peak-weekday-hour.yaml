@@ -1,0 +1,13 @@
+id: j-c01-peak-weekday-hour
+dataset: jaffle
+prompt: >-
+  In 2025, which weekday and hour of the day had the highest pre-tax sales, and what share of the year's sales did that
+  slot take? Answer with one row: the weekday's name (e.g. Monday), the hour of the day (0 to 23), that slot's sales in
+  dollars and its share of the year's sales as a fraction.
+truth_sql: |
+  select dayname(o.ordered_at) as weekday, hour(o.ordered_at) as hour, sum(o.subtotal) / 100.0 as net_sales,
+         sum(o.subtotal) * 1.0 / sum(sum(o.subtotal)) over () as share
+  from orders o where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by 1, 2 order by net_sales desc limit 1
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "weekday", "sql": "dayname(ordered_at)", "type": "string"}]}, "dimensions": ["weekday", "order_hour"], "measures": [{"formula": "net_sales", "name": "net_sales"}, {"formula": "sum(subtotal) / sum(subtotal, partition_by=[])", "name": "share"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"], "order": [{"column": "net_sales", "direction": "desc"}], "limit": 1}}
+compare: {values: [weekday, hour, net_sales, share]}

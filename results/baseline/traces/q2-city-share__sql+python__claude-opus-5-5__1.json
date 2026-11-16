@@ -278,33 +278,109 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from orders) n, (select count(*) from orders o left join customers c on c.id=o.customer_id where c.id is null) nocust, (select count(*) from customers where region_id is null) nullreg, (select count(*) from customers c left join regions r on r.id=c.region_id where r.id is null) badreg, (select count(*) from customers where city is null) nullcity, (select count(*) from orders where amount is null) nullamt, (select count(*) from orders_flat) nf, (select count(distinct id) from customers) dc, (select count(*) from customers) cc"
+    "sql": "select count(*), count(o.customer_id), count(c.id), count(c.region_id), count(r.id), count(c.city), sum(amount), count(amount) from orders o left join customers c on o.customer_id=c.id left join regions r on c.region_id=r.id"
    },
-   "result_text": "{\"columns\": [\"n\", \"nocust\", \"nullreg\", \"badreg\", \"nullcity\", \"nullamt\", \"nf\", \"dc\", \"cc\"], \"rows\": [[5016, 6, 1, 1, 0, 0, 5016, 202, 202]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"count_star()\", \"count(o.customer_id)\", \"count(c.id)\", \"count(c.region_id)\", \"count(r.id)\", \"count(c.city)\", \"sum(amount)\", \"count(amount)\"], \"rows\": [[5016, 5010, 5010, 5000, 5000, 5010, 332688.45000000036, 5016]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "n",
-     "nocust",
-     "nullreg",
-     "badreg",
-     "nullcity",
-     "nullamt",
-     "nf",
-     "dc",
-     "cc"
+     "count_star()",
+     "count(o.customer_id)",
+     "count(c.id)",
+     "count(c.region_id)",
+     "count(r.id)",
+     "count(c.city)",
+     "sum(amount)",
+     "count(amount)"
     ],
     "rows": [
      [
       5016,
-      6,
+      5010,
+      5010,
+      5000,
+      5000,
+      5010,
+      332688.45000000036,
+      5016
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select * from regions"
+   },
+   "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "id",
+     "name"
+    ],
+    "rows": [
+     [
       1,
-      1,
-      0,
-      0,
+      "North"
+     ],
+     [
+      2,
+      "South"
+     ],
+     [
+      3,
+      "East"
+     ],
+     [
+      4,
+      "West"
+     ],
+     [
+      5,
+      "Arctic"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select (select count(*) from orders), (select count(*) - count(distinct id) from customers), (select list(distinct city) from customers), (select list(distinct status) from orders)"
+   },
+   "result_text": "{\"columns\": [\"(SELECT count_star() FROM orders)\", \"(SELECT (count_star() - count(DISTINCT id)) FROM customers)\", \"(SELECT list(DISTINCT city) FROM customers)\", \"(SELECT list(DISTINCT status) FROM orders)\"], \"rows\": [[5016, 0, [\"Bergen\", \"Rome\", \"Porto\", \"Vienna\", \"Naples\", \"Paris\", \"Lisbon\", \"Prague\", \"Oslo\", \"Trondheim\"], [\"bad\", \"ok\"]]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "(SELECT count_star() FROM orders)",
+     "(SELECT (count_star() - count(DISTINCT id)) FROM customers)",
+     "(SELECT list(DISTINCT city) FROM customers)",
+     "(SELECT list(DISTINCT status) FROM orders)"
+    ],
+    "rows": [
+     [
       5016,
-      202,
-      202
+      0,
+      [
+       "Bergen",
+       "Rome",
+       "Porto",
+       "Vienna",
+       "Naples",
+       "Paris",
+       "Lisbon",
+       "Prague",
+       "Oslo",
+       "Trondheim"
+      ],
+      [
+       "bad",
+       "ok"
+      ]
      ]
     ],
     "warnings": []
@@ -314,87 +390,17 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select distinct status from orders; "
+    "sql": "with b as (select r.name region, c.city, sum(o.amount) rev from orders o left join customers c on o.customer_id=c.id left join regions r on c.region_id=r.id group by all)\nselect region, city, rev, rev/sum(rev) over (partition by region) frac_region, rev/sum(rev) over () frac_total from b order by region nulls last, city nulls last"
    },
-   "result_text": "{\"columns\": [\"status\"], \"rows\": [[\"bad\"], [\"ok\"]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "status"
-    ],
-    "rows": [
-     [
-      "bad"
-     ],
-     [
-      "ok"
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select distinct city from customers order by 1"
-   },
-   "result_text": "{\"columns\": [\"city\"], \"rows\": [[\"Bergen\"], [\"Lisbon\"], [\"Naples\"], [\"Oslo\"], [\"Paris\"], [\"Porto\"], [\"Prague\"], [\"Rome\"], [\"Trondheim\"], [\"Vienna\"]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "city"
-    ],
-    "rows": [
-     [
-      "Bergen"
-     ],
-     [
-      "Lisbon"
-     ],
-     [
-      "Naples"
-     ],
-     [
-      "Oslo"
-     ],
-     [
-      "Paris"
-     ],
-     [
-      "Porto"
-     ],
-     [
-      "Prague"
-     ],
-     [
-      "Rome"
-     ],
-     [
-      "Trondheim"
-     ],
-     [
-      "Vienna"
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with b as (select r.name region, c.city, o.amount from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id),\ng as (select region, city, sum(amount) rev from b group by all)\nselect region, city, rev, rev/sum(rev) over (partition by region) share_of_region, rev/sum(rev) over () share_of_total from g order by region nulls last, city nulls last"
-   },
-   "result_text": "{\"columns\": [\"region\", \"city\", \"rev\", \"share_of_region\", \"share_of_total\"], \"rows\": [[\"East\", \"Prague\", 32254.819999999985, 0.4692381438694652, 0.09695202824143728], [\"East\", \"Vienna\", 36483.879999999976, 0.530761856130535, 0.10966380107274534], [\"North\", \"Bergen\", 56068.28999999996, 0.5128130340250436, 0.16853091834116868], [\"North\", \"Oslo\", 28939.53, 0.26468736932335163, 0.0869868791657781], [\"North\", \"Trondheim\", 24326.939999999988, 0.22249959665160465, 0.07312228603066923], [\"South\", \"Naples\", 28128.550000000007, 0.2697667303795248, 0.08454922315457605], [\"South\", \"Oslo\", 26339.030000000002, 0.25260434698796114, 0.07917025673719665], [\"South\", \"Rome\", 49802.31999999996, 0.4776289226325141, 0.14969657047005983], [\"West\", \"Lisbon\", 29471.18, 0.5995952538045918, 0.08858492081705875], [\"West\", \"Porto\", 19680.61000000001, 0.40040474619540833, 0.05915627669069971], [null, \"Paris\", 677.83, 0.5680298332355652, 0.0020374317172718206], [null, null, 515.47, 0.4319701667644347, 0.0015494075613385443]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"region\", \"city\", \"rev\", \"frac_region\", \"frac_total\"], \"rows\": [[\"East\", \"Prague\", 32254.819999999985, 0.4692381438694652, 0.09695202824143728], [\"East\", \"Vienna\", 36483.879999999976, 0.530761856130535, 0.10966380107274534], [\"North\", \"Bergen\", 56068.28999999996, 0.5128130340250436, 0.16853091834116868], [\"North\", \"Oslo\", 28939.53, 0.26468736932335163, 0.0869868791657781], [\"North\", \"Trondheim\", 24326.939999999988, 0.22249959665160465, 0.07312228603066923], [\"South\", \"Naples\", 28128.550000000007, 0.2697667303795248, 0.08454922315457605], [\"South\", \"Oslo\", 26339.030000000002, 0.25260434698796114, 0.07917025673719665], [\"South\", \"Rome\", 49802.31999999996, 0.4776289226325141, 0.14969657047005983], [\"West\", \"Lisbon\", 29471.18, 0.5995952538045918, 0.08858492081705875], [\"West\", \"Porto\", 19680.61000000001, 0.40040474619540833, 0.05915627669069971], [null, \"Paris\", 677.83, 0.5680298332355652, 0.0020374317172718206], [null, null, 515.47, 0.4319701667644347, 0.0015494075613385443]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "region",
      "city",
      "rev",
-     "share_of_region",
-     "share_of_total"
+     "frac_region",
+     "frac_total"
     ],
     "rows": [
      [
@@ -582,7 +588,7 @@
       0.0015494075613385443
      ]
     ],
-    "message": "Revenue is the sum of orders.amount for all orders, whatever their status. Each order is assigned to its customer's city and region. The two shares are city revenue divided by its region's total and city revenue divided by the grand total.\n\nGroups with an unknown key:\n- Region null, city Paris: Paris customers whose region_id doesn't match any region.\n- Region null, city null: 6 orders whose customer ID isn't in the customers table.\n\nOslo shows up under both North and South because customers there are linked to both regions."
+    "message": "Revenue is the sum of orders.amount over all 5,016 orders, which comes to about 332,688.45. Each order is assigned to a region and city through its customer. The null-region group has two parts. Paris customers have no region set. The null/null row covers 6 orders that have no customer at all. Oslo shows up under both North and South because customers there are recorded in two regions. Orders of every status are included, including those marked 'bad'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -592,13 +598,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 706,
-  "cache_read_tokens": 7451,
-  "cache_write_tokens": 2184,
+  "output_tokens": 713,
+  "cache_read_tokens": 7573,
+  "cache_write_tokens": 2351,
   "partial": false
  },
- "cost_usd": 0.0265622,
- "duration_s": 17.64554900600342,
+ "cost_usd": 0.0275616,
+ "duration_s": 15.654528827988543,
  "turns": 8,
  "end_reason": "submitted",
  "error": null

@@ -1,0 +1,56 @@
+version: 12
+name: tweets
+sql_table: tweets
+source_kind: table
+query_variables: {}
+columns:
+- name: id
+  sql: id
+  type: TEXT
+  primary_key: true
+  unique: false
+  hidden: false
+- name: user_id
+  sql: user_id
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Customer who tweeted.
+  label: Customer ID
+  hidden: false
+- name: tweeted_at
+  sql: tweeted_at
+  type: TIMESTAMP
+  primary_key: false
+  unique: false
+  description: When the tweet was posted.
+  label: Tweet Date
+  hidden: false
+- name: content
+  sql: content
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Tweet text.
+  label: Tweet
+  hidden: false
+measures:
+- formula: id:count
+  name: tweet_count
+  label: Tweets
+  description: Number of tweets.
+  meta:
+    format:
+      type: integer
+      symbol: null
+      precision: 0
+aggregations: []
+joins:
+- target_model: customers
+  join_pairs:
+  - - user_id
+    - id
+  join_type: left
+  cardinality: many_to_one
+filters: []
+hidden: false

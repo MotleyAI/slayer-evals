@@ -1,0 +1,32 @@
+{
+ "columns": [
+  "store",
+  "opened_on"
+ ],
+ "rows": [
+  [
+   "Brooklyn",
+   "2023-05-11"
+  ],
+  [
+   "Chicago",
+   "2024-06-27"
+  ],
+  [
+   "Los Angeles",
+   "2025-11-11"
+  ],
+  [
+   "New Orleans",
+   "2025-05-08"
+  ],
+  [
+   "Philadelphia",
+   "2022-10-31"
+  ],
+  [
+   "San Francisco",
+   "2024-07-07"
+  ]
+ ]
+}

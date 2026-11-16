@@ -1,6 +1,7 @@
 """JSON round-trips of the core schemas."""
 
 import datetime as dt
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -8,9 +9,12 @@ from pydantic import ValidationError
 from slayer_evals.core import (
     ALL_ROWS,
     COVERED_ROWS,
+    DATASET_SPECS,
+    DATASETS,
     DEFAULT_PROFILES,
     PITFALLS,
     AuditEvent,
+    DatasetSpec,
     ParsedResult,
     PythonAudit,
     ResultWarning,
@@ -19,10 +23,12 @@ from slayer_evals.core import (
     ToolCall,
     Trace,
     TraceFlags,
+    TrialEnv,
     TrialResult,
     Usage,
     Verdict,
 )
+from tests.fake_sdk import make_input
 from tests.helpers import make_task
 
 
@@ -176,6 +182,44 @@ def test_old_result_line_rejected():
     }
     with pytest.raises(ValidationError):
         TrialResult.model_validate(old)
+
+
+def test_dataset_registry():
+    assert DATASETS == ("bench", "jaffle")
+    assert DATASET_SPECS["bench"] == DatasetSpec(datasource="bench", db_file="bench.duckdb")
+    assert DATASET_SPECS["jaffle"] == DatasetSpec(datasource="demo_database", db_file="jaffle.duckdb")
+
+
+def test_result_line_without_dataset_reads_as_bench():
+    line = TrialResult(
+        task_id="q1", covers=["Q1"], profile="slayer", model="m", trial=1, verdict=None, end_reason="submitted"
+    ).model_dump(exclude={"dataset"})
+    assert "dataset" not in line
+    assert TrialResult.model_validate(line).dataset == "bench"
+
+
+def test_jaffle_result_round_trip():
+    tr = TrialResult(
+        task_id="j-q01-stores",
+        dataset="jaffle",
+        covers=[],
+        profile="sql+python",
+        model="claude-opus-5-5",
+        trial=1,
+        verdict=None,
+        end_reason="submitted",
+    )
+    back = TrialResult.model_validate_json(tr.model_dump_json())
+    assert back == tr
+    assert back.dataset == "jaffle"
+    assert '"dataset":"jaffle"' in tr.model_dump_json()
+
+
+def test_trial_env_business_rules_round_trip(tmp_path: Path):
+    inp = make_input(tmp_path, profile="sql+python")
+    assert inp.env.business_rules is None
+    env = inp.env.model_copy(update={"business_rules": "## jaffle-money-in-cents\nMoney is in cents."})
+    assert TrialEnv.model_validate_json(env.model_dump_json()) == env
 
 
 def test_run_metadata_round_trip():

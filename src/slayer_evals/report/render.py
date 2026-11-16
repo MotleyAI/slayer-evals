@@ -52,8 +52,14 @@ ROW_TITLES = {
     "Q24": "Nested / hierarchical results",
     "Q25": "Explicit aggregate locality",
 }
-SUITES: tuple[Suite, ...] = ("capability", "combo", "trap")
+SUITES: tuple[Suite, ...] = ("capability", "combo", "trap", "jaffle")
 NON_QUERY_TOOLS = ("submit_answer", "python")
+JAFFLE_NOTE = (
+    "Yann's nao-vs-Motley questions over the Jaffle Shop database. Several depend on business rules (revenue is "
+    "pre-tax, the data cut-off, what a new customer is): the raw-SQL profile receives the business rules in its "
+    "system prompt, while the SLayer and Motley profiles must find them through search of the stored memories. "
+    "Expected failures (xfail) are left out."
+)
 MOTLEY_NOTE = (
     "Motley's `query` cannot run a saved query by name with `refine` yet (DEV-2260); "
     "saved-query tasks are answered with one inline query."
@@ -64,11 +70,17 @@ def stem(r: TrialResult) -> str:
     return trial_stem(r.task_id, r.profile, r.model, r.trial)
 
 
-def suite_of(covers: list[str]) -> Suite:
-    """The suite a task's `covers` puts it in (as `Task.suite`)."""
-    if any(c in PITFALLS for c in covers):
+def suite_of(r: TrialResult) -> Suite:
+    """The suite of a trial's task (as `Task.suite`), from its dataset and `covers`."""
+    if r.dataset == "jaffle":
+        return "jaffle"
+    if any(c in PITFALLS for c in r.covers):
         return "trap"
-    return "combo" if sum(c in COVERED_ROWS for c in covers) >= 2 else "capability"
+    return "combo" if sum(c in COVERED_ROWS for c in r.covers) >= 2 else "capability"
+
+
+def _bench(results: list[TrialResult]) -> list[TrialResult]:
+    return [r for r in results if r.dataset == "bench"]
 
 
 def load_results(run_dir: Path) -> list[TrialResult]:
@@ -133,12 +145,12 @@ def _task_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
         rows = []
         for tid, rs in tasks.items():
             k, n = sum(r.passed for r in rs), len(rs)
-            rows.append([tid, suite_of(rs[0].covers), _covers(rs[0]), f"{k}/{n}", f"{(k / n) ** md.n:.3f}"])
+            rows.append([tid, suite_of(rs[0]), _covers(rs[0]), f"{k}/{n}", f"{(k / n) ** md.n:.3f}"])
         return _table(["Task", "Suite", "Covers", "Pass rate", f"pass^{md.n}"], rows)
     rows = [
         [
             tid,
-            suite_of(rs[0].covers),
+            suite_of(rs[0]),
             _covers(rs[0]),
             "yes" if rs[0].passed else "no",
             "yes" if any(r.passed for r in rs) else "no",
@@ -157,14 +169,14 @@ def _section(results: list[TrialResult], md: RunMetadata, profile: Profile, mode
     if not any(r.profile == profile and r.model == model for r in results):
         return [*out, "No trials.", ""]
     out += ["A task counts under every row it covers, so a multi-row task adds to several rows.", ""]
-    out += _row_table(scored) + [""]
+    out += _row_table(_bench(scored)) + [""]
     if scored:
         out += _task_table(scored, md) + [""]
     return out
 
 
 def _covers(r: TrialResult) -> str:
-    return ", ".join(r.covers)
+    return ", ".join(r.covers) or "—"
 
 
 def _scored(results: list[TrialResult]) -> list[TrialResult]:
@@ -173,16 +185,18 @@ def _scored(results: list[TrialResult]) -> list[TrialResult]:
 
 def _suite_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
     rows = []
-    for suite in SUITES:
+    present = {suite_of(r) for r in results}
+    for suite in (s for s in SUITES if s in present):
         for profile in md.profiles:
             for model in md.models:
-                rs = [r for r in results if suite_of(r.covers) == suite and r.profile == profile and r.model == model]
+                rs = [r for r in results if suite_of(r) == suite and r.profile == profile and r.model == model]
                 counts = [_count(rs, f) for f in ("correct", "single_query", "passed")]
                 rows.append([suite, f"`{profile}`", f"`{model}`", len(rs), *counts])
     return _table(["Suite", "Profile", "Model", "Trials", "Correct", "Single query", "Passed"], rows)
 
 
 def _pitfall_table(results: list[TrialResult], md: RunMetadata) -> list[str]:
+    results = _bench(results)
     rows = []
     for pitfall in PITFALLS:
         if not any(pitfall in r.covers for r in results):
@@ -216,6 +230,21 @@ def _headline(results: list[TrialResult], md: RunMetadata) -> list[str]:
         "",
         *_pitfall_table(results, md),
     ]
+
+
+def _jaffle_section(results: list[TrialResult]) -> list[str]:
+    jaffle = [r for r in results if r.dataset == "jaffle"]
+    if not jaffle:
+        return []
+    groups: dict[tuple[str, str, str], list[TrialResult]] = defaultdict(list)
+    for r in jaffle:
+        groups[(r.task_id, r.profile, r.model)].append(r)
+    rows = [
+        [t, f"`{p}`", f"`{m}`", len(rs), *(_count(rs, f) for f in ("correct", "single_query", "passed"))]
+        for (t, p, m), rs in sorted(groups.items())
+    ]
+    header = ["Task", "Profile", "Model", "Trials", "Correct", "Single query", "Passed"]
+    return ["## Jaffle Shop sub-suite", "", JAFFLE_NOTE, "", *_table(header, rows), ""]
 
 
 def _xfail_section(results: list[TrialResult]) -> list[str]:
@@ -374,6 +403,7 @@ def render_report(run_dir: Path) -> str:
         "",
     ]
     out += _headline(_scored(results), md)
+    out += _jaffle_section(_scored(results))
     for profile in md.profiles:
         for model in md.models:
             out += _section(results, md, profile, model)

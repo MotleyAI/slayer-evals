@@ -7,29 +7,34 @@ using the row's capability answers it — and how tasks are loaded and their tru
 ## Requirements
 
 ### Requirement: Task file format
-Each task SHALL be one YAML file with: `id` (unique), `covers` (a non-empty list without duplicates, each entry a
-covered row — one of Q1–Q18, Q20, Q21, Q23–Q25 — or a pitfall kind, with at least one row), `prompt` (a natural
-language business question), `truth_sql` (DuckDB SQL over the built dataset), `slayer_query` (the intended single
-SLayer query, in the argument shape of the SLayer MCP `query` tool), `compare` (`keys`, `values`, `tolerance` default
-1e-6, `ordered` default false, `columns_exact` default false, `null_as_zero` default false), `expect` (`match` by
-default, or `{error: <kind or list of kinds>, message_any: [...]}` / `{warning: <kind or list of kinds>,
+Each task SHALL be one YAML file with: `id` (unique), `dataset` (`bench` by default, or `jaffle`), `covers` (required
+on a `bench` task and forbidden on a `jaffle` task; on a `bench` task a non-empty list without duplicates, each entry
+a covered row — one of Q1–Q18, Q20, Q21, Q23–Q25 — or a pitfall kind, with at least one row), `prompt` (a natural
+language business question), `truth_sql` (DuckDB SQL over the task's built dataset), `slayer_query` (the intended
+single SLayer query, in the argument shape of the SLayer MCP `query` tool), `compare` (`keys`, `values`, `tolerance`
+default 1e-6, `ordered` default false, `columns_exact` default false, `null_as_zero` default false), `expect` (`match`
+by default, or `{error: <kind or list of kinds>, message_any: [...]}` / `{warning: <kind or list of kinds>,
 message_any: [...]}`), `naive_sql` (one DuckDB statement or a list of them; required iff `covers` holds a pitfall kind,
 forbidden otherwise), optional `uses_saved` (the saved SLayer definitions the prompt names) and optional `xfail` (an
 issue key with a reason, and optionally the `profiles` it applies to; without `profiles` it applies to every profile).
 The pitfall kinds SHALL be the closed list `fan_out`, `count_after_join`, `chasm`, `bridge`, `non_unique_key`,
 `outer_join_filter`, `not_in_null`, `count_outer_join`, `filtered_total`, `distinct_reagg`, `missing_periods`,
 `filter_before_window`, `rows_window_gap`, `timestamp_bounds`, `avg_of_avgs`, `bucket_reaggregation`. Loading MUST
-reject a file with an unknown key, a missing required key, a duplicate id, an unknown or repeated `covers` entry, a
-`covers` without a row, row Q19 or Q22, a trap without `naive_sql`, `naive_sql` on a task that is not a trap, or an
-`xfail` naming an unknown profile.
+reject a file with an unknown key, a missing required key, an unknown dataset, a duplicate id, a `bench` task without
+`covers`, a `jaffle` task with `covers`, an unknown or repeated `covers` entry, a `covers` without a row, row Q19 or
+Q22, a trap without `naive_sql`, `naive_sql` on a task that is not a trap, or an `xfail` naming an unknown profile.
 
 #### Scenario: Valid task loads
 - **WHEN** a well-formed task file is loaded
-- **THEN** it yields a task whose fields equal the file's values, with defaults applied
+- **THEN** it yields a task whose fields equal the file's values, with defaults applied and dataset `bench` when the file names none
 
 #### Scenario: Malformed task rejected
-- **WHEN** a task file has an unknown key, lacks `truth_sql` or `slayer_query`, reuses another task's id, covers Q19 or Q22, covers only pitfalls, repeats a `covers` entry, names an unknown pitfall, or has an `xfail` naming an unknown profile
+- **WHEN** a task file has an unknown key, lacks `truth_sql` or `slayer_query`, reuses another task's id, covers Q19 or Q22, covers only pitfalls, repeats a `covers` entry, names an unknown pitfall, has an `xfail` naming an unknown profile, or names an unknown dataset
 - **THEN** loading fails with an error naming the file and the problem
+
+#### Scenario: Covers tied to the dataset
+- **WHEN** a `bench` task has no `covers`, or a `jaffle` task has one
+- **THEN** loading fails naming the file and `covers`
 
 #### Scenario: Naive SQL tied to traps
 - **WHEN** a task covering `chasm` has no `naive_sql`, or a task covering only rows has one
@@ -55,54 +60,63 @@ SHALL match as whole words or phrases, case-insensitively, so that ordinary word
 - **THEN** the check does not flag `join`
 
 ### Requirement: Row coverage
-The committed task set SHALL contain at least one task covering each of Q1–Q18, Q20, Q21, Q23, Q24 and Q25, and none
-covering Q19 or Q22; at least 12 trap tasks; and at least 2 tasks covering three or more rows. Tasks for Q21 and Q24
-SHALL exercise only what SLayer supports for those rows. Rows Q9 and Q18 SHALL include at least one refusal or warning
-task.
+The committed `bench` task set SHALL contain at least one task covering each of Q1–Q18, Q20, Q21, Q23, Q24 and Q25,
+and none covering Q19 or Q22; at least 12 trap tasks; and at least 2 tasks covering three or more rows. Tasks for Q21
+and Q24 SHALL exercise only what SLayer supports for those rows. Rows Q9 and Q18 SHALL include at least one refusal or
+warning task. `jaffle` tasks SHALL NOT count towards any of these.
 
 #### Scenario: Coverage check
 - **WHEN** the task suite is loaded
-- **THEN** every covered row has a task, Q19 and Q22 have none, Q9 and Q18 each have a task whose `expect` is an error or warning, there are at least 12 trap tasks, and at least 2 tasks cover three or more rows
+- **THEN** every covered row has a `bench` task, Q19 and Q22 have none, Q9 and Q18 each have a task whose `expect` is an error or warning, there are at least 12 trap tasks, and at least 2 tasks cover three or more rows
+
+#### Scenario: Jaffle tasks outside coverage
+- **WHEN** the coverage check runs over a task set holding `jaffle` tasks
+- **THEN** it reports the same problems as over the `bench` tasks alone
 
 ### Requirement: Truth computation and snapshots
-Truth SHALL be computed by running each task's `truth_sql` against the built dataset; truth values MUST NOT be
+Truth SHALL be computed by running each task's `truth_sql` against the task's built dataset; truth values MUST NOT be
 hand-typed. The build SHALL write a truth snapshot per task (columns and rows), committed to the repository, and a
-check MUST fail when regenerated truth differs from the committed snapshot. A truth result SHALL have at most 20 rows
-unless the task deliberately tests result limiting.
+check MUST fail when regenerated truth differs from the committed snapshot. Writing snapshots SHALL always cover every
+loaded task of every dataset, so that it never removes the snapshot of a task that still exists. A truth result SHALL
+have at most 20 rows unless the task deliberately tests result limiting.
 
 #### Scenario: Snapshot drift detected
 - **WHEN** the generator or a `truth_sql` changes so that a task's truth rows change
 - **THEN** the snapshot check fails naming the task until the snapshot is regenerated explicitly
 
 #### Scenario: Truth SQL error surfaces
-- **WHEN** a task's `truth_sql` fails on the built dataset
+- **WHEN** a task's `truth_sql` fails on its built dataset
 - **THEN** truth computation fails naming the task and the database error
 
+#### Scenario: Writing keeps every dataset's snapshots
+- **WHEN** snapshots are written for a task set holding `bench` and `jaffle` tasks
+- **THEN** there is exactly one snapshot per task of both datasets and the snapshot check then passes
+
 ### Requirement: Task suites
-Each task SHALL belong to exactly one suite, derived from `covers` and never stored: `trap` if it covers a pitfall
-kind, else `combo` if it covers two or more rows, else `capability`. Task files SHALL live under `tasks/capability/`,
-`tasks/combo/` and `tasks/traps/` according to their suite.
+Each task SHALL belong to exactly one suite, derived and never stored: `jaffle` if its dataset is `jaffle`; otherwise
+`trap` if it covers a pitfall kind, else `combo` if it covers two or more rows, else `capability`. Task files SHALL live
+under `tasks/capability/`, `tasks/combo/`, `tasks/traps/` and `tasks/jaffle/` according to their suite.
 
 #### Scenario: Suite derivation
-- **WHEN** tasks covering `[Q4]`, `[Q2, Q4]` and `[Q6, fan_out]` are loaded
-- **THEN** their suites are `capability`, `combo` and `trap`
+- **WHEN** tasks covering `[Q4]`, `[Q2, Q4]` and `[Q6, fan_out]`, and a `jaffle` task, are loaded
+- **THEN** their suites are `capability`, `combo`, `trap` and `jaffle`
 
 #### Scenario: Misplaced file
-- **WHEN** a task whose suite is `trap` sits under `tasks/combo/`
+- **WHEN** a task whose suite is `trap` sits under `tasks/combo/`, or a `jaffle` task sits outside `tasks/jaffle/`
 - **THEN** the task-suite check fails naming the file
 
 ### Requirement: Task proofs
-Every task's `slayer_query` SHALL be run through SLayer, in process, on the built store and database: for a `match`
-task its result MUST match the truth under the task's `compare`; for an error or warning task it MUST raise or warn
-with one of the expected kinds. Every `naive_sql` statement SHALL run on the built database, return a table whose
+Every task's `slayer_query` SHALL be run through SLayer, in process, on the task's built store and database: for a
+`match` task its result MUST match the truth under the task's `compare`; for an error or warning task it MUST raise or
+warn with one of the expected kinds. Every `naive_sql` statement SHALL run on the built database, return a table whose
 columns resolve against the truth's, and MUST NOT match the truth. For every covered row that has DSL markers (for
 example Q2 and Q3 `partition_by`, Q4 `time_shift`, `cumsum` or `change`, Q11 `window=`, Q14 `rank(`), the
 `slayer_query` MUST contain one of that row's markers. Every `uses_saved` entry MUST name a saved definition in the
-store template.
+task's store template.
 
 #### Scenario: Reference query answers the task
 - **WHEN** the proofs run over the committed tasks
-- **THEN** every `slayer_query` result matches its truth or produces the expected kind
+- **THEN** every `slayer_query` result, on its task's dataset, matches its truth or produces the expected kind
 
 #### Scenario: Dead trap detected
 - **WHEN** a trap's `naive_sql` returns the truth on the built database
@@ -111,3 +125,19 @@ store template.
 #### Scenario: Mislabelled cover detected
 - **WHEN** a task covers Q14 but its `slayer_query` contains no ranking marker
 - **THEN** the proof fails naming the task and Q14
+
+### Requirement: Jaffle tasks
+The committed task set SHALL hold 24 `jaffle` tasks, one per question of Yann's nao-vs-Motley experiment (first set
+q01–q12, complex set c01–c12), with ids `j-<question id>-<slug>` (for example `j-q01-stores`). Each prompt SHALL be
+the question's text verbatim followed by an answer-shape sentence that fixes only the answer's rows, columns, units
+and invented labels and states no business rule (no tax basis, data cut-off, money unit of the source data, new
+customer or same-store definition). Each `truth_sql` SHALL be the question's reference SQL adapted only to that shape.
+Each SHALL have a `slayer_query` answering it on the Jaffle store.
+
+#### Scenario: All 24 questions present
+- **WHEN** the task set is loaded
+- **THEN** it holds exactly 24 `jaffle` tasks, one for each of q01–q12 and c01–c12
+
+#### Scenario: Prompt starts with the verbatim question
+- **WHEN** each `jaffle` task's prompt is compared with the source question text
+- **THEN** the prompt begins with that text unchanged

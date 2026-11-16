@@ -278,63 +278,28 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), count(amount), count(customer_id), sum(amount), min(amount) from orders group by 1"
+    "sql": "with c as (select customer_id, sum(amount) t from orders where customer_id is not null group by 1)\nselect case when c.t>2000 then 'high' else 'other' end grp, sum(o.amount) revenue, count(*) n, count(o.amount) na\nfrom orders o left join c using(customer_id) group by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(amount)\", \"count(customer_id)\", \"sum(amount)\", \"min(amount)\"], \"rows\": [[\"bad\", 606, 606, 606, 37980.90000000004, 9.6], [\"ok\", 4410, 4410, 4404, 294707.5499999996, 6.54]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "status",
-     "count_star()",
-     "count(amount)",
-     "count(customer_id)",
-     "sum(amount)",
-     "min(amount)"
-    ],
-    "rows": [
-     [
-      "bad",
-      606,
-      606,
-      606,
-      37980.90000000004,
-      9.6
-     ],
-     [
-      "ok",
-      4410,
-      4410,
-      4404,
-      294707.5499999996,
-      6.54
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with c as (select customer_id, sum(amount) t from orders where customer_id is not null group by 1)\nselect case when c.t>2000 then 'high' else 'other' end grp, sum(o.amount) revenue, count(*) n from orders o left join c using(customer_id) group by 1"
-   },
-   "result_text": "{\"columns\": [\"grp\", \"revenue\", \"n\"], \"rows\": [[\"high\", 194165.78000000006, 2879], [\"other\", 138522.67, 2137]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"grp\", \"revenue\", \"n\", \"na\"], \"rows\": [[\"high\", 194165.78000000006, 2879, 2879], [\"other\", 138522.67, 2137, 2137]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "grp",
      "revenue",
-     "n"
+     "n",
+     "na"
     ],
     "rows": [
      [
       "high",
       194165.78000000006,
+      2879,
       2879
      ],
      [
       "other",
       138522.67,
+      2137,
       2137
      ]
     ],
@@ -346,7 +311,7 @@
    "tool": "submit_answer",
    "args": {
     "columns": [
-     "segment",
+     "group",
      "revenue"
     ],
     "rows": [
@@ -359,7 +324,7 @@
       138522.67
      ]
     ],
-    "message": "Revenue from high-spend customers' orders is 194,165.78, and revenue from all other orders is 138,522.67. A customer counts as high-spend when the total of all their orders is above 2000.\n\n- **Statuses:** I included every order, both the 'ok' and 'bad' ones, because the question didn't say to filter by status.\n- **Orders without a customer:** the 6 orders with no customer are in 'other'.\n- **Order counts:** 2,879 orders are in 'high' and 2,137 in 'other'."
+    "message": "Revenue from high-spend customers is 194,165.78 (2,879 orders), and revenue from all other orders is 138,522.67 (2,137 orders). A customer counts as high-spend when their order amounts add up to more than 2000. All order statuses are included, and orders with no customer are in 'other'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -368,15 +333,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 379,
-  "cache_read_tokens": 4666,
-  "cache_write_tokens": 1676,
+  "input_tokens": 4,
+  "output_tokens": 234,
+  "cache_read_tokens": 2275,
+  "cache_write_tokens": 1425,
   "partial": false
  },
- "cost_usd": 0.0169172,
- "duration_s": 11.100511595999706,
- "turns": 6,
+ "cost_usd": 0.012276,
+ "duration_s": 7.606492459017318,
+ "turns": 5,
  "end_reason": "submitted",
  "error": null
 }

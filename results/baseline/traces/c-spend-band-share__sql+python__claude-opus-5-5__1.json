@@ -323,42 +323,15 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with c as (select customer_id, sum(amount) t from orders where customer_id is not null group by 1),\ng as (select case when c.t>2000 then 'high' else 'other' end grp, o.amount from orders o left join c using(customer_id))\nselect grp, sum(amount) revenue, sum(amount)/(select sum(amount) from orders) as revenue_share, count(*) n from g group by 1 order by 1"
+    "sql": "with c as (select customer_id, sum(amount) t from orders where customer_id is not null group by 1),\ng as (select case when c.t>2000 then 'high' else 'other' end grp, o.amount from orders o left join c using(customer_id))\nselect grp, sum(amount) revenue, sum(amount)/(select sum(amount) from orders) as \"share\" from g group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"grp\", \"revenue\", \"revenue_share\", \"n\"], \"rows\": [[\"high\", 194165.78000000006, 0.5836264529171357, 2879], [\"other\", 138522.67, 0.41637354708286345, 2137]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"grp\", \"revenue\", \"share\"], \"rows\": [[\"high\", 194165.78000000006, 0.5836264529171357], [\"other\", 138522.67, 0.41637354708286345]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "grp",
      "revenue",
-     "revenue_share",
-     "n"
-    ],
-    "rows": [
-     [
-      "high",
-      194165.78000000006,
-      0.5836264529171357,
-      2879
-     ],
-     [
-      "other",
-      138522.67,
-      0.41637354708286345,
-      2137
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "submit_answer",
-   "args": {
-    "columns": [
-     "segment",
-     "revenue",
-     "revenue_share"
+     "share"
     ],
     "rows": [
      [
@@ -372,7 +345,31 @@
       0.41637354708286345
      ]
     ],
-    "message": "High-spend customers (total order amount > 2000) bring in 58.4% of revenue and all other orders bring in 41.6%. Revenue is the sum of orders.amount across all orders, including the 606 with status 'bad'. The 6 orders with no customer are counted in 'other'."
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "group",
+     "revenue",
+     "share"
+    ],
+    "rows": [
+     [
+      "high",
+      194165.78000000006,
+      0.5836264529171357
+     ],
+     [
+      "other",
+      138522.67,
+      0.41637354708286345
+     ]
+    ],
+    "message": "High-spend customers account for about 58.4% of total revenue (194,165.78); all other orders account for about 41.6% (138,522.67). A customer counts as high-spend when the sum of all their order amounts is over 2000. Orders with no customer are counted in 'other'. Revenue is the sum of orders.amount over all 5,016 orders, including the 606 with status 'bad', since the question didn't say to filter by status."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -382,13 +379,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 632,
+  "output_tokens": 598,
   "cache_read_tokens": 7349,
-  "cache_write_tokens": 2049,
+  "cache_write_tokens": 2023,
   "partial": false
  },
- "cost_usd": 0.0243868,
- "duration_s": 12.770619317001547,
+ "cost_usd": 0.023576800000000002,
+ "duration_s": 11.575279535958543,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

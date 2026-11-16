@@ -1,0 +1,16 @@
+id: j-c09-brooklyn-cogs-margin
+dataset: jaffle
+prompt: >-
+  What was the total supply cost of everything Brooklyn sold in 2025, and what gross margin percentage does that leave
+  on its pre-tax product sales? Answer with one row: the total supply cost in dollars, the product sales in dollars and
+  the gross margin as a fraction of those sales.
+truth_sql: |
+  with u as (select sku, sum(cost) as unit_cogs from supplies group by 1),
+  l as (
+    select i.sku from items i join orders o on o.id = i.order_id join stores s on s.id = o.store_id
+    where s.name = 'Brooklyn' and o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01')
+  select sum(u.unit_cogs) / 100.0 as cogs, sum(p.price) / 100.0 as product_sales,
+         1 - sum(u.unit_cogs) * 1.0 / sum(p.price) as gross_margin
+  from l join products p on p.sku = l.sku join u on u.sku = l.sku
+slayer_query: {"query": [{"name": "unit_cogs", "source_model": "supplies", "dimensions": ["sku"], "measures": [{"formula": "sum(cost)", "name": "unit_cogs"}]}, {"source_model": {"source_name": "items", "joins": [{"target_model": "unit_cogs", "join_pairs": [["sku", "sku"]]}], "columns": [{"name": "uc", "sql": "unit_cogs.unit_cogs", "type": "number"}]}, "dimensions": ["orders.stores.name"], "measures": [{"formula": "sum(uc) / 100.0", "name": "cogs"}, {"formula": "sum(unit_price)", "name": "product_sales"}, {"formula": "1 - sum(uc) / 100.0 / sum(unit_price)", "name": "gross_margin"}], "filters": ["orders.stores.name == 'Brooklyn'", "orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"]}]}
+compare: {values: [cogs, product_sales, gross_margin]}

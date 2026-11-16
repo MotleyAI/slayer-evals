@@ -1,0 +1,25 @@
+# The 24 questions of the nao-vs-Motley experiment (6 Nov 2026), verbatim from nao_project/tests.
+q01: How many stores do we have, and when did each open?
+q02: How many orders did we take in 2025?
+q03: What was revenue by store in 2025?
+q04: Show monthly order count for 2026 so far.
+q05: What were the top 5 products by units sold in 2025, and what type is each?
+q06: What share of 2025 product sales came from jaffles vs beverages?
+q07: What is the average order value by store, and which store is highest?
+q08: For each store, compare the tax rate we actually collected with the store's stated tax rate.
+q09: Which store grew revenue fastest from 2024 to 2025, in percent?
+q10: How many new customers did we acquire in each year?
+q11: How much did revenue grow this year to date versus the same period last year, and how much of that growth is same-store?
+q12: Using supply costs, which product has the highest gross margin per unit sold?
+c01: In 2025, which weekday and hour of the day had the highest pre-tax sales, and what share of the year's sales did that slot take?
+c02: Bucket 2025 orders by pre-tax order value into under $5, $5 to $10, $10 to $20 and $20 or more. How many orders fall in each band, and what share of 2025 sales does each band bring in?
+c03: What share of 2025 orders contained only beverages, only jaffles, or both? Leave out orders with no items.
+c04: What is the average lifetime pre-tax spend per customer for each store, attributing each customer to the store of their first order?
+c05: In 2025, what was the median number of orders per customer at each store?
+c06: What share of 2025 pre-tax sales came from the top 10% of customers by 2025 spend?
+c07: For each store, which month of 2025 was its best by pre-tax sales, and how far above that store's average 2025 month was it? Average only over months the store was open.
+c08: What is the longest run of consecutive months in which Brooklyn's pre-tax sales grew month over month? Use complete months from June 2023 to September 2026.
+c09: What was the total supply cost of everything Brooklyn sold in 2025, and what gross margin percentage does that leave on its pre-tax product sales?
+c10: Which supply component (for example bread or a cup) cost us the most in total across everything sold in 2025, and how much? Treat a component shared by several products as one component.
+c11: In 2025, did customers who tweeted at least once that year have a higher pre-tax average order value than customers who did not tweet?
+c12: For each store, what share of 2025 orders containing at least one jaffle also contained a beverage?

@@ -280,7 +280,7 @@
    "args": {
     "sql": "select channel, count(*) from campaigns group by 1"
    },
-   "result_text": "{\"columns\": [\"channel\", \"count_star()\"], \"rows\": [[\"email\", 3], [\"search\", 1], [\"social\", 2]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"channel\", \"count_star()\"], \"rows\": [[\"email\", 3], [\"social\", 2], [\"search\", 1]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -293,12 +293,12 @@
       3
      ],
      [
-      "search",
-      1
-     ],
-     [
       "social",
       2
+     ],
+     [
+      "search",
+      1
      ]
     ],
     "warnings": []
@@ -308,15 +308,53 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select r.name, sum(o.amount), count(*) from orders o join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id\nwhere o.customer_id in (select m.customer_id from campaign_members m join campaigns k on k.id=m.campaign_id where k.channel='email')\ngroup by 1 order by 1"
+    "sql": "select * from regions"
    },
-   "result_text": "{\"columns\": [\"name\", \"sum(o.amount)\", \"count_star()\"], \"rows\": [[\"East\", 24416.239999999972, 358], [\"North\", 31994.350000000006, 472], [\"South\", 47752.929999999964, 753], [\"West\", 24155.930000000008, 356]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "name",
-     "sum(o.amount)",
-     "count_star()"
+     "id",
+     "name"
+    ],
+    "rows": [
+     [
+      1,
+      "North"
+     ],
+     [
+      2,
+      "South"
+     ],
+     [
+      3,
+      "East"
+     ],
+     [
+      4,
+      "West"
+     ],
+     [
+      5,
+      "Arctic"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select r.name region, sum(o.amount) revenue, count(*) n\nfrom orders o join customers c on c.id=o.customer_id\nleft join regions r on r.id=c.region_id\nwhere c.id in (select cm.customer_id from campaign_members cm join campaigns ca on ca.id=cm.campaign_id where ca.channel='email')\ngroup by 1 order by 1"
+   },
+   "result_text": "{\"columns\": [\"region\", \"revenue\", \"n\"], \"rows\": [[\"East\", 24416.239999999972, 358], [\"North\", 31994.350000000006, 472], [\"South\", 47752.929999999964, 753], [\"West\", 24155.930000000008, 356]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "region",
+     "revenue",
+     "n"
     ],
     "rows": [
      [
@@ -369,7 +407,7 @@
       24155.930000000008
      ]
     ],
-    "message": "Revenue = sum of orders.amount (all statuses), restricted to customers belonging to at least one campaign with channel='email'. Each customer is counted once even if in multiple email campaigns (semi-join, no double counting). Grouped by the customer's region."
+    "message": "Revenue is the sum of order amounts from customers who belong to at least one campaign with channel 'email'. Each customer's orders are counted once, even if they belong to several email campaigns. The Arctic region has no orders from such customers, so it doesn't appear."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -378,15 +416,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 316,
-  "cache_read_tokens": 2228,
-  "cache_write_tokens": 1385,
+  "input_tokens": 6,
+  "output_tokens": 469,
+  "cache_read_tokens": 4577,
+  "cache_write_tokens": 1740,
   "partial": false
  },
- "cost_usd": 0.0137066,
- "duration_s": 9.571461475003161,
- "turns": 6,
+ "cost_usd": 0.0190194,
+ "duration_s": 10.951546664000489,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

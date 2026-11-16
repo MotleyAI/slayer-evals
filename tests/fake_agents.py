@@ -104,6 +104,7 @@ class ScriptedAgent:
                 con.execute("delete from orders where customer_id is not null")
         finally:
             con.close()
+        record["datasources"] = sorted(f.stem for f in (inp.env.store_dir / "datasources").glob("*.yaml"))
         saw_marker = (inp.env.store_dir / MARKER).exists()
         record["saw_marker"] = saw_marker
         record["end"] = time.time()

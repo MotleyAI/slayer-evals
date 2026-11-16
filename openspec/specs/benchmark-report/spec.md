@@ -9,16 +9,20 @@ query, and why — and publishes the baseline with the repository.
 ### Requirement: Run report
 The report SHALL show the run metadata (SLayer and SDK versions, model, mode, N, budgets, auth mode, date, and when a
 Motley profile ran, the Motley URL and the MCP server info `initialize` reported); a headline table of suite
-(`capability`, `combo`, `trap`) by profile and model with trials and counts for `correct`, `single_query` and `passed`,
-stating that `correct` is the cross-profile comparison; a table of pitfall kind by profile and model with trials and
-`correct` counts; and per profile and model a table of rows Q1–Q25 with tasks, trials, counts for `correct`,
-`single_query` and `passed`, and counts of the trace flags, where a task counts under every row it covers and the
-table says so; each Motley profile's section SHALL state that Motley's `query` cannot yet run a saved query by name
-with `refine`, so saved-query tasks are answered with one inline query; for `repeat` the pass rate k/N and pass^N per
-task with its suite; for `until-pass` first-try passes, eventual passes and attempts used; xfail trials in their own
-section with their issue key; totals of tokens, cost and duration; and for every failed trial its unmet criteria with
-reasons and a digest of its SLayer, Motley and `sql` calls. Rows Q19 and Q22 SHALL appear as not covered. A
-single-trial run SHALL be labelled as a single-trial snapshot.
+(`capability`, `combo`, `trap`, `jaffle`) by profile and model with trials and counts for `correct`, `single_query`
+and `passed`, stating that `correct` is the cross-profile comparison, and listing only suites the run holds trials of;
+a table of pitfall kind by profile and model with trials and `correct` counts; and per profile and model a table of
+rows Q1–Q25 with tasks, trials, counts for `correct`, `single_query` and `passed`, and counts of the trace flags, where
+a task counts under every row it covers and the table says so; the pitfall and row tables SHALL count `bench` trials
+only. When the run holds `jaffle` trials the report SHALL have a Jaffle section with a table of each `jaffle` task by
+profile and model with trials and counts for `correct`, `single_query` and `passed`, stating that the raw-SQL profile
+receives the business rules in its system prompt while the SLayer and Motley profiles must find them through search.
+Each Motley profile's section SHALL state that Motley's `query` cannot yet run a saved query by name with `refine`, so
+saved-query tasks are answered with one inline query; for `repeat` the pass rate k/N and pass^N per task with its
+suite; for `until-pass` first-try passes, eventual passes and attempts used; xfail trials in their own section with
+their issue key; totals of tokens, cost and duration; and for every failed trial its unmet criteria with reasons and a
+digest of its SLayer, Motley and `sql` calls. Rows Q19 and Q22 SHALL appear as not covered. A single-trial run SHALL be
+labelled as a single-trial snapshot.
 
 #### Scenario: Report from results
 - **WHEN** a report is generated from a results file with passes and failures in all three profiles
@@ -27,6 +31,14 @@ single-trial run SHALL be labelled as a single-trial snapshot.
 #### Scenario: Multi-row task counted per row
 - **WHEN** a passing trial covers Q2 and Q4
 - **THEN** it adds one trial and one pass to both the Q2 and the Q4 rows of its profile's table
+
+#### Scenario: Jaffle trials in the report
+- **WHEN** a report is generated from results holding `bench` and `jaffle` trials
+- **THEN** the headline table has a `jaffle` row whose counts equal the `jaffle` trials', the Jaffle section lists each `jaffle` task per profile and model with the business-rules note, and the row and pitfall tables' totals equal those of the `bench` trials alone
+
+#### Scenario: Run without Jaffle
+- **WHEN** a report is generated from results holding no `jaffle` trials
+- **THEN** it has no `jaffle` headline row and no Jaffle section
 
 #### Scenario: Until-pass report
 - **WHEN** the results come from an `until-pass` run
@@ -45,10 +57,15 @@ single-trial run SHALL be labelled as a single-trial snapshot.
 - **THEN** it shows no Motley metadata rows and no Motley note
 
 ### Requirement: Committed baseline
-The repository SHALL include a baseline: the report, results and normalized traces of a run of all tasks in all three
-profiles with model Opus 5.5 in `repeat` mode with N = 1; the README SHALL summarise it per suite and profile and link to
-it, and `docs/baseline-failures.md` SHALL break its failures down by profile and pitfall.
+The repository SHALL include a baseline: the report, results and normalized traces of a run of all tasks of every
+suite in all three default profiles with model Opus 5.5 in `repeat` mode with N = 1; the README SHALL summarise it per
+suite and profile and link to it, and `docs/baseline-failures.md` SHALL break its failures down by profile and pitfall
+and, for the `jaffle` suite, by business rule.
 
 #### Scenario: Baseline is reproducible from its files
 - **WHEN** the report is regenerated from the committed baseline results
 - **THEN** it equals the committed baseline report
+
+#### Scenario: Baseline covers every task
+- **WHEN** the committed baseline results are read
+- **THEN** they hold exactly one trial for every committed task, `jaffle` tasks included, in each of `slayer`, `slayer+python` and `sql+python`

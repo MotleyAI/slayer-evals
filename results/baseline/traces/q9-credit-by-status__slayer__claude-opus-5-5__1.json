@@ -16,8 +16,8 @@
    "args": {
     "entity_type": "model",
     "reference": [
-     "bench.customers",
-     "bench.orders"
+     "customers",
+     "orders"
     ]
    },
    "result_text": "## bench.customers\n# `customers`\nColumns: id, name, region_id, city, tier, credit, discount\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: cities, regions\n\n---\n\n## bench.orders\n# `orders`\nColumns: id, customer_id, amount, status, order_date\nMeasures: aov\nAggregations: _(none)_\nJoins to: customers\nSaved queries: monthly_rev",
@@ -30,8 +30,8 @@
    "args": {
     "entity_type": "column",
     "reference": [
-     "bench.customers.credit",
-     "bench.orders.status"
+     "customers.credit",
+     "orders.status"
     ]
    },
    "result_text": "## bench.customers.credit\n\n\n---\n\n## bench.orders.status\n",
@@ -48,44 +48,38 @@
       "orders.status"
      ],
      "measures": [
-      "sum(credit)",
-      "count(*)"
+      {
+       "formula": "sum(credit)",
+       "name": "total_credit"
+      }
      ],
      "to_many_handling": "associate"
     },
     "format": "json",
     "show_sql": true
    },
-   "result_text": "SQL:\nWITH _base AS (\n  SELECT\n    orders.status AS \"customers.orders.status\"\n  FROM customers AS customers\n  LEFT JOIN orders AS orders\n    ON customers.id = orders.customer_id\n  GROUP BY\n    orders.status\n), _cm_customers__credit_sum AS (\n  SELECT\n    _base.\"customers.orders.status\" AS \"customers.orders.status\",\n    CAST(SUM(_base._v) AS DOUBLE) AS \"customers.credit_sum_host\"\n  FROM (\n    SELECT\n      orders.status AS \"customers.orders.status\",\n      customers.id AS _ek0,\n      MAX(customers.credit) AS _v\n    FROM customers AS customers\n    LEFT JOIN orders AS orders\n      ON customers.id = orders.customer_id\n    WHERE\n      NOT customers.id IS NULL\n    GROUP BY\n      orders.status,\n      customers.id\n  ) AS _base\n  GROUP BY\n    _base.\"customers.orders.status\"\n), _cm_customers___count AS (\n  SELECT\n    _base.\"customers.orders.status\" AS \"customers.orders.status\",\n    COUNT(*) AS \"customers._count_host\"\n  FROM (\n    SELECT\n      orders.status AS \"customers.orders.status\",\n      customers.id AS _ek0\n    FROM customers AS customers\n    LEFT JOIN orders AS orders\n      ON customers.id = orders.customer_id\n    WHERE\n      NOT customers.id IS NULL\n    GROUP BY\n      orders.status,\n      customers.id\n  ) AS _base\n  GROUP BY\n    _base.\"customers.orders.status\"\n)\nSELECT\n  _base.\"customers.orders.status\",\n  _cm_customers__credit_sum.\"customers.credit_sum_host\" AS \"customers.credit_sum\",\n  COALESCE(_cm_customers___count.\"customers._count_host\", 0) AS \"customers._count\"\nFROM _base\nLEFT JOIN _cm_customers__credit_sum\n  ON _base.\"customers.orders.status\" IS NOT DISTINCT FROM _cm_customers__credit_sum.\"customers.orders.status\"\nLEFT JOIN _cm_customers___count\n  ON _base.\"customers.orders.status\" IS NOT DISTINCT FROM _cm_customers___count.\"customers.orders.status\"\nLIMIT 21\n\n{\"data\": [{\"customers.orders.status\": null, \"customers.credit_sum\": 600.0, \"customers._count\": 1}, {\"customers.orders.status\": \"ok\", \"customers.credit_sum\": 111230.0, \"customers._count\": 201}, {\"customers.orders.status\": \"bad\", \"customers.credit_sum\": 92580.0, \"customers._count\": 169}], \"warnings\": [{\"kind\": \"associated\", \"measure\": \"credit_sum\", \"location\": \"stages[0]\", \"dimensions\": [\"orders.status\"]}, {\"kind\": \"associated\", \"measure\": \"_count\", \"location\": \"stages[0]\", \"dimensions\": [\"orders.status\"]}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"customers._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH _base AS (\n  SELECT\n    orders.status AS \"customers.orders.status\"\n  FROM customers AS customers\n  LEFT JOIN orders AS orders\n    ON customers.id = orders.customer_id\n  GROUP BY\n    orders.status\n), _cm_customers__credit_sum AS (\n  SELECT\n    _base.\"customers.orders.status\" AS \"customers.orders.status\",\n    CAST(SUM(_base._v) AS DOUBLE) AS \"customers.credit_sum_host\"\n  FROM (\n    SELECT\n      orders.status AS \"customers.orders.status\",\n      customers.id AS _ek0,\n      MAX(customers.credit) AS _v\n    FROM customers AS customers\n    LEFT JOIN orders AS orders\n      ON customers.id = orders.customer_id\n    WHERE\n      NOT customers.id IS NULL\n    GROUP BY\n      orders.status,\n      customers.id\n  ) AS _base\n  GROUP BY\n    _base.\"customers.orders.status\"\n)\nSELECT\n  _base.\"customers.orders.status\",\n  _cm_customers__credit_sum.\"customers.credit_sum_host\" AS \"customers.total_credit\"\nFROM _base\nLEFT JOIN _cm_customers__credit_sum\n  ON _base.\"customers.orders.status\" IS NOT DISTINCT FROM _cm_customers__credit_sum.\"customers.orders.status\"\nLIMIT 21\n\n{\"data\": [{\"customers.orders.status\": \"bad\", \"customers.total_credit\": 92580.0}, {\"customers.orders.status\": null, \"customers.total_credit\": 600.0}, {\"customers.orders.status\": \"ok\", \"customers.total_credit\": 111230.0}], \"warnings\": [{\"kind\": \"associated\", \"measure\": \"total_credit\", \"location\": \"stages[0]\", \"dimensions\": [\"orders.status\"]}]}",
    "is_error": false,
    "parsed": {
     "columns": [
      "customers.orders.status",
-     "customers.credit_sum",
-     "customers._count"
+     "customers.total_credit"
     ],
     "rows": [
      [
+      "bad",
+      92580.0
+     ],
+     [
       null,
-      600.0,
-      1
+      600.0
      ],
      [
       "ok",
-      111230.0,
-      201
-     ],
-     [
-      "bad",
-      92580.0,
-      169
+      111230.0
      ]
     ],
     "warnings": [
-     {
-      "kind": "associated",
-      "message": ""
-     },
      {
       "kind": "associated",
       "message": ""
@@ -97,9 +91,9 @@
   {
    "tool": "submit_answer",
    "args": {
-    "columns": "[\"status\", \"total_credit\", \"customer_count\"]",
-    "rows": "[[\"ok\", 111230.0, 201], [\"bad\", 92580.0, 169]]",
-    "message": "Total customer credit limit by order status: \"ok\" is 111,230 across 201 customers and \"bad\" is 92,580 across 169 customers. Each customer's credit is counted once per status, even if they placed several orders with that status. A customer with orders in both statuses is counted under each one, so the two totals overlap and shouldn't be added together. One customer has no orders (credit 600) and is left out."
+    "columns": "[\"status\", \"total_credit\"]",
+    "rows": "[[\"bad\", 92580.0], [\"ok\", 111230.0], [null, 600.0]]",
+    "message": "Total customer credit by order status. A customer's credit counts once in each status they have orders in, even if they have several orders with that status. A customer with orders in both statuses is counted under each one, so the rows don't add up to a single total. The null row (600) covers customers with no orders, or orders with no status recorded."
    },
    "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
    "is_error": true,
@@ -111,22 +105,23 @@
    "args": {
     "columns": [
      "status",
-     "total_credit",
-     "customer_count"
+     "total_credit"
     ],
     "rows": [
      [
-      "ok",
-      111230,
-      201
+      "bad",
+      92580
      ],
      [
-      "bad",
-      92580,
-      169
+      "ok",
+      111230
+     ],
+     [
+      null,
+      600
      ]
     ],
-    "message": "Total customer credit limit by order status: \"ok\" is 111,230 across 201 customers and \"bad\" is 92,580 across 169 customers. Each customer's credit is counted once per status, even if they placed several orders with that status. A customer with orders in both statuses is counted under each one, so the two totals overlap and shouldn't be added together. One customer has no orders (credit 600) and is left out."
+    "message": "Total customer credit by order status. A customer's credit counts once in each status they have orders in, even if they have several orders with that status. A customer with orders in both statuses is counted under each one, so the rows don't add up to a single total. The null row (600) covers customers with no orders, or orders with no status recorded."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -136,13 +131,13 @@
  ],
  "usage": {
   "input_tokens": 10,
-  "output_tokens": 892,
-  "cache_read_tokens": 120587,
-  "cache_write_tokens": 3192,
+  "output_tokens": 852,
+  "cache_read_tokens": 120713,
+  "cache_write_tokens": 2691,
   "partial": false
  },
- "cost_usd": 0.0579574,
- "duration_s": 18.247547730992665,
+ "cost_usd": 0.05467759999999999,
+ "duration_s": 15.191733964020386,
  "turns": 8,
  "end_reason": "submitted",
  "error": null

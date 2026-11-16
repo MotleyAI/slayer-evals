@@ -278,31 +278,46 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from regions) nreg, (select count(distinct name) from regions) nregname, (select count(*) from customers where region_id is null) nullreg, (select count(*) from customers c where region_id is not null and not exists(select 1 from regions r where r.id=c.region_id)) orphreg, (select count(*) from orders o where not exists(select 1 from customers c where c.id=o.customer_id)) orphord, (select count(*) from orders where amount is null) nullamt, (select count(*)-count(distinct id) from customers) dupcust, (select count(*) from customers where credit is null) nullcredit"
+    "sql": "select r.*, (select count(*) from customers c where c.region_id=r.id) n from regions r union all select null,null,(select count(*) from customers where region_id is null or region_id not in (select id from regions))"
    },
-   "result_text": "{\"columns\": [\"nreg\", \"nregname\", \"nullreg\", \"orphreg\", \"orphord\", \"nullamt\", \"dupcust\", \"nullcredit\"], \"rows\": [[5, 5, 1, 0, 6, 0, 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"id\", \"name\", \"n\"], \"rows\": [[1, \"North\", 59], [2, \"South\", 65], [3, \"East\", 44], [4, \"West\", 33], [5, \"Arctic\", 0], [null, null, 1]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "nreg",
-     "nregname",
-     "nullreg",
-     "orphreg",
-     "orphord",
-     "nullamt",
-     "dupcust",
-     "nullcredit"
+     "id",
+     "name",
+     "n"
     ],
     "rows": [
      [
-      5,
-      5,
       1,
-      0,
-      6,
-      0,
-      0,
+      "North",
+      59
+     ],
+     [
+      2,
+      "South",
+      65
+     ],
+     [
+      3,
+      "East",
+      44
+     ],
+     [
+      4,
+      "West",
+      33
+     ],
+     [
+      5,
+      "Arctic",
       0
+     ],
+     [
+      null,
+      null,
+      1
      ]
     ],
     "warnings": []
@@ -312,47 +327,79 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with rev as (select c.region_id, sum(o.amount) revenue from orders o join customers c on c.id=o.customer_id where c.region_id is not null group by 1),\ncr as (select region_id, sum(credit) credit from customers where region_id is not null group by 1)\nselect r.name region, rev.revenue, rank() over (order by rev.revenue desc nulls last) rnk, cr.credit\nfrom regions r left join rev on rev.region_id=r.id left join cr on cr.region_id=r.id order by rnk"
+    "sql": "select count(*), count(distinct id), sum(case when customer_id not in (select id from customers) then 1 end), sum(case when amount is null then 1 end) from orders"
    },
-   "result_text": "{\"columns\": [\"region\", \"revenue\", \"rnk\", \"credit\"], \"rows\": [[\"North\", 109334.75999999994, 1, 35740.0], [\"South\", 104269.89999999994, 2, 32650.0], [\"East\", 68738.69999999997, 3, 24920.0], [\"West\", 49151.790000000015, 4, 18020.0], [\"Arctic\", null, 5, null]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"count_star()\", \"count(DISTINCT id)\", \"sum(CASE  WHEN ((NOT (customer_id = ANY(SELECT id FROM customers)))) THEN (1) ELSE NULL END)\", \"sum(CASE  WHEN ((amount IS NULL)) THEN (1) ELSE NULL END)\"], \"rows\": [[5016, 5016, null, null]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "count_star()",
+     "count(DISTINCT id)",
+     "sum(CASE  WHEN ((NOT (customer_id = ANY(SELECT id FROM customers)))) THEN (1) ELSE NULL END)",
+     "sum(CASE  WHEN ((amount IS NULL)) THEN (1) ELSE NULL END)"
+    ],
+    "rows": [
+     [
+      5016,
+      5016,
+      null,
+      null
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "with rev as (select c.region_id, sum(o.amount) revenue from orders o join customers c on c.id=o.customer_id group by 1),\ncr as (select region_id, sum(credit) credit from customers group by 1)\nselect r.name region, rev.revenue, rank() over (order by rev.revenue desc nulls last) rnk, cr.credit, (select count(*)-count(distinct id) from customers) dup\nfrom regions r left join rev on rev.region_id=r.id left join cr on cr.region_id=r.id order by rnk"
+   },
+   "result_text": "{\"columns\": [\"region\", \"revenue\", \"rnk\", \"credit\", \"dup\"], \"rows\": [[\"North\", 109334.75999999994, 1, 35740.0, 0], [\"South\", 104269.89999999994, 2, 32650.0, 0], [\"East\", 68738.69999999997, 3, 24920.0, 0], [\"West\", 49151.790000000015, 4, 18020.0, 0], [\"Arctic\", null, 5, null, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "region",
      "revenue",
      "rnk",
-     "credit"
+     "credit",
+     "dup"
     ],
     "rows": [
      [
       "North",
       109334.75999999994,
       1,
-      35740.0
+      35740.0,
+      0
      ],
      [
       "South",
       104269.89999999994,
       2,
-      32650.0
+      32650.0,
+      0
      ],
      [
       "East",
       68738.69999999997,
       3,
-      24920.0
+      24920.0,
+      0
      ],
      [
       "West",
       49151.790000000015,
       4,
-      18020.0
+      18020.0,
+      0
      ],
      [
       "Arctic",
       null,
       5,
-      null
+      null,
+      0
      ]
     ],
     "warnings": []
@@ -394,7 +441,7 @@
       18020
      ]
     ],
-    "message": "I ranked the four regions that have orders by revenue (sum of order amounts), with 1 for the highest. North ranks first, then South, East and West. Credit limits are summed over every customer in the region, including customers who never ordered. Excluded: orders from the one customer with no region, and 6 orders whose customer ID doesn't match any customer record. A fifth region, Arctic, has no customers or orders, so it has no revenue to rank and is left out."
+    "message": "North has the most revenue, then South, East and West. Revenue is the sum of order amounts, with each order assigned to its customer's region. I left out orders from the one customer with no known region. The credit-limit total adds up every customer in the region, including those who never ordered. The Arctic region is in the region list but has no customers or orders, so it has no revenue and isn't ranked. Ranks are by revenue, highest first, with no ties."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -404,14 +451,14 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 609,
-  "cache_read_tokens": 3705,
-  "cache_write_tokens": 2813,
+  "output_tokens": 721,
+  "cache_read_tokens": 4667,
+  "cache_write_tokens": 2009,
   "partial": false
  },
- "cost_usd": 0.02701,
- "duration_s": 14.272061327996198,
- "turns": 6,
+ "cost_usd": 0.025422400000000005,
+ "duration_s": 13.538617390964646,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

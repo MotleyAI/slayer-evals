@@ -1,0 +1,10 @@
+id: j-q10-new-customers-by-year
+dataset: jaffle
+prompt: >-
+  How many new customers did we acquire in each year? Answer with one row per year: the year (as a number, e.g. 2024)
+  and its number of new customers.
+truth_sql: |
+  with f as (select customer, min(ordered_at) as first_at from orders group by customer)
+  select year(first_at) as year, count(*) as new_customers from f group by 1
+slayer_query: {"query": [{"name": "first_orders", "source_model": "orders", "dimensions": ["customer"], "measures": [{"formula": "min(ordered_at)", "name": "first_order_at"}]}, {"source_model": "first_orders", "dimensions": [{"expression": "date_part('year', first_order_at)", "name": "year"}], "measures": [{"formula": "count(*)", "name": "new_customers"}]}]}
+compare: {keys: [year], values: [new_customers]}

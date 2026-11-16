@@ -399,3 +399,128 @@ def test_failed_motley_call_digest_names_the_bare_error_class(motley_report: str
 def test_run_without_motley_has_no_motley_rows_or_note(repeat_report: str):
     assert "Motley" not in repeat_report
     assert "MCP server info" not in repeat_report
+
+
+# The Jaffle sub-suite
+
+
+def _jaffle_result(task_id: str, profile: Profile, trial: int, correct: bool, single: bool, model: str = MODEL):
+    return TrialResult(
+        task_id=task_id,
+        dataset="jaffle",
+        covers=[],
+        profile=profile,
+        model=model,
+        trial=trial,
+        verdict=Verdict(correct=correct, single_query=single),
+        end_reason="submitted",
+    )
+
+
+JAFFLE_RESULTS = [
+    _jaffle_result("j-q01-stores", "slayer", 1, True, True),
+    _jaffle_result("j-q01-stores", "slayer", 2, False, False),
+    _jaffle_result("j-q01-stores", RAW, 1, True, True),
+    _jaffle_result("j-q01-stores", RAW, 2, True, False),
+    _jaffle_result("j-c09-brooklyn-cogs-margin", "slayer+python", 1, True, False),
+    _jaffle_result("j-c09-brooklyn-cogs-margin", "slayer", 1, True, True, model=OTHER_MODEL),
+]
+
+
+def jaffle_section(report: str) -> str:
+    lines = report.splitlines()
+    start = next(i for i, x in enumerate(lines) if x.startswith("#") and "jaffle" in x.lower())
+    level = lines[start].split(" ", 1)[0]
+    end = next(
+        (
+            i
+            for i in range(start + 1, len(lines))
+            if lines[i].startswith("#") and len(lines[i].split(" ", 1)[0]) <= len(level)
+        ),
+        len(lines),
+    )
+    return "\n".join(lines[start:end])
+
+
+@pytest.fixture
+def mixed_run(tmp_path: Path) -> Path:
+    run = tmp_path / "run"
+    shutil.copytree(FIXTURES / "run_repeat", run)
+    with (run / "results.jsonl").open("a") as f:
+        for r in JAFFLE_RESULTS:
+            f.write(r.model_dump_json() + "\n")
+    return run
+
+
+def test_jaffle_headline_row(mixed_run: Path):
+    report = render_report(mixed_run)
+    assert suite_counts(report, "jaffle", "slayer") == ("2", "1", "1", "1")
+    assert suite_counts(report, "jaffle", RAW) == ("2", "2", "1", "1")
+    assert suite_counts(report, "jaffle", "slayer+python") == ("1", "1", "0", "0")
+    assert suite_counts(report, "jaffle", "slayer", OTHER_MODEL) == ("1", "1", "1", "1")
+
+
+def test_bench_suites_unchanged_by_jaffle_trials(mixed_run: Path, repeat_report: str):
+    report = render_report(mixed_run)
+    for suite in ("capability", "combo", "trap"):
+        for profile in ("slayer", "slayer+python", RAW):
+            assert suite_counts(report, suite, profile) == suite_counts(repeat_report, suite, profile), (suite, profile)
+
+
+def test_row_and_pitfall_tables_count_bench_trials_only(mixed_run: Path, repeat_report: str):
+    report = render_report(mixed_run)
+    for profile in ("slayer", "slayer+python", RAW):
+        assert table_with(section(report, profile), "Row", "Tasks", "Trials") == table_with(
+            section(repeat_report, profile), "Row", "Tasks", "Trials"
+        ), profile
+    assert table_with(report, "Pitfall", "Trials", "Correct") == table_with(
+        repeat_report, "Pitfall", "Trials", "Correct"
+    )
+
+
+def test_jaffle_section_lists_each_task(mixed_run: Path):
+    text = jaffle_section(render_report(mixed_run))
+    rows = table_with(text, "Task", "Profile", "Model", "Trials", "Correct", "Single query", "Passed")
+    got = {
+        (bare(r["Task"]), bare(r["Profile"]), bare(r["Model"])): (
+            r["Trials"],
+            r["Correct"],
+            r["Single query"],
+            r["Passed"],
+        )
+        for r in rows
+    }
+    assert got[("j-q01-stores", "slayer", MODEL)] == ("2", "1", "1", "1")
+    assert got[("j-q01-stores", RAW, MODEL)] == ("2", "2", "1", "1")
+    assert got[("j-c09-brooklyn-cogs-margin", "slayer+python", MODEL)] == ("1", "1", "0", "0")
+    assert got[("j-c09-brooklyn-cogs-margin", "slayer", OTHER_MODEL)] == ("1", "1", "1", "1")
+    assert not any(t.startswith(("q", "c", "t", "s", "x")) for t, _, _ in got)
+
+
+def test_jaffle_section_states_how_rules_reach_each_profile(mixed_run: Path):
+    text = " ".join(jaffle_section(render_report(mixed_run)).lower().split())
+    assert "business rules" in text
+    assert "system prompt" in text
+    assert "search" in text
+
+
+def test_jaffle_report_regenerates_byte_identical(mixed_run: Path):
+    first = write_report(mixed_run).read_bytes()
+    assert write_report(mixed_run).read_bytes() == first
+
+
+def test_run_without_jaffle(repeat_report: str):
+    suites = {bare(r["Suite"]) for r in table_with(repeat_report, "Suite", "Profile", "Model", "Trials")}
+    assert suites == {"capability", "combo", "trap"}
+    assert not any(x.startswith("#") and "jaffle" in x.lower() for x in repeat_report.splitlines())
+
+
+def test_headline_lists_only_suites_with_trials(tmp_path: Path):
+    run = tmp_path / "run"
+    (run / "traces").mkdir(parents=True)
+    md = json.loads((FIXTURES / "run_repeat" / "metadata.json").read_text())
+    (run / "metadata.json").write_text(json.dumps({**md, "models": [MODEL], "profiles": ["slayer", RAW], "n": 2}))
+    (run / "results.jsonl").write_text("".join(r.model_dump_json() + "\n" for r in JAFFLE_RESULTS[:4]))
+    report = render_report(run)
+    suites = {bare(r["Suite"]) for r in table_with(report, "Suite", "Profile", "Model", "Trials")}
+    assert suites == {"jaffle"}

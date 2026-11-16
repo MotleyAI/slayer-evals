@@ -1,0 +1,39 @@
+{
+ "columns": [
+  "store",
+  "customers",
+  "avg_lifetime_spend"
+ ],
+ "rows": [
+  [
+   "Brooklyn",
+   701,
+   5619.583452211127
+  ],
+  [
+   "Chicago",
+   601,
+   3693.7936772046587
+  ],
+  [
+   "Los Angeles",
+   388,
+   1219.6494845360824
+  ],
+  [
+   "New Orleans",
+   400,
+   2070.0525
+  ],
+  [
+   "Philadelphia",
+   450,
+   6388.795555555555
+  ],
+  [
+   "San Francisco",
+   550,
+   3624.5145454545454
+  ]
+ ]
+}

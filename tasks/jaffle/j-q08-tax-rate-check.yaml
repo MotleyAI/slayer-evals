@@ -1,0 +1,11 @@
+id: j-q08-tax-rate-check
+dataset: jaffle
+prompt: >-
+  For each store, compare the tax rate we actually collected with the store's stated tax rate. Answer with one row per
+  store: the store name, its stated rate and the rate actually collected, both as fractions.
+truth_sql: |
+  select s.name as store, s.tax_rate as stated_rate, sum(o.tax_paid) * 1.0 / sum(o.subtotal) as collected_rate
+  from orders o join stores s on s.id = o.store_id
+  group by s.name, s.tax_rate
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["stores.name", "stores.tax_rate"], "measures": [{"formula": "effective_tax_rate", "name": "collected_rate"}]}}
+compare: {keys: [store], values: [stated_rate, collected_rate]}

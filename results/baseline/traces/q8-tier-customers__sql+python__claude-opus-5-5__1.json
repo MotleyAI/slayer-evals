@@ -278,42 +278,33 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select c.tier, count(distinct c.id) n, count(*) rows_, sum(o.amount) rev, count(o.id) norders, sum(case when o.amount is null and o.id is not null then 1 else 0 end) nullamt from customers c left join orders o on o.customer_id=c.id group by 1 order by 1"
+    "sql": "select (select count(*) from customers), (select count(distinct id) from customers), (select list(distinct tier) from customers), (select list(distinct status) from orders), (select count(*) from orders where customer_id not in (select id from customers)), (select count(*) from orders where amount is null)"
    },
-   "result_text": "{\"columns\": [\"tier\", \"n\", \"rows_\", \"rev\", \"norders\", \"nullamt\"], \"rows\": [[\"bronze\", 100, 2493, 163987.1800000001, 2493, 0], [\"gold\", 43, 1061, 71294.78999999996, 1060, 0], [\"silver\", 59, 1457, 96891.01000000007, 1457, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"(SELECT count_star() FROM customers)\", \"(SELECT count(DISTINCT id) FROM customers)\", \"(SELECT list(DISTINCT tier) FROM customers)\", \"(SELECT list(DISTINCT status) FROM orders)\", \"(SELECT count_star() FROM orders WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))\", \"(SELECT count_star() FROM orders WHERE (amount IS NULL))\"], \"rows\": [[202, 202, [\"silver\", \"bronze\", \"gold\"], [\"ok\", \"bad\"], 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "tier",
-     "n",
-     "rows_",
-     "rev",
-     "norders",
-     "nullamt"
+     "(SELECT count_star() FROM customers)",
+     "(SELECT count(DISTINCT id) FROM customers)",
+     "(SELECT list(DISTINCT tier) FROM customers)",
+     "(SELECT list(DISTINCT status) FROM orders)",
+     "(SELECT count_star() FROM orders WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))",
+     "(SELECT count_star() FROM orders WHERE (amount IS NULL))"
     ],
     "rows": [
      [
-      "bronze",
-      100,
-      2493,
-      163987.1800000001,
-      2493,
-      0
-     ],
-     [
-      "gold",
-      43,
-      1061,
-      71294.78999999996,
-      1060,
-      0
-     ],
-     [
-      "silver",
-      59,
-      1457,
-      96891.01000000007,
-      1457,
+      202,
+      202,
+      [
+       "silver",
+       "bronze",
+       "gold"
+      ],
+      [
+       "ok",
+       "bad"
+      ],
+      0,
       0
      ]
     ],
@@ -324,31 +315,39 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select count(*), count(distinct id), count(id) from customers union all select count(*), count(distinct customer_id), count(customer_id) from orders union all select count(*), count(*) filter (where customer_id not in (select id from customers)), 0 from orders"
+    "sql": "select c.tier, count(distinct c.id) n, sum(o.amount) rev, count(o.id) orders, sum(case when o.status='bad' then o.amount end) bad_rev from customers c left join orders o on o.customer_id=c.id group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"count_star()\", \"count(DISTINCT id)\", \"count(id)\"], \"rows\": [[202, 202, 202], [5016, 201, 5010], [5016, 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"tier\", \"n\", \"rev\", \"orders\", \"bad_rev\"], \"rows\": [[\"bronze\", 100, 163987.1800000001, 2493, 19543.349999999995], [\"gold\", 43, 71294.78999999996, 1060, 7932.4599999999955], [\"silver\", 59, 96891.01000000007, 1457, 10505.09]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "count_star()",
-     "count(DISTINCT id)",
-     "count(id)"
+     "tier",
+     "n",
+     "rev",
+     "orders",
+     "bad_rev"
     ],
     "rows": [
      [
-      202,
-      202,
-      202
+      "bronze",
+      100,
+      163987.1800000001,
+      2493,
+      19543.349999999995
      ],
      [
-      5016,
-      201,
-      5010
+      "gold",
+      43,
+      71294.78999999996,
+      1060,
+      7932.4599999999955
      ],
      [
-      5016,
-      0,
-      0
+      "silver",
+      59,
+      96891.01000000007,
+      1457,
+      10505.09
      ]
     ],
     "warnings": []
@@ -367,20 +366,20 @@
      [
       "bronze",
       100,
-      163987.18
+      163987.1800000001
      ],
      [
       "gold",
       43,
-      71294.79
+      71294.78999999996
      ],
      [
       "silver",
       59,
-      96891.01
+      96891.01000000007
      ]
     ],
-    "message": "I counted every customer by tier and joined their orders with a left join, so customers who never ordered are still counted and add 0 to revenue. Totals are the sum of orders.amount across all order statuses: bronze has 100 customers and 163,987.18 in revenue, gold has 43 and 71,294.79, and silver has 59 and 96,891.01. Six orders have no customer ID and can't be assigned to a tier, so they are left out. No customer is missing a tier. The raw sums had tiny floating-point artefacts (e.g. 163987.1800000001); I show them to the cent."
+    "message": "Customers left-joined to orders, so customers with no orders still count (they add 0 revenue). Revenue is the sum of all order amounts, including orders with status 'bad'. Without those, revenue is bronze 144443.83, gold 63362.33 and silver 86385.92. All 202 customers have a tier."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -389,14 +388,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 384,
-  "cache_read_tokens": 2240,
-  "cache_write_tokens": 1390,
+  "input_tokens": 6,
+  "output_tokens": 444,
+  "cache_read_tokens": 4590,
+  "cache_write_tokens": 1804,
   "partial": false
  },
- "cost_usd": 0.015094,
- "duration_s": 16.386143931988045,
+ "cost_usd": 0.018842,
+ "duration_s": 9.668268666020595,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from slayer_evals.core.datasets import Dataset
 from slayer_evals.core.trace import EndReason, Profile, Usage
 
 RunMode = Literal["repeat", "until-pass"]
@@ -38,6 +39,8 @@ class Verdict(BaseModel):
 
 class TrialResult(BaseModel):
     task_id: str
+    # Absent in result lines written before datasets existed.
+    dataset: Dataset = "bench"
     covers: list[str]
     profile: Profile
     model: str

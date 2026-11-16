@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from slayer_evals.core import Task
 from slayer_evals.tasks import TaskFormatError, load_task, load_tasks
 from tests.helpers import make_task, write_task
 
@@ -191,6 +192,59 @@ def test_expectation_kind_list(tmp_path: Path):
 )
 def test_suite_derivation(covers: list[str], suite: str):
     assert make_task(id="t", covers=covers).suite == suite
+
+
+def _jaffle(**overrides: Any) -> dict[str, Any]:
+    doc = {k: v for k, v in _doc(id="j-q01-stores", dataset="jaffle").items() if k != "covers"}
+    doc.update(overrides)
+    return doc
+
+
+def test_valid_task_defaults_to_bench(tmp_path: Path):
+    assert load_task(write_task(tmp_path, _doc())).dataset == "bench"
+
+
+def test_jaffle_task_loads(tmp_path: Path):
+    task = load_task(write_task(tmp_path, _jaffle()))
+    assert task.dataset == "jaffle"
+    assert task.covers == []
+    assert task.rows == []
+    assert task.suite == "jaffle"
+
+
+def test_suite_derivation_with_jaffle():
+    tasks = [
+        make_task(id="a", covers=["Q4"]),
+        make_task(id="b", covers=["Q2", "Q4"]),
+        make_task(id="c", covers=["Q6", "fan_out"]),
+        Task.model_validate(_jaffle()),
+    ]
+    assert [t.suite for t in tasks] == ["capability", "combo", "trap", "jaffle"]
+
+
+@pytest.mark.parametrize(
+    "doc, problem",
+    [
+        (_doc(dataset="nao"), "dataset"),
+        ({k: v for k, v in _doc(dataset="bench").items() if k != "covers"}, "covers"),
+        (_jaffle(covers=["Q1"]), "covers"),
+        (_jaffle(covers=[]), "covers"),
+    ],
+    ids=["unknown-dataset", "bench-without-covers", "jaffle-with-covers", "jaffle-with-empty-covers"],
+)
+def test_dataset_and_covers_rejected(tmp_path: Path, doc: dict[str, Any], problem: str):
+    path = write_task(tmp_path, doc, name="bad")
+    with pytest.raises(TaskFormatError) as exc:
+        load_task(path)
+    assert "bad.yaml" in str(exc.value)
+    assert problem in str(exc.value)
+
+
+def test_jaffle_task_with_naive_sql_rejected(tmp_path: Path):
+    path = write_task(tmp_path, _jaffle(naive_sql="select 1 as rev"), name="bad")
+    with pytest.raises(TaskFormatError) as exc:
+        load_task(path)
+    assert "naive_sql" in str(exc.value)
 
 
 def test_suite_is_not_stored(tmp_path: Path):

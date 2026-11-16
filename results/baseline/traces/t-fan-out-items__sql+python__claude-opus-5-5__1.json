@@ -278,16 +278,16 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with o as (select o.id, o.amount, r.name region from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id),\nrev as (select region, sum(amount) revenue, count(*) n_orders from o group by region),\nli as (select o.region, count(oi.id) lines from order_items oi join o on o.id=oi.order_id group by o.region)\nselect rev.region, revenue, coalesce(lines,0) lines, n_orders from rev left join li on li.region is not distinct from rev.region order by 1"
+    "sql": "with o as (select o.id, o.amount, r.name region from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id),\nrev as (select region, sum(amount) revenue, count(*) n from o group by region),\nli as (select o.region, count(*) lines from order_items i join o on o.id=i.order_id group by o.region)\nselect rev.region, revenue, coalesce(lines,0) lines, n from rev left join li on li.region is not distinct from rev.region order by 1"
    },
-   "result_text": "{\"columns\": [\"region\", \"revenue\", \"lines\", \"n_orders\"], \"rows\": [[\"East\", 68738.70000000001, 2245, 1053], [\"North\", 109334.7599999999, 3434, 1613], [\"South\", 104269.89999999998, 3454, 1584], [\"West\", 49151.790000000015, 1602, 750], [null, 1193.3, 35, 16]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"region\", \"revenue\", \"lines\", \"n\"], \"rows\": [[\"East\", 68738.70000000001, 2245, 1053], [\"North\", 109334.7599999999, 3434, 1613], [\"South\", 104269.89999999998, 3454, 1584], [\"West\", 49151.790000000015, 1602, 750], [null, 1193.3, 35, 16]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "region",
      "revenue",
      "lines",
-     "n_orders"
+     "n"
     ],
     "rows": [
      [
@@ -328,28 +328,22 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from order_items where order_id not in (select id from orders)) orphan_items, (select count(*) from orders where customer_id not in (select id from customers) or customer_id is null) orphan_orders, (select count(*) from customers where region_id is null or region_id not in (select id from regions)) cust_noregion, (select count(*) from regions) nreg, (select count(distinct name) from regions) ndn, (select count(*)-count(distinct id) from orders) dupo, (select count(*)-count(distinct id) from customers) dupc"
+    "sql": "select (select count(*) from order_items where order_id not in (select id from orders)) orphan_items, (select count(*) from regions) nreg, (select count(distinct name) from regions) ndist, (select count(*) from orders where amount is null) nullamt"
    },
-   "result_text": "{\"columns\": [\"orphan_items\", \"orphan_orders\", \"cust_noregion\", \"nreg\", \"ndn\", \"dupo\", \"dupc\"], \"rows\": [[0, 6, 1, 5, 5, 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"orphan_items\", \"nreg\", \"ndist\", \"nullamt\"], \"rows\": [[0, 5, 5, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orphan_items",
-     "orphan_orders",
-     "cust_noregion",
      "nreg",
-     "ndn",
-     "dupo",
-     "dupc"
+     "ndist",
+     "nullamt"
     ],
     "rows": [
      [
       0,
-      6,
-      1,
       5,
       5,
-      0,
       0
      ]
     ],
@@ -360,41 +354,35 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select r.*, (select count(*) from customers c where c.region_id=r.id) from regions r"
+    "sql": "select * from regions"
    },
-   "result_text": "{\"columns\": [\"id\", \"name\", \"(SELECT count_star() FROM customers AS c WHERE (c.region_id = r.id))\"], \"rows\": [[1, \"North\", 59], [2, \"South\", 65], [3, \"East\", 44], [4, \"West\", 33], [5, \"Arctic\", 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "id",
-     "name",
-     "(SELECT count_star() FROM customers AS c WHERE (c.region_id = r.id))"
+     "name"
     ],
     "rows": [
      [
       1,
-      "North",
-      59
+      "North"
      ],
      [
       2,
-      "South",
-      65
+      "South"
      ],
      [
       3,
-      "East",
-      44
+      "East"
      ],
      [
       4,
-      "West",
-      33
+      "West"
      ],
      [
       5,
-      "Arctic",
-      0
+      "Arctic"
      ]
     ],
     "warnings": []
@@ -411,6 +399,11 @@
     ],
     "rows": [
      [
+      "East",
+      68738.70000000001,
+      2245
+     ],
+     [
       "North",
       109334.7599999999,
       3434
@@ -419,11 +412,6 @@
       "South",
       104269.89999999998,
       3454
-     ],
-     [
-      "East",
-      68738.70000000001,
-      2245
      ],
      [
       "West",
@@ -441,7 +429,7 @@
       35
      ]
     ],
-    "message": "Revenue is the sum of orders.amount, and order lines are the count of order_items rows. I calculated each one separately and then combined them, so joining orders to their line items didn't count any order amount more than once. The null group (16 orders) covers orders whose customer is missing from the customers table or has no matching region. Arctic has no customers, so it shows 0 for both."
+    "message": "I calculated revenue and order-line counts separately and then joined them on region. This stops each order's amount from being counted once for every line item it has. Each order's region comes from its customer's region. The null group has the 16 orders whose customer has no known region. Arctic is listed in the regions table but has no orders, so I've shown it with 0 for both."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -451,13 +439,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 722,
-  "cache_read_tokens": 4619,
-  "cache_write_tokens": 2235,
+  "output_tokens": 609,
+  "cache_read_tokens": 4617,
+  "cache_write_tokens": 2106,
   "partial": false
  },
- "cost_usd": 0.026562800000000004,
- "duration_s": 15.492202067995095,
+ "cost_usd": 0.023657399999999995,
+ "duration_s": 12.698540887038689,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

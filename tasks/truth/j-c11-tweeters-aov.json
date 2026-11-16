@@ -1,0 +1,22 @@
+{
+ "columns": [
+  "segment",
+  "customers",
+  "orders",
+  "net_aov"
+ ],
+ "rows": [
+  [
+   "did not tweet",
+   229,
+   18744,
+   10.94200810926163
+  ],
+  [
+   "tweeted",
+   2561,
+   389562,
+   10.503126588322269
+  ]
+ ]
+}

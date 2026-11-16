@@ -27,16 +27,6 @@
    "args": {
     "query": {
      "source_model": "orders",
-     "time_dimensions": [
-      {
-       "dimension": "order_date",
-       "granularity": "month",
-       "date_range": [
-        "2025-01-01",
-        "2025-03-31"
-       ]
-      }
-     ],
      "measures": [
       {
        "formula": "sum(amount)",
@@ -45,6 +35,16 @@
       {
        "formula": "time_shift(sum(amount), -1, 'year')",
        "name": "revenue_prev_year"
+      }
+     ],
+     "time_dimensions": [
+      {
+       "dimension": "order_date",
+       "granularity": "month",
+       "date_range": [
+        "2025-01-01",
+        "2025-03-31"
+       ]
       }
      ],
      "order": [
@@ -90,6 +90,12 @@
    "args": {
     "query": {
      "source_model": "orders",
+     "measures": [
+      {
+       "formula": "sum(amount)",
+       "name": "revenue"
+      }
+     ],
      "time_dimensions": [
       {
        "dimension": "order_date",
@@ -98,12 +104,6 @@
         "2024-01-01",
         "2024-03-31"
        ]
-      }
-     ],
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "revenue"
       }
      ]
     },
@@ -140,26 +140,26 @@
     "columns": [
      "month",
      "revenue",
-     "revenue_same_month_prior_year"
+     "revenue_prev_year"
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
-      8795.05
+      8795.049999999997
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       7419.6
      ],
      [
-      "2025-03",
-      9816.2,
-      11469.28
+      "2025-03-01",
+      9816.199999999999,
+      11469.280000000008
      ]
     ],
-    "message": "Revenue = sum(orders.amount) for each month of Q1 2025, with the same month of 2024 alongside (via a 1-year time shift, checked by querying 2024 directly). All orders are included, whatever their status."
+    "message": "Revenue is the sum of orders.amount for each month of Q1 2025, shown next to the same month in 2024. All orders are included, with no filter on status. Revenue was higher than the year before in January and February, and lower in March."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -168,14 +168,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 8,
-  "output_tokens": 577,
-  "cache_read_tokens": 96199,
-  "cache_write_tokens": 1936,
+  "input_tokens": 10,
+  "output_tokens": 854,
+  "cache_read_tokens": 121548,
+  "cache_write_tokens": 2306,
   "partial": false
  },
- "cost_usd": 0.0404918,
- "duration_s": 12.965751806012122,
+ "cost_usd": 0.0529596,
+ "duration_s": 12.910722050990444,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

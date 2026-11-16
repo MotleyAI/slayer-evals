@@ -67,6 +67,8 @@ class TrialEnv(BaseModel):
     transcript_path: Path
     motley_url: str | None = None
     motley_user_id: str | None = None
+    # Plain-text business rules for the raw-SQL profile on a dataset that has them.
+    business_rules: str | None = None
 
 
 class AgentInput(BaseModel):

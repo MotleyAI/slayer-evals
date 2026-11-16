@@ -21,9 +21,12 @@ from mcp.client.streamable_http import streamable_http_client
 
 from slayer_evals.agents import USER_ID_HEADER, slayer_server_env
 from slayer_evals.core import (
+    DATASET_SPECS,
+    DATASETS,
     PROFILE_SPECS,
     AgentInput,
     AgentOutcome,
+    Dataset,
     Profile,
     RunMetadata,
     Table,
@@ -33,7 +36,7 @@ from slayer_evals.core import (
     TrialResult,
     trial_stem,
 )
-from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset, build_dataset, load_built
+from slayer_evals.dataset import STORE_DIR, BuiltDataset, build_datasets, jaffle_rules, load_datasets
 from slayer_evals.grading import grade
 from slayer_evals.report import write_report
 from slayer_evals.runner.auth import CREDENTIAL_VARS, resolve_auth
@@ -66,7 +69,7 @@ class MotleyWarmUpError(RuntimeError):
 
 
 def motley_user_id(run_dir: Path, label: str) -> str:
-    """`se-<run dir name>-<12 hex>`, unique per absolute run directory and label (a trial stem or `warm-up`)."""
+    """`se-<run dir name>-<12 hex>`, unique per absolute run directory and label (a trial stem or a warm-up)."""
     digest = hashlib.sha256(f"{run_dir.absolute()}|{label}".encode()).hexdigest()[:12]
     return f"se-{run_dir.name}-{digest}"
 
@@ -137,16 +140,22 @@ def _init_failure(url: str, exc: BaseException) -> str:
     return f"cannot initialize the Motley MCP server at {url}: {'; '.join(causes)}"
 
 
-async def warm_up_motley(cfg: RunConfig, built: BuiltDataset, run_dir: Path, env: Mapping[str, str]) -> str:
-    """Seed the warm-up org, then `initialize` as its user; returns the server's `<name> <version>`."""
+async def warm_up_motley(
+    cfg: RunConfig, datasets: Mapping[Dataset, BuiltDataset], run_dir: Path, env: Mapping[str, str]
+) -> str:
+    """Seed one warm-up org per dataset, then `initialize` as the first one's user; returns `<name> <version>`."""
     assert cfg.motley_seed_command is not None
-    user_id = motley_user_id(run_dir, WARM_UP)
-    try:
-        await seed_org(
-            cfg.motley_seed_command, user_id, built.store_dir.absolute(), built.db_path.absolute(), env, echo=True
-        )
-    except SeedError as exc:
-        raise MotleyWarmUpError(f"warm-up {exc}") from exc
+    user_ids = []
+    for dataset, built in datasets.items():
+        user_id = motley_user_id(run_dir, f"{WARM_UP}:{dataset}")
+        try:
+            await seed_org(
+                cfg.motley_seed_command, user_id, built.store_dir.absolute(), built.db_path.absolute(), env, echo=True
+            )
+        except SeedError as exc:
+            raise MotleyWarmUpError(f"warm-up ({dataset}) {exc}") from exc
+        user_ids.append(user_id)
+    user_id = user_ids[0]
     try:
         async with asyncio.timeout(MOTLEY_INIT_TIMEOUT_S):
             http = httpx.AsyncClient(headers={USER_ID_HEADER: user_id}, timeout=MOTLEY_INIT_TIMEOUT_S)
@@ -183,13 +192,13 @@ class Runner:
     def __init__(
         self,
         cfg: RunConfig,
-        built: BuiltDataset,
+        datasets: Mapping[Dataset, BuiltDataset],
         truths: dict[str, Table],
         credentials: dict[str, str],
         slayer_command: list[str],
         run_dir: Path,
     ):
-        self.cfg, self.built, self.truths = cfg, built, truths
+        self.cfg, self.datasets, self.truths = cfg, datasets, truths
         self.credentials, self.slayer_command, self.run_dir = credentials, slayer_command, run_dir
         self.semaphore = asyncio.Semaphore(cfg.concurrency)
         self.results_path = run_dir / "results.jsonl"
@@ -198,10 +207,12 @@ class Runner:
         return trial_stem(combo.task.id, combo.profile, combo.model, trial)
 
     async def _run_agent(self, combo: Combo, trial_dir: Path, user_id: str | None) -> tuple[AgentOutcome, float]:
+        dataset = combo.task.dataset
+        raw_sql = PROFILE_SPECS[combo.profile].surface == "sql"
         env = TrialEnv(
             trial_dir=trial_dir,
             store_dir=trial_dir / STORE_DIR,
-            db_path=trial_dir / DB_FILE,
+            db_path=trial_dir / DATASET_SPECS[dataset].db_file,
             slayer_command=self.slayer_command,
             credentials=self.credentials,
             max_turns=self.cfg.max_turns,
@@ -209,6 +220,7 @@ class Runner:
             transcript_path=trial_dir / TRANSCRIPT_FILE,
             motley_url=self.cfg.motley_url if user_id else None,
             motley_user_id=user_id,
+            business_rules=jaffle_rules() if dataset == "jaffle" and raw_sql else None,
         )
         inp = AgentInput(prompt=combo.task.prompt, profile=combo.profile, env=env)
         spec = TrialSpec(agent=self.cfg.agent, model=combo.model, input=inp)
@@ -249,9 +261,10 @@ class Runner:
         """Run the agent in its own process on fresh copies of the database and store (and its own Motley org)."""
         async with self.semaphore:
             trial_dir = Path(tempfile.mkdtemp(prefix="slayer-evals-trial-"))
+            built = self.datasets[combo.task.dataset]
             try:
-                shutil.copy2(self.built.db_path, trial_dir / DB_FILE)
-                shutil.copytree(self.built.store_dir, trial_dir / STORE_DIR)
+                shutil.copy2(built.db_path, trial_dir / built.db_path.name)
+                shutil.copytree(built.store_dir, trial_dir / STORE_DIR)
                 user_id = motley_user_id(self.run_dir, stem) if combo.motley else None
                 if user_id is not None:
                     assert self.cfg.motley_seed_command is not None
@@ -260,7 +273,7 @@ class Runner:
                             self.cfg.motley_seed_command,
                             user_id,
                             trial_dir / STORE_DIR,
-                            self.built.db_path.absolute(),
+                            built.db_path.absolute(),
                             _child_env(),
                         )
                     except SeedError as exc:
@@ -286,6 +299,7 @@ class Runner:
         (self.run_dir / "traces" / f"{stem}.json").write_text(outcome.trace.model_dump_json(indent=1) + "\n")
         result = TrialResult(
             task_id=task.id,
+            dataset=task.dataset,
             covers=task.covers,
             profile=combo.profile,
             model=combo.model,
@@ -318,7 +332,7 @@ class Runner:
 async def slayer_version(command: list[str], built: BuiltDataset) -> str:
     """The version a SLayer MCP server reports, from a throwaway copy of the store."""
     with tempfile.TemporaryDirectory(prefix="slayer-evals-version-") as tmp:
-        shutil.copy2(built.db_path, Path(tmp) / DB_FILE)
+        shutil.copy2(built.db_path, Path(tmp) / built.db_path.name)
         shutil.copytree(built.store_dir, Path(tmp) / STORE_DIR)
         params = StdioServerParameters(
             command=command[0],
@@ -355,21 +369,25 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
     if not tasks:
         raise ValueError("no tasks match the selection")
     command = cfg.slayer_command or default_slayer_command()
+    needed: list[Dataset] = [d for d in DATASETS if any(t.dataset == d for t in tasks)]
     with contextlib.ExitStack() as stack:
         if cfg.dataset_dir is not None:
-            built = load_built(cfg.dataset_dir)
+            datasets = load_datasets(cfg.dataset_dir, needed)
         else:
-            built = build_dataset(Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="slayer-evals-data-"))))
-        truths = compute_truths(tasks, built.db_path)
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="slayer-evals-data-")))
+            datasets = build_datasets(root, needed)
+        truths: dict[str, Table] = {}
+        for dataset, built in datasets.items():
+            truths |= compute_truths([t for t in tasks if t.dataset == dataset], built.db_path)
         started = dt.datetime.now(dt.UTC).replace(microsecond=0)
-        version = asyncio.run(slayer_version(command, built))
+        version = asyncio.run(slayer_version(command, next(iter(datasets.values()))))
         run_dir = _run_dir(cfg.out_dir, started)
         for sub in ("traces", "transcripts"):
             (run_dir / sub).mkdir()
         server_info = None
         if motley:
             try:
-                server_info = asyncio.run(warm_up_motley(cfg, built, run_dir, _child_env()))
+                server_info = asyncio.run(warm_up_motley(cfg, datasets, run_dir, _child_env()))
             except BaseException:
                 shutil.rmtree(run_dir, ignore_errors=True)
                 raise
@@ -388,7 +406,7 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
             motley_server_info=server_info,
         )
         (run_dir / "metadata.json").write_text(metadata.model_dump_json(indent=1) + "\n")
-        runner = Runner(cfg, built, truths, credentials, command, run_dir)
+        runner = Runner(cfg, datasets, truths, credentials, command, run_dir)
         combos = [Combo(t, p, m) for t in tasks for p in cfg.profiles for m in cfg.models]
         asyncio.run(runner.run(combos))
     write_report(run_dir)

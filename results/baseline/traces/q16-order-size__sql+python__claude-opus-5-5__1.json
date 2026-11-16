@@ -330,16 +330,16 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select case when amount>100 then 'big' when amount is null then null else 'small' end c, count(*), sum(amount), count(distinct id) from orders group by 1"
+    "sql": "select case when amount>100 then 'big' else 'small' end cls, count(*), sum(amount), count(amount) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"c\", \"count_star()\", \"sum(amount)\", \"count(DISTINCT id)\"], \"rows\": [[\"small\", 4194, 214999.39000000033, 4194], [\"big\", 822, 117689.06000000017, 822]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"cls\", \"count_star()\", \"sum(amount)\", \"count(amount)\"], \"rows\": [[\"small\", 4194, 214999.39000000033, 4194], [\"big\", 822, 117689.06000000017, 822]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "c",
+     "cls",
      "count_star()",
      "sum(amount)",
-     "count(DISTINCT id)"
+     "count(amount)"
     ],
     "rows": [
      [
@@ -379,7 +379,7 @@
       214999.39000000033
      ]
     ],
-    "message": "I classified the orders in the query itself (amount > 100 is 'big', everything else is 'small'), so no stored tables or model changed. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39. Every order has an amount, so none fell outside the two classes. The submitted revenue figures are unrounded and carry tiny floating-point artifacts."
+    "message": "Split by amount > 100 ('big') vs. otherwise ('small') across all 5,016 orders (all statuses)."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -388,14 +388,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 197,
-  "cache_read_tokens": 2253,
-  "cache_write_tokens": 1568,
+  "input_tokens": 6,
+  "output_tokens": 405,
+  "cache_read_tokens": 4789,
+  "cache_write_tokens": 1805,
   "partial": false
  },
- "cost_usd": 0.0122466,
- "duration_s": 10.083801626999048,
+ "cost_usd": 0.0181068,
+ "duration_s": 7.410683671012521,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

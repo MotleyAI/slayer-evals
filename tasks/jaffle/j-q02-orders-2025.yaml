@@ -1,0 +1,8 @@
+id: j-q02-orders-2025
+dataset: jaffle
+prompt: >-
+  How many orders did we take in 2025? Answer with a single number: the count of orders.
+truth_sql: |
+  select count(*) as orders from orders where ordered_at >= '2025-01-01' and ordered_at < '2026-01-01'
+slayer_query: {"query": {"source_model": "orders", "measures": [{"formula": "count(*)", "name": "orders"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}}
+compare: {values: [orders]}

@@ -1,0 +1,163 @@
+{
+ "profile": "sql+python",
+ "calls": [
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select table_name, column_name, data_type from information_schema.columns where table_name in ('tweets','orders','customers') order by 1"
+   },
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"customers\", \"id\", \"VARCHAR\"], [\"customers\", \"name\", \"VARCHAR\"], [\"orders\", \"id\", \"VARCHAR\"], [\"orders\", \"customer\", \"VARCHAR\"], [\"orders\", \"ordered_at\", \"TIMESTAMP\"], [\"orders\", \"store_id\", \"VARCHAR\"], [\"orders\", \"subtotal\", \"BIGINT\"], [\"orders\", \"tax_paid\", \"BIGINT\"], [\"orders\", \"order_total\", \"BIGINT\"], [\"tweets\", \"id\", \"VARCHAR\"], [\"tweets\", \"user_id\", \"VARCHAR\"], [\"tweets\", \"tweeted_at\", \"TIMESTAMP\"], [\"tweets\", \"content\", \"VARCHAR\"]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "table_name",
+     "column_name",
+     "data_type"
+    ],
+    "rows": [
+     [
+      "customers",
+      "id",
+      "VARCHAR"
+     ],
+     [
+      "customers",
+      "name",
+      "VARCHAR"
+     ],
+     [
+      "orders",
+      "id",
+      "VARCHAR"
+     ],
+     [
+      "orders",
+      "customer",
+      "VARCHAR"
+     ],
+     [
+      "orders",
+      "ordered_at",
+      "TIMESTAMP"
+     ],
+     [
+      "orders",
+      "store_id",
+      "VARCHAR"
+     ],
+     [
+      "orders",
+      "subtotal",
+      "BIGINT"
+     ],
+     [
+      "orders",
+      "tax_paid",
+      "BIGINT"
+     ],
+     [
+      "orders",
+      "order_total",
+      "BIGINT"
+     ],
+     [
+      "tweets",
+      "id",
+      "VARCHAR"
+     ],
+     [
+      "tweets",
+      "user_id",
+      "VARCHAR"
+     ],
+     [
+      "tweets",
+      "tweeted_at",
+      "TIMESTAMP"
+     ],
+     [
+      "tweets",
+      "content",
+      "VARCHAR"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "with t as (select distinct user_id from tweets where year(tweeted_at)=2025),\no as (select * from orders where year(ordered_at)=2025)\nselect case when t.user_id is not null then 'tweeted' else 'did not tweet' end seg,\ncount(distinct o.customer), count(*), sum(subtotal)/100.0/count(*) aov\nfrom o left join t on o.customer=t.user_id group by 1"
+   },
+   "result_text": "{\"columns\": [\"seg\", \"count(DISTINCT o.customer)\", \"count_star()\", \"aov\"], \"rows\": [[\"tweeted\", 2561, 389562, 10.503126588322269], [\"did not tweet\", 229, 18744, 10.94200810926163]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "seg",
+     "count(DISTINCT o.customer)",
+     "count_star()",
+     "aov"
+    ],
+    "rows": [
+     [
+      "tweeted",
+      2561,
+      389562,
+      10.503126588322269
+     ],
+     [
+      "did not tweet",
+      229,
+      18744,
+      10.94200810926163
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "segment",
+     "customers",
+     "orders",
+     "avg_order_value_dollars"
+    ],
+    "rows": [
+     [
+      "tweeted",
+      2561,
+      389562,
+      10.503126588322269
+     ],
+     [
+      "did not tweet",
+      229,
+      18744,
+      10.94200810926163
+     ]
+    ],
+    "message": "No. In 2025, customers who tweeted had a lower pre-tax average order value than customers who didn't: $10.50 against $10.94.\n\n- **Tweeted:** 2,561 customers placed 389,562 orders.\n- **Did not tweet:** 229 customers placed 18,744 orders.\n\nHow this was calculated:\n- **Average order value:** total pre-tax sales (`subtotal`, converted from cents to dollars) divided by the number of orders.\n- **Tweeted:** a customer who ordered in 2025 and posted at least one tweet in 2025.\n- **Did not tweet:** a customer who ordered in 2025 and posted no tweets that year.\n\nMost 2025 customers fall in the tweeted group, so the did-not-tweet group is fairly small (229 customers)."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 4,
+  "output_tokens": 286,
+  "cache_read_tokens": 5869,
+  "cache_write_tokens": 773,
+  "partial": false
+ },
+ "cost_usd": 0.0107748,
+ "duration_s": 9.513118728995323,
+ "turns": 5,
+ "end_reason": "submitted",
+ "error": null
+}

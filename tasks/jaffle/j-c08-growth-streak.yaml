@@ -1,0 +1,17 @@
+id: j-c08-growth-streak
+dataset: jaffle
+prompt: >-
+  What is the longest run of consecutive months in which Brooklyn's pre-tax sales grew month over month? Use complete
+  months from June 2023 to September 2026. Answer with one row: the run's length in months, counting only the months
+  that grew, and its first and last month (each as the month's first day); if runs tie, the earliest.
+truth_sql: |
+  with m as (
+    select date_trunc('month', o.ordered_at) as month, sum(o.subtotal) as sales
+    from orders o join stores s on s.id = o.store_id
+    where s.name = 'Brooklyn' and o.ordered_at >= '2023-06-01' and o.ordered_at < '2026-10-01' group by 1),
+  g as (select month, sales > lag(sales) over (order by month) as up from m),
+  k as (select month, up, sum(case when up then 0 else 1 end) over (order by month) as grp from g)
+  select count(*) as streak_months, cast(min(month) as date) as streak_start, cast(max(month) as date) as streak_end
+  from k where up group by grp order by streak_months desc, streak_start limit 1
+slayer_query: {"query": [{"name": "monthly", "source_model": "orders", "time_dimensions": [{"dimension": "ordered_at", "granularity": "month", "date_range": ["2023-06-01", "2026-09-30"]}], "measures": [{"formula": "sum(subtotal)", "name": "sales"}, {"formula": "consecutive_periods(change(sum(subtotal)) > 0)", "name": "run"}], "filters": ["stores.name == 'Brooklyn'"]}, {"source_model": "monthly", "dimensions": [{"expression": "date_add(ordered_at, -(run - 1), 'month')", "name": "streak_start"}, {"expression": "ordered_at", "name": "streak_end"}], "measures": [{"formula": "max(run)", "name": "streak_months"}], "order": [{"column": "streak_months", "direction": "desc"}, {"column": "streak_start", "direction": "asc"}], "limit": 1}]}
+compare: {values: [streak_months, streak_start, streak_end]}

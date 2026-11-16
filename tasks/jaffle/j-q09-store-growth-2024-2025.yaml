@@ -1,0 +1,16 @@
+id: j-q09-store-growth-2024-2025
+dataset: jaffle
+prompt: >-
+  Which store grew revenue fastest from 2024 to 2025, in percent? Answer with one row per store that had sales in both
+  2024 and 2025: the store name, its revenue in dollars in 2024 and in 2025, and its growth as a fraction (0.25 for
+  25%).
+truth_sql: |
+  with y as (
+    select s.name as store, year(o.ordered_at) as yr, sum(o.subtotal) / 100.0 as net_sales
+    from orders o join stores s on s.id = o.store_id
+    where o.ordered_at >= '2024-01-01' and o.ordered_at < '2026-01-01'
+    group by 1, 2)
+  select a.store, a.net_sales as sales_2024, b.net_sales as sales_2025, b.net_sales / a.net_sales - 1 as growth
+  from y a join y b on a.store = b.store and a.yr = 2024 and b.yr = 2025
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "s24", "sql": "CASE WHEN ordered_at >= '2024-01-01' AND ordered_at < '2025-01-01' THEN subtotal END", "type": "number"}, {"name": "s25", "sql": "CASE WHEN ordered_at >= '2025-01-01' AND ordered_at < '2026-01-01' THEN subtotal END", "type": "number"}]}, "dimensions": ["stores.name"], "measures": [{"formula": "sum(s24) / 100.0", "name": "sales_2024"}, {"formula": "sum(s25) / 100.0", "name": "sales_2025"}, {"formula": "sum(s25) / sum(s24) - 1", "name": "growth"}], "filters": ["sum(s24) > 0", "sum(s25) > 0"]}}
+compare: {keys: [store], values: [sales_2024, sales_2025, growth]}

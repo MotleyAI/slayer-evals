@@ -1,0 +1,12 @@
+id: j-q05-top-products-2025
+dataset: jaffle
+prompt: >-
+  What were the top 5 products by units sold in 2025, and what type is each? Answer with five rows: the product name,
+  its type and its units sold.
+truth_sql: |
+  select p.name as product, p.type as type, count(*) as units_sold
+  from items i join orders o on o.id = i.order_id join products p on p.sku = i.sku
+  where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by p.name, p.type order by units_sold desc limit 5
+slayer_query: {"query": {"source_model": "items", "dimensions": ["products.name", "products.type"], "measures": [{"formula": "count(*)", "name": "units_sold"}], "filters": ["orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"], "order": [{"column": "units_sold", "direction": "desc"}], "limit": 5}}
+compare: {keys: [product], values: [type, units_sold]}

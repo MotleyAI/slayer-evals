@@ -139,66 +139,66 @@
     "rows": [
      [
       "2024-01",
-      8795.05,
-      8795.05
+      8795.049999999997,
+      8795.049999999997
      ],
      [
       "2024-02",
       7419.6,
-      16214.65
+      16214.649999999998
      ],
      [
       "2024-03",
-      11469.28,
-      27683.93
+      11469.280000000008,
+      27683.930000000008
      ],
      [
       "2024-04",
-      11767.95,
-      39451.88
+      11767.950000000003,
+      39451.88000000001
      ],
      [
       "2024-05",
-      9366.48,
-      48818.36
+      9366.480000000001,
+      48818.360000000015
      ],
      [
       "2024-06",
       9352.83,
-      58171.19
+      58171.19000000002
      ],
      [
       "2024-07",
-      10177.42,
-      68348.61
+      10177.420000000004,
+      68348.61000000002
      ],
      [
       "2024-08",
       0,
-      68348.61
+      68348.61000000002
      ],
      [
       "2024-09",
-      9259.91,
-      77608.52
+      9259.910000000003,
+      77608.52000000002
      ],
      [
       "2024-10",
-      8958.22,
-      86566.74
+      8958.220000000005,
+      86566.74000000002
      ],
      [
       "2024-11",
-      9247.11,
-      95813.85
+      9247.110000000002,
+      95813.85000000002
      ],
      [
       "2024-12",
       10371.18,
-      106185.03
+      106185.03000000003
      ]
     ],
-    "message": "Revenue for 2024 adds up to 106,185.03 across the 12 months. August 2024 had no orders, so it shows 0 and the running total stays the same that month. Revenue is the sum of the order amounts for every order, with no filter on order status."
+    "message": "Revenue for 2024 was 106,185.03 in total. August had no orders, so its revenue is 0 and the running total stays the same that month. Revenue includes every order, whatever its status."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -208,13 +208,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 417,
-  "cache_read_tokens": 71253,
-  "cache_write_tokens": 1752,
+  "output_tokens": 404,
+  "cache_read_tokens": 71339,
+  "cache_write_tokens": 1753,
   "partial": false
  },
- "cost_usd": 0.0313746,
- "duration_s": 14.536355709991767,
+ "cost_usd": 0.0311368,
+ "duration_s": 12.015191704966128,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

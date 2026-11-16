@@ -1,0 +1,9 @@
+id: j-q01-stores
+dataset: jaffle
+prompt: >-
+  How many stores do we have, and when did each open? Answer with one row per store: the store name and its opening
+  date.
+truth_sql: |
+  select name as store, cast(opened_at as date) as opened_on from stores
+slayer_query: {"query": {"source_model": "stores", "dimensions": ["name", "opened_at"]}}
+compare: {keys: [store], values: [opened_on]}

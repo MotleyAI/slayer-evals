@@ -14,5 +14,7 @@
  "max_turns": 60,
  "timeout_s": 900.0,
  "auth_mode": "subscription",
- "started_at": "2026-10-06T17:31:52Z"
+ "started_at": "2026-11-16T14:57:33Z",
+ "motley_url": null,
+ "motley_server_info": null
 }

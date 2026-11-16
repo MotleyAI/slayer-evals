@@ -150,6 +150,34 @@ def test_system_prompt_per_profile(tmp_path: Path):
     assert by["slayer"].replace(JSON_RESULTS_SENTENCE, "").split() == by["sql+python"].split()
 
 
+RULES = (
+    "## jaffle-money-in-cents\nMoney is stored as integer cents.\n\n## jaffle-data-coverage\nOrders end 2026-10-29.\n"
+)
+
+
+def options_with_rules(tmp_path: Path, profile: Profile = "sql+python", rules: str | None = RULES):
+    inp = make_input(tmp_path, profile=profile)
+    inp = inp.model_copy(update={"env": inp.env.model_copy(update={"business_rules": rules})})
+    config_dir = tmp_path / "cfg"
+    config_dir.mkdir()
+    return ClaudeAgent(model=MODEL).build_options(inp, config_dir=config_dir, collector=AnswerCollector())
+
+
+def test_business_rules_in_the_system_prompt(tmp_path: Path):
+    plain = str(options(tmp_path / "a", profile="sql+python")[1].system_prompt)
+    with_rules = str(options_with_rules(tmp_path / "b").system_prompt)
+    assert with_rules.startswith(plain)
+    assert with_rules.endswith(RULES)
+    heading = with_rules[len(plain) : -len(RULES)]
+    assert "business rules" in heading.lower()
+
+
+def test_no_rules_no_heading(tmp_path: Path):
+    plain = str(options(tmp_path / "a", profile="sql+python")[1].system_prompt)
+    assert str(options_with_rules(tmp_path / "b", rules=None).system_prompt) == plain
+    assert "business rules" not in plain.lower()
+
+
 def test_system_prompt_generic(tmp_path: Path):
     for profile, prompt in prompts(tmp_path).items():
         low = prompt.lower()
