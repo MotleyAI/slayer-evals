@@ -65,7 +65,7 @@ Source bundle: `~/Downloads/nao-vs-motley-slim.zip` (unpack into a fresh scratch
 
 ## 7. Baseline
 
-- [ ] 7.1 Re-run the baseline: all tasks × `slayer`, `slayer+python`, `sql+python`, Opus 5.5, `repeat`, N = 1; commit
+- [x] 7.1 Re-run the baseline: all tasks × `slayer`, `slayer+python`, `sql+python`, Opus 5.5, `repeat`, N = 1; commit
   `results/baseline/`; verify the "Baseline covers every task" and "Baseline is reproducible from its files" tests
-- [ ] 7.2 Update the README baseline summary per suite and profile, and redo `docs/baseline-failures.md` (by profile
+- [x] 7.2 Update the README baseline summary per suite and profile, and redo `docs/baseline-failures.md` (by profile
   and pitfall, and the Jaffle suite by business rule); verify the baseline tests

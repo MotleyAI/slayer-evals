@@ -308,26 +308,23 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), sum(amount) from orders group by 1"
+    "sql": "select status, count(*) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"sum(amount)\"], \"rows\": [[\"bad\", 606, 37980.90000000004], [\"ok\", 4410, 294707.5499999996]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\"], \"rows\": [[\"bad\", 606], [\"ok\", 4410]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "status",
-     "count_star()",
-     "sum(amount)"
+     "count_star()"
     ],
     "rows": [
      [
       "bad",
-      606,
-      37980.90000000004
+      606
      ],
      [
       "ok",
-      4410,
-      294707.5499999996
+      4410
      ]
     ],
     "warnings": []
@@ -337,84 +334,100 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select date_trunc('month', order_date) mo, sum(amount) rev from orders group by 1),\nr as (select mo, rev, sum(rev) over (order by mo) run from m)\nselect strftime(mo,'%Y-%m') month, rev, run from r where year(mo)=2025 order by mo"
+    "sql": "select count(distinct id), sum(amount), sum(amount) filter (where status='bad'), min(amount) from orders"
    },
-   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 3: select strftime(mo,'%Y-%m') month, rev, run from r where year(mo)=2025 order by mo\n                                    ^",
-   "is_error": true,
-   "parsed": null,
+   "result_text": "{\"columns\": [\"count(DISTINCT id)\", \"sum(amount)\", \"sum(amount) FILTER (WHERE (status = 'bad'))\", \"min(amount)\"], \"rows\": [[5016, 332688.45000000036, 37980.90000000004, 6.54]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "count(DISTINCT id)",
+     "sum(amount)",
+     "sum(amount) FILTER (WHERE (status = 'bad'))",
+     "min(amount)"
+    ],
+    "rows": [
+     [
+      5016,
+      332688.45000000036,
+      37980.90000000004,
+      6.54
+     ]
+    ],
+    "warnings": []
+   },
    "audit": null
   },
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select date_trunc('month', order_date) mo, sum(amount) rev from orders group by 1),\nr as (select mo, rev, sum(rev) over (order by mo) run from m)\nselect strftime(mo,'%Y-%m') as \"month\", rev, run from r where year(mo)=2025 order by mo"
+    "sql": "with m as (select date_trunc('month', order_date)::date as month, sum(amount) as revenue from orders group by 1),\nr as (select month, revenue, sum(revenue) over (order by month) as running_total from m)\nselect * from r where year(month)=2025 order by month"
    },
-   "result_text": "{\"columns\": [\"month\", \"rev\", \"run\"], \"rows\": [[\"2025-01\", 10070.12, 227622.70000000004], [\"2025-02\", 8920.94, 236543.64000000004], [\"2025-03\", 9816.199999999999, 246359.84000000005], [\"2025-04\", 8541.85, 254901.69000000006], [\"2025-05\", 11804.920000000002, 266706.61000000004], [\"2025-06\", 9697.670000000002, 276404.28], [\"2025-07\", 8337.360000000002, 284741.64], [\"2025-08\", 9446.379999999997, 294188.02], [\"2025-09\", 10191.819999999996, 304379.8400000001], [\"2025-10\", 9750.920000000007, 314130.76000000007], [\"2025-11\", 7270.0, 321400.76000000007], [\"2025-12\", 11287.689999999999, 332688.45000000007]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"month\", \"revenue\", \"running_total\"], \"rows\": [[\"2025-01-01\", 10070.12, 227622.70000000004], [\"2025-02-01\", 8920.94, 236543.64000000004], [\"2025-03-01\", 9816.199999999999, 246359.84000000005], [\"2025-04-01\", 8541.85, 254901.69000000006], [\"2025-05-01\", 11804.920000000002, 266706.61000000004], [\"2025-06-01\", 9697.670000000002, 276404.28], [\"2025-07-01\", 8337.360000000002, 284741.64], [\"2025-08-01\", 9446.379999999997, 294188.02], [\"2025-09-01\", 10191.819999999996, 304379.8400000001], [\"2025-10-01\", 9750.920000000007, 314130.76000000007], [\"2025-11-01\", 7270.0, 321400.76000000007], [\"2025-12-01\", 11287.689999999999, 332688.45000000007]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "month",
-     "rev",
-     "run"
+     "revenue",
+     "running_total"
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
       227622.70000000004
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       236543.64000000004
      ],
      [
-      "2025-03",
+      "2025-03-01",
       9816.199999999999,
       246359.84000000005
      ],
      [
-      "2025-04",
+      "2025-04-01",
       8541.85,
       254901.69000000006
      ],
      [
-      "2025-05",
+      "2025-05-01",
       11804.920000000002,
       266706.61000000004
      ],
      [
-      "2025-06",
+      "2025-06-01",
       9697.670000000002,
       276404.28
      ],
      [
-      "2025-07",
+      "2025-07-01",
       8337.360000000002,
       284741.64
      ],
      [
-      "2025-08",
+      "2025-08-01",
       9446.379999999997,
       294188.02
      ],
      [
-      "2025-09",
+      "2025-09-01",
       10191.819999999996,
       304379.8400000001
      ],
      [
-      "2025-10",
+      "2025-10-01",
       9750.920000000007,
       314130.76000000007
      ],
      [
-      "2025-11",
+      "2025-11-01",
       7270.0,
       321400.76000000007
      ],
      [
-      "2025-12",
+      "2025-12-01",
       11287.689999999999,
       332688.45000000007
      ]
@@ -429,71 +442,71 @@
     "columns": [
      "month",
      "revenue",
-     "running_total_revenue"
+     "running_total"
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
       227622.70000000004
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       236543.64000000004
      ],
      [
-      "2025-03",
+      "2025-03-01",
       9816.199999999999,
       246359.84000000005
      ],
      [
-      "2025-04",
+      "2025-04-01",
       8541.85,
       254901.69000000006
      ],
      [
-      "2025-05",
+      "2025-05-01",
       11804.920000000002,
       266706.61000000004
      ],
      [
-      "2025-06",
+      "2025-06-01",
       9697.670000000002,
       276404.28
      ],
      [
-      "2025-07",
+      "2025-07-01",
       8337.360000000002,
       284741.64
      ],
      [
-      "2025-08",
+      "2025-08-01",
       9446.379999999997,
       294188.02
      ],
      [
-      "2025-09",
+      "2025-09-01",
       10191.819999999996,
       304379.8400000001
      ],
      [
-      "2025-10",
+      "2025-10-01",
       9750.920000000007,
       314130.76000000007
      ],
      [
-      "2025-11",
+      "2025-11-01",
       7270,
       321400.76000000007
      ],
      [
-      "2025-12",
+      "2025-12-01",
       11287.689999999999,
       332688.45000000007
      ]
     ],
-    "message": "The table shows revenue for each month of 2025 and the running total of revenue since the first order on 2023-01-01. The running total reaches 332,688.45 at the end of December 2025.\n\nRevenue includes every order, whatever its status. 606 orders are marked \"bad\" and add up to 37,980.90 overall. I counted them because the question asked for the sum of all order amounts. If \"bad\" means cancelled orders and you leave them out, both the monthly figures and the running total will be lower."
+    "message": "The table shows revenue for each month of 2025 and the running total since the first order on 2023-01-01. That means January's running total includes all of 2023 and 2024. The December running total of 332,688.45 equals the sum of every order in the data. I included all 5,016 orders whatever their status, as the question asked. 606 orders are marked \"bad\" and add up to 37,980.90 across all years; leaving them out would make every total lower."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -503,13 +516,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 634,
-  "cache_read_tokens": 7339,
-  "cache_write_tokens": 2142,
+  "output_tokens": 520,
+  "cache_read_tokens": 7307,
+  "cache_write_tokens": 2046,
   "partial": false
  },
- "cost_usd": 0.024889800000000004,
- "duration_s": 17.58505958499154,
+ "cost_usd": 0.0221234,
+ "duration_s": 13.558840035984758,
  "turns": 8,
  "end_reason": "submitted",
  "error": null

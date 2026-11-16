@@ -278,31 +278,33 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from orders) n, (select count(*) from orders o left join customers c on c.id=o.customer_id where c.id is null) nocust, (select count(*) from customers c left join regions r on r.id=c.region_id where r.id is null) noreg, (select count(*) from customers where city is null) nocity, (select count(*) from customers) nc, (select count(distinct id) from customers) ndc, (select count(*) from regions) nr, (select count(distinct id) from regions) ndr"
+    "sql": "select (select count(*) from orders) n, (select count(*) from orders o left join customers c on c.id=o.customer_id where c.id is null) orphan, (select count(*) from customers) nc, (select count(distinct id) from customers) ncd, (select count(*) from regions) nr, (select count(distinct id) from regions) nrd, (select count(*) from customers where region_id is null) nullreg, (select count(*) from customers where city is null) nullcity, (select count(*) from customers c left join regions r on r.id=c.region_id where r.id is null and c.region_id is not null) badreg"
    },
-   "result_text": "{\"columns\": [\"n\", \"nocust\", \"noreg\", \"nocity\", \"nc\", \"ndc\", \"nr\", \"ndr\"], \"rows\": [[5016, 6, 1, 0, 202, 202, 5, 5]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"n\", \"orphan\", \"nc\", \"ncd\", \"nr\", \"nrd\", \"nullreg\", \"nullcity\", \"badreg\"], \"rows\": [[5016, 6, 202, 202, 5, 5, 1, 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "n",
-     "nocust",
-     "noreg",
-     "nocity",
+     "orphan",
      "nc",
-     "ndc",
+     "ncd",
      "nr",
-     "ndr"
+     "nrd",
+     "nullreg",
+     "nullcity",
+     "badreg"
     ],
     "rows": [
      [
       5016,
       6,
-      1,
-      0,
       202,
       202,
       5,
-      5
+      5,
+      1,
+      0,
+      0
      ]
     ],
     "warnings": []
@@ -312,7 +314,7 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select * from regions; "
+    "sql": "select * from regions"
    },
    "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
    "is_error": false,
@@ -350,135 +352,7 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select r.name, c.city, c.region_id, count(*), sum(o.amount), count(o.amount) from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by all order by 1,2"
-   },
-   "result_text": "{\"columns\": [\"name\", \"city\", \"region_id\", \"count_star()\", \"sum(o.amount)\", \"count(o.amount)\"], \"rows\": [[\"East\", \"Prague\", 3, 483, 32254.819999999985, 483], [\"East\", \"Vienna\", 3, 570, 36483.879999999976, 570], [\"North\", \"Bergen\", 1, 823, 56068.28999999996, 823], [\"North\", \"Oslo\", 1, 430, 28939.53, 430], [\"North\", \"Trondheim\", 1, 360, 24326.939999999988, 360], [\"South\", \"Naples\", 2, 423, 28128.550000000007, 423], [\"South\", \"Oslo\", 2, 409, 26339.030000000002, 409], [\"South\", \"Rome\", 2, 752, 49802.31999999996, 752], [\"West\", \"Lisbon\", 4, 452, 29471.18, 452], [\"West\", \"Porto\", 4, 298, 19680.61000000001, 298], [null, \"Paris\", null, 10, 677.83, 10], [null, null, null, 6, 515.47, 6]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "name",
-     "city",
-     "region_id",
-     "count_star()",
-     "sum(o.amount)",
-     "count(o.amount)"
-    ],
-    "rows": [
-     [
-      "East",
-      "Prague",
-      3,
-      483,
-      32254.819999999985,
-      483
-     ],
-     [
-      "East",
-      "Vienna",
-      3,
-      570,
-      36483.879999999976,
-      570
-     ],
-     [
-      "North",
-      "Bergen",
-      1,
-      823,
-      56068.28999999996,
-      823
-     ],
-     [
-      "North",
-      "Oslo",
-      1,
-      430,
-      28939.53,
-      430
-     ],
-     [
-      "North",
-      "Trondheim",
-      1,
-      360,
-      24326.939999999988,
-      360
-     ],
-     [
-      "South",
-      "Naples",
-      2,
-      423,
-      28128.550000000007,
-      423
-     ],
-     [
-      "South",
-      "Oslo",
-      2,
-      409,
-      26339.030000000002,
-      409
-     ],
-     [
-      "South",
-      "Rome",
-      2,
-      752,
-      49802.31999999996,
-      752
-     ],
-     [
-      "West",
-      "Lisbon",
-      4,
-      452,
-      29471.18,
-      452
-     ],
-     [
-      "West",
-      "Porto",
-      4,
-      298,
-      19680.61000000001,
-      298
-     ],
-     [
-      null,
-      "Paris",
-      null,
-      10,
-      677.83,
-      10
-     ],
-     [
-      null,
-      null,
-      null,
-      6,
-      515.47,
-      6
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select r.name region, c.city, sum(o.amount) city_revenue, sum(sum(o.amount)) over (partition by r.name) region_revenue from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by all order by 1,2"
-   },
-   "result_text": "Binder Error: Cannot mix aggregates with non-aggregated columns!",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select r.name region, c.city, sum(o.amount) city_revenue, sum(sum(o.amount)) over (partition by r.name) region_revenue from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by r.name, c.city order by 1,2"
+    "sql": "with b as (select r.name region, c.city, o.amount from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id),\ng as (select region, city, sum(amount) city_revenue from b group by all)\nselect region, city, city_revenue, sum(city_revenue) over (partition by region) region_revenue from g order by region nulls last, city nulls last"
    },
    "result_text": "{\"columns\": [\"region\", \"city\", \"city_revenue\", \"region_revenue\"], \"rows\": [[\"East\", \"Prague\", 32254.819999999985, 68738.69999999995], [\"East\", \"Vienna\", 36483.879999999976, 68738.69999999995], [\"North\", \"Bergen\", 56068.28999999996, 109334.75999999995], [\"North\", \"Oslo\", 28939.53, 109334.75999999995], [\"North\", \"Trondheim\", 24326.939999999988, 109334.75999999995], [\"South\", \"Naples\", 28128.550000000007, 104269.89999999997], [\"South\", \"Oslo\", 26339.030000000002, 104269.89999999997], [\"South\", \"Rome\", 49802.31999999996, 104269.89999999997], [\"West\", \"Lisbon\", 29471.18, 49151.79000000001], [\"West\", \"Porto\", 19680.61000000001, 49151.79000000001], [null, \"Paris\", 677.83, 1193.3000000000002], [null, null, 515.47, 1193.3000000000002]], \"truncated\": false}",
    "is_error": false,
@@ -650,7 +524,7 @@
       1193.3000000000002
      ]
     ],
-    "message": "Revenue = sum(orders.amount), with region and city taken from the order's customer (customers.region_id joined to regions, and customers.city). Region revenue is the sum of the city revenues within each region. Oslo shows up under both North and South because customers there have different regions. The null region group has Paris customers whose region_id doesn't match any region (677.83) and 6 orders whose customer_id isn't in customers (515.47)."
+    "message": "Revenue is the sum of order amounts for each region and city, with the region's total revenue on every row. Region and city come from each order's customer. Two groups have no known region: Paris, from one customer whose region is missing, and a group with no region or city, from 6 orders whose customer ID matches no customer record. Their combined total is 1,193.30. Oslo shows up under both North and South because customers there are assigned to different regions."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -659,15 +533,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 10,
-  "output_tokens": 897,
-  "cache_read_tokens": 11043,
-  "cache_write_tokens": 2765,
+  "input_tokens": 6,
+  "output_tokens": 630,
+  "cache_read_tokens": 4508,
+  "cache_write_tokens": 2128,
   "partial": false
  },
- "cost_usd": 0.0340136,
- "duration_s": 21.764573666005163,
- "turns": 9,
+ "cost_usd": 0.0241656,
+ "duration_s": 13.253043920965865,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

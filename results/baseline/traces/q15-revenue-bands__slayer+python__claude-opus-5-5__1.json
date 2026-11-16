@@ -27,7 +27,7 @@
    "args": {
     "query": [
      {
-      "name": "cust",
+      "name": "per_cust",
       "source_model": "orders",
       "dimensions": [
        "customer_id"
@@ -40,17 +40,17 @@
       ]
      },
      {
-      "source_model": "cust",
+      "source_model": "per_cust",
       "dimensions": [
        {
-        "expression": "CASE WHEN rev < 1000 THEN 0 WHEN rev < 2000 THEN 1000 WHEN rev < 3000 THEN 2000 ELSE 3000 END",
+        "expression": "case when rev < 1000 then 0 when rev < 2000 then 1000 when rev < 3000 then 2000 else 3000 end",
         "name": "band"
        }
       ],
       "measures": [
        {
         "formula": "count(*)",
-        "name": "customers"
+        "name": "n"
        }
       ],
       "order": [
@@ -64,12 +64,12 @@
     ],
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"cust.band\": 0, \"cust.customers\": 62}, {\"cust.band\": 1000, \"cust.customers\": 68}, {\"cust.band\": 2000, \"cust.customers\": 49}, {\"cust.band\": 3000, \"cust.customers\": 23}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"cust.customers\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"per_cust.band\": 0, \"per_cust.n\": 62}, {\"per_cust.band\": 1000, \"per_cust.n\": 68}, {\"per_cust.band\": 2000, \"per_cust.n\": 49}, {\"per_cust.band\": 3000, \"per_cust.n\": 23}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"per_cust.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "cust.band",
-     "cust.customers"
+     "per_cust.band",
+     "per_cust.n"
     ],
     "rows": [
      [
@@ -104,36 +104,36 @@
        "name": "n"
       },
       {
-       "formula": "count_distinct(customer_id)",
-       "name": "c"
+       "formula": "count(customer_id)",
+       "name": "nc"
       },
       {
        "formula": "count(amount)",
        "name": "na"
       },
       {
-       "formula": "count(customer_id)",
-       "name": "nc"
+       "formula": "count_distinct(customer_id)",
+       "name": "dc"
       }
      ]
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.n\": 5016, \"orders.c\": 201, \"orders.na\": 5016, \"orders.nc\": 5010}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.c\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.na\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.nc\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.n\": 5016, \"orders.nc\": 5010, \"orders.na\": 5016, \"orders.dc\": 201}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.nc\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.na\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.dc\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.n",
-     "orders.c",
+     "orders.nc",
      "orders.na",
-     "orders.nc"
+     "orders.dc"
     ],
     "rows": [
      [
       5016,
-      201,
+      5010,
       5016,
-      5010
+      201
      ]
     ],
     "warnings": []
@@ -145,14 +145,13 @@
    "args": {
     "query": [
      {
-      "name": "cust",
+      "name": "per_cust",
       "source_model": "orders",
-      "filters": [
-       "customer_id IS NOT NULL"
-      ],
       "dimensions": [
-       "customer_id",
-       "customers.id"
+       "customer_id"
+      ],
+      "filters": [
+       "customer_id is not null"
       ],
       "measures": [
        {
@@ -162,21 +161,17 @@
       ]
      },
      {
-      "source_model": "cust",
+      "source_model": "per_cust",
       "dimensions": [
        {
-        "expression": "CASE WHEN rev < 1000 THEN 0 WHEN rev < 2000 THEN 1000 WHEN rev < 3000 THEN 2000 ELSE 3000 END",
+        "expression": "case when rev < 1000 then 0 when rev < 2000 then 1000 when rev < 3000 then 2000 else 3000 end",
         "name": "band"
        }
       ],
       "measures": [
        {
         "formula": "count(*)",
-        "name": "customers"
-       },
-       {
-        "formula": "count(customers__id)",
-        "name": "matched"
+        "name": "n"
        }
       ],
       "order": [
@@ -190,33 +185,28 @@
     ],
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"cust.band\": 0, \"cust.customers\": 61, \"cust.matched\": 61}, {\"cust.band\": 1000, \"cust.customers\": 68, \"cust.matched\": 68}, {\"cust.band\": 2000, \"cust.customers\": 49, \"cust.matched\": 49}, {\"cust.band\": 3000, \"cust.customers\": 23, \"cust.matched\": 23}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"cust.customers\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"cust.matched\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"per_cust.band\": 0, \"per_cust.n\": 61}, {\"per_cust.band\": 1000, \"per_cust.n\": 68}, {\"per_cust.band\": 2000, \"per_cust.n\": 49}, {\"per_cust.band\": 3000, \"per_cust.n\": 23}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"per_cust.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "cust.band",
-     "cust.customers",
-     "cust.matched"
+     "per_cust.band",
+     "per_cust.n"
     ],
     "rows": [
      [
       0,
-      61,
       61
      ],
      [
       1000,
-      68,
       68
      ],
      [
       2000,
-      49,
       49
      ],
      [
       3000,
-      23,
       23
      ]
     ],
@@ -229,7 +219,7 @@
    "args": {
     "columns": [
      "band",
-     "customers"
+     "customer_count"
     ],
     "rows": [
      [
@@ -249,7 +239,7 @@
       23
      ]
     ],
-    "message": "I added up each customer's order amounts, using all orders whatever their status, and counted customers per band. 201 customers have placed at least one order: 61 are under 1000, 68 are from 1000 to under 2000, 49 are from 2000 to under 3000, and 23 are at 3000 or more. 6 orders have no customer attached, so I left them out; counting them would wrongly add an extra \"customer\" to the under-1000 band. Every remaining customer ID matches a record in the customer list."
+    "message": "201 customers have placed at least one order. I added up each customer's order amounts and put them in revenue bands labelled by their lower bound. Six orders have no customer ID, so I left them out because they can't be assigned to anyone. Counting them as one extra customer would have made the under-1000 band 62 instead of 61."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -259,13 +249,13 @@
  ],
  "usage": {
   "input_tokens": 10,
-  "output_tokens": 1070,
-  "cache_read_tokens": 121561,
-  "cache_write_tokens": 2482,
+  "output_tokens": 981,
+  "cache_read_tokens": 121721,
+  "cache_write_tokens": 2492,
   "partial": false
  },
- "cost_usd": 0.0581622,
- "duration_s": 20.246311825001612,
+ "cost_usd": 0.056464200000000006,
+ "duration_s": 16.278140863985755,
  "turns": 8,
  "end_reason": "submitted",
  "error": null

@@ -230,31 +230,39 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 
 ## Baseline
 
-`results/baseline/` holds a committed run of every task in all three profiles with Claude Opus 5.5 — its
-[report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task ran
-once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
-`1653a91` of its main branch (reported as 1.1.0). The `sql+python` trials were rerun after the system prompt gained
-its exact-answers sentence; the SLayer profiles ran just before it. `q12-net-revenue` was rerun in all three profiles
-after its prompt was made explicit about orders without a customer.
+`results/baseline/` holds a committed run of every task of every suite in all three profiles with Claude Opus 5.5 —
+its [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task
+ran once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
+`1653a91` of its main branch (reported as 1.1.0).
 
 | Suite | Profile | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | 24 | 23 | 20 | 19 |
-| capability | `slayer+python` | 24 | 23 | 16 | 16 |
-| capability | `sql+python` | 24 (2 auto-failed) | 20 | 17 | 17 |
-| combo | `slayer` | 11 | 11 | 4 | 4 |
-| combo | `slayer+python` | 11 | 11 | 4 | 4 |
-| combo | `sql+python` | 11 (1 auto-failed) | 10 | 6 | 6 |
-| trap | `slayer` | 17 | 17 | 10 | 10 |
-| trap | `slayer+python` | 17 | 16 | 9 | 8 |
-| trap | `sql+python` | 17 | 16 | 16 | 15 |
+| capability | `slayer` | 24 | 23 | 19 | 18 |
+| capability | `slayer+python` | 24 | 24 | 15 | 15 |
+| capability | `sql+python` | 24 (2 auto-failed) | 19 | 14 | 14 |
+| combo | `slayer` | 11 | 11 | 7 | 7 |
+| combo | `slayer+python` | 11 | 11 | 5 | 5 |
+| combo | `sql+python` | 11 (1 auto-failed) | 10 | 5 | 5 |
+| trap | `slayer` | 17 | 17 | 11 | 11 |
+| trap | `slayer+python` | 17 | 17 | 8 | 8 |
+| trap | `sql+python` | 17 | 16 | 15 | 14 |
+| jaffle | `slayer` | 24 | 22 | 10 | 10 |
+| jaffle | `slayer+python` | 24 | 21 | 9 | 9 |
+| jaffle | `sql+python` | 24 | 23 | 18 | 18 |
 
-(The relative-date task is xfail and not counted.) **Correct** is the comparison: the SLayer agent answered every
-trap correctly, and so — on this set — did the raw-SQL agent, apart from one answer with an extra empty row; Opus 5.5
-avoids these pitfalls in SQL too. The SLayer agents' gap is single query: on traps and combos they often assembled the
-right answer from several queries instead of one, most persistently when ordering by an unshown measure (Q13), with
-transforms over a date range (Q4, Q7, Q11) and on combos. [docs/baseline-failures.md](docs/baseline-failures.md)
-breaks every failure down by profile and pitfall; the report lists each one with its SLayer and `sql` calls.
+(The relative-date task is xfail and not counted.) **Correct** is the comparison: both SLayer agents answered every
+trap correctly, and the raw-SQL agent missed one, by adding an empty row; Opus 5.5 avoids these pitfalls in SQL too.
+The SLayer agents' gap on the bench suites is single query: they often assembled the right answer from several queries
+instead of one, most persistently when ordering by an unshown measure (Q13), with transforms over a date range (Q4,
+Q7, Q11) and on combos.
+
+On the **jaffle** suite the raw-SQL agent, with the business rules in its system prompt, was correct on 23 of 24
+questions; the SLayer agents, which have to find the rules with `search`, on 22 and 21. Their wrong answers are
+mostly a rule they never looked up: they called `search` on only 13 (`slayer`) and 7 (`slayer+python`) of the 24
+questions, and reported tax-inclusive revenue where the rule says pre-tax. Single query is where the Jaffle suite
+separates the profiles most: 10 and 9 passes for SLayer against 18 for SQL, on questions that need multi-stage queries
+or joins to a computed stage. [docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by
+profile and pitfall, and the Jaffle suite by business rule; the report lists each one with its SLayer and `sql` calls.
 
 ## Plugging in your own agent
 

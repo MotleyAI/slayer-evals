@@ -46,7 +46,7 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}, {\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}, {\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -56,14 +56,14 @@
     ],
     "rows": [
      [
-      "big",
-      822,
-      117689.06000000017
-     ],
-     [
       "small",
       4194,
       214999.39000000033
+     ],
+     [
+      "big",
+      822,
+      117689.06000000017
      ]
     ],
     "warnings": []
@@ -82,15 +82,15 @@
      [
       "big",
       822,
-      117689.06
+      117689.06000000017
      ],
      [
       "small",
       4194,
-      214999.39
+      214999.39000000033
      ]
     ],
-    "message": "Orders with amount over 100 are 'big' and all others are 'small'. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39. I set the class inside this query only, so the stored orders model was not changed. Any order with no amount would count as 'small'."
+    "message": "Orders were classified with a computed dimension inside the query (CASE WHEN amount > 100 THEN 'big' ELSE 'small'), so the stored model was not changed. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39. Any order with no amount would fall into 'small'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -100,13 +100,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 323,
-  "cache_read_tokens": 71275,
+  "output_tokens": 392,
+  "cache_read_tokens": 71359,
   "cache_write_tokens": 1356,
   "partial": false
  },
- "cost_usd": 0.027519000000000002,
- "duration_s": 11.61159572500037,
+ "cost_usd": 0.0289158,
+ "duration_s": 9.904364987974986,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

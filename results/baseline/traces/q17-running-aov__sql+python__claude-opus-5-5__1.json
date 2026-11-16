@@ -278,38 +278,38 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), count(amount), sum(amount), min(order_date), max(order_date), count(*)-count(order_date) from orders group by 1"
+    "sql": "select status, count(*), sum(amount), count(amount), min(order_date), max(order_date), count(distinct id) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(amount)\", \"sum(amount)\", \"min(order_date)\", \"max(order_date)\", \"(count_star() - count(order_date))\"], \"rows\": [[\"bad\", 606, 606, 37980.90000000004, \"2023-01-01\", \"2025-12-31\", 0], [\"ok\", 4410, 4410, 294707.5499999996, \"2023-01-01\", \"2025-12-31\", 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"sum(amount)\", \"count(amount)\", \"min(order_date)\", \"max(order_date)\", \"count(DISTINCT id)\"], \"rows\": [[\"bad\", 606, 37980.90000000004, 606, \"2023-01-01\", \"2025-12-31\", 606], [\"ok\", 4410, 294707.5499999996, 4410, \"2023-01-01\", \"2025-12-31\", 4410]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "status",
      "count_star()",
-     "count(amount)",
      "sum(amount)",
+     "count(amount)",
      "min(order_date)",
      "max(order_date)",
-     "(count_star() - count(order_date))"
+     "count(DISTINCT id)"
     ],
     "rows": [
      [
       "bad",
       606,
-      606,
       37980.90000000004,
+      606,
       "2023-01-01",
       "2025-12-31",
-      0
+      606
      ],
      [
       "ok",
       4410,
-      4410,
       294707.5499999996,
+      4410,
       "2023-01-01",
       "2025-12-31",
-      0
+      4410
      ]
     ],
     "warnings": []
@@ -319,9 +319,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select date_trunc('month', order_date) mon, sum(amount)/count(*) aov from orders where year(order_date)=2025 group by 1)\nselect strftime(mon,'%Y-%m') month, aov, sum(aov) over (order by mon) running_sum_aov from m order by mon"
+    "sql": "with m as (select date_trunc('month', order_date) mo, sum(amount)/count(*) aov, count(*) n from orders where order_date >= '2025-01-01' and order_date < '2026-01-01' group by 1)\nselect strftime(mo,'%Y-%m') month, n, aov, sum(aov) over (order by mo) running from m order by mo"
    },
-   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 2: select strftime(mon,'%Y-%m') month, aov, sum(aov) over (order by mon) running_sum_aov...\n                                     ^",
+   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 2: select strftime(mo,'%Y-%m') month, n, aov, sum(aov) over (order by mo) running from...\n                                    ^",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -329,74 +329,87 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select date_trunc('month', order_date) mon, sum(amount)/count(*) aov from orders where year(order_date)=2025 group by 1)\nselect strftime(mon,'%Y-%m') as \"month\", aov, sum(aov) over (order by mon) running_sum_aov from m order by mon"
+    "sql": "with m as (select date_trunc('month', order_date) mo, sum(amount)/count(*) aov, count(*) n from orders where order_date >= '2025-01-01' and order_date < '2026-01-01' group by 1)\nselect strftime(mo,'%Y-%m') as month_, n, aov, sum(aov) over (order by mo) as running from m order by mo"
    },
-   "result_text": "{\"columns\": [\"month\", \"aov\", \"running_sum_aov\"], \"rows\": [[\"2025-01\", 63.33408805031447, 63.33408805031447], [\"2025-02\", 61.95097222222223, 125.2850602725367], [\"2025-03\", 67.23424657534245, 192.51930684787914], [\"2025-04\", 61.89746376811595, 254.4167706159951], [\"2025-05\", 71.11397590361447, 325.5307465196096], [\"2025-06\", 71.8345925925926, 397.36533911220215], [\"2025-07\", 63.64396946564887, 461.009308577851], [\"2025-08\", 66.05860139860138, 527.0679099764524], [\"2025-09\", 72.79871428571425, 599.8666242621666], [\"2025-10\", 73.31518796992486, 673.1818122320915], [\"2025-11\", 61.610169491525426, 734.7919817236169], [\"2025-12\", 66.39817647058823, 801.1901581942052]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"month_\", \"n\", \"aov\", \"running\"], \"rows\": [[\"2025-01\", 159, 63.33408805031447, 63.33408805031447], [\"2025-02\", 144, 61.95097222222223, 125.2850602725367], [\"2025-03\", 146, 67.23424657534245, 192.51930684787914], [\"2025-04\", 138, 61.89746376811595, 254.4167706159951], [\"2025-05\", 166, 71.11397590361447, 325.5307465196096], [\"2025-06\", 135, 71.8345925925926, 397.36533911220215], [\"2025-07\", 131, 63.64396946564887, 461.009308577851], [\"2025-08\", 143, 66.05860139860138, 527.0679099764524], [\"2025-09\", 140, 72.79871428571425, 599.8666242621666], [\"2025-10\", 133, 73.31518796992486, 673.1818122320915], [\"2025-11\", 118, 61.610169491525426, 734.7919817236169], [\"2025-12\", 170, 66.39817647058823, 801.1901581942052]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "month",
+     "month_",
+     "n",
      "aov",
-     "running_sum_aov"
+     "running"
     ],
     "rows": [
      [
       "2025-01",
+      159,
       63.33408805031447,
       63.33408805031447
      ],
      [
       "2025-02",
+      144,
       61.95097222222223,
       125.2850602725367
      ],
      [
       "2025-03",
+      146,
       67.23424657534245,
       192.51930684787914
      ],
      [
       "2025-04",
+      138,
       61.89746376811595,
       254.4167706159951
      ],
      [
       "2025-05",
+      166,
       71.11397590361447,
       325.5307465196096
      ],
      [
       "2025-06",
+      135,
       71.8345925925926,
       397.36533911220215
      ],
      [
       "2025-07",
+      131,
       63.64396946564887,
       461.009308577851
      ],
      [
       "2025-08",
+      143,
       66.05860139860138,
       527.0679099764524
      ],
      [
       "2025-09",
+      140,
       72.79871428571425,
       599.8666242621666
      ],
      [
       "2025-10",
+      133,
       73.31518796992486,
       673.1818122320915
      ],
      [
       "2025-11",
+      118,
       61.610169491525426,
       734.7919817236169
      ],
      [
       "2025-12",
+      170,
       66.39817647058823,
       801.1901581942052
      ]
@@ -475,7 +488,7 @@
       801.1901581942052
      ]
     ],
-    "message": "For each month, average order value = total order amount ÷ number of orders. The running sum of these monthly values starting January 2025 reaches 801.19 by December 2025. This includes all orders, both 'ok' and 'bad' status, because nothing in the data says to exclude either one."
+    "message": "Average order value for each month = sum of order amounts ÷ number of orders, using every order in the orders table (both 'ok' and 'bad' status). The running sum adds these monthly values starting from January 2025. If 'bad' orders should be left out, the numbers would change."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -485,13 +498,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 566,
-  "cache_read_tokens": 7234,
-  "cache_write_tokens": 2012,
+  "output_tokens": 584,
+  "cache_read_tokens": 7232,
+  "cache_write_tokens": 2008,
   "partial": false
  },
- "cost_usd": 0.0228588,
- "duration_s": 15.58041680000315,
+ "cost_usd": 0.0231984,
+ "duration_s": 12.571768467954826,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

@@ -308,25 +308,36 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select count(*), count(event_ts), min(event_ts), max(event_ts), count(distinct id) from events"
+    "sql": "select * from events where event_ts between '2025-02-28 20:00' and '2025-03-01 04:00' or event_ts between '2025-03-31 20:00' and '2025-04-01 04:00' order by event_ts"
    },
-   "result_text": "{\"columns\": [\"count_star()\", \"count(event_ts)\", \"min(event_ts)\", \"max(event_ts)\", \"count(DISTINCT id)\"], \"rows\": [[605, 605, \"2025-01-01T04:10:36\", \"2025-06-30T23:11:41\", 605]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"id\", \"amount\", \"event_ts\"], \"rows\": [[186, 28.2, \"2025-02-28T23:36:40\"], [187, 7.91, \"2025-02-28T23:38:43\"], [301, 45.4, \"2025-03-31T23:04:44\"], [302, 16.21, \"2025-04-01T02:09:23\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "count_star()",
-     "count(event_ts)",
-     "min(event_ts)",
-     "max(event_ts)",
-     "count(DISTINCT id)"
+     "id",
+     "amount",
+     "event_ts"
     ],
     "rows": [
      [
-      605,
-      605,
-      "2025-01-01T04:10:36",
-      "2025-06-30T23:11:41",
-      605
+      186,
+      28.2,
+      "2025-02-28T23:36:40"
+     ],
+     [
+      187,
+      7.91,
+      "2025-02-28T23:38:43"
+     ],
+     [
+      301,
+      45.4,
+      "2025-03-31T23:04:44"
+     ],
+     [
+      302,
+      16.21,
+      "2025-04-01T02:09:23"
      ]
     ],
     "warnings": []
@@ -346,7 +357,7 @@
       2925.369999999999
      ]
     ],
-    "message": "March 2025 had 119 events with a total amount of 2925.37 (unrounded sum: 2925.369999999999). I counted events with event_ts from 2025-03-01 up to, but not including, 2025-04-01, using the timestamps as stored. All 119 events have distinct IDs, and none has a missing amount."
+    "message": "119 events were recorded in March 2025, with a total amount of 2925.369999999999 (about 2,925.37). This counts events timestamped from 2025-03-01 up to, but not including, 2025-04-01. A few events sit just outside the month (two late on 28 February, one early on 1 April), so the total would change if the timestamps were meant to be read in a different time zone."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -355,14 +366,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 284,
-  "cache_read_tokens": 2212,
-  "cache_write_tokens": 1362,
+  "input_tokens": 6,
+  "output_tokens": 366,
+  "cache_read_tokens": 4540,
+  "cache_write_tokens": 1631,
   "partial": false
  },
- "cost_usd": 0.012948399999999999,
- "duration_s": 9.014608568002586,
+ "cost_usd": 0.016406999999999998,
+ "duration_s": 9.434705065970775,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

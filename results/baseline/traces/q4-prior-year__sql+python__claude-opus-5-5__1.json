@@ -278,101 +278,158 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select date_trunc('month',order_date) m, sum(amount), count(*), count(amount) from orders where order_date between '2024-01-01' and '2025-03-31' or order_date is null group by 1 order by 1"
+    "sql": "select date_trunc('month',order_date) m, sum(amount), count(*), count(amount), list(distinct status) from orders where order_date between '2024-01-01' and '2025-03-31' group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"m\", \"sum(amount)\", \"count_star()\", \"count(amount)\"], \"rows\": [[\"2024-01-01T00:00:00\", 8795.049999999997, 135, 135], [\"2024-02-01T00:00:00\", 7419.6, 110, 110], [\"2024-03-01T00:00:00\", 11469.280000000008, 162, 162], [\"2024-04-01T00:00:00\", 11767.950000000003, 163, 163], [\"2024-05-01T00:00:00\", 9366.480000000001, 142, 142], [\"2024-06-01T00:00:00\", 9352.83, 142, 142], [\"2024-07-01T00:00:00\", 10177.420000000004, 159, 159], [\"2024-09-01T00:00:00\", 9259.910000000003, 143, 143], [\"2024-10-01T00:00:00\", 8958.220000000005, 134, 134], [\"2024-11-01T00:00:00\", 9247.110000000002, 148, 148], [\"2024-12-01T00:00:00\", 10371.18, 146, 146], [\"2025-01-01T00:00:00\", 10070.12, 159, 159], [\"2025-02-01T00:00:00\", 8920.94, 144, 144], [\"2025-03-01T00:00:00\", 9816.199999999999, 146, 146]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"m\", \"sum(amount)\", \"count_star()\", \"count(amount)\", \"list(DISTINCT status)\"], \"rows\": [[\"2024-01-01T00:00:00\", 8795.049999999997, 135, 135, [\"ok\", \"bad\"]], [\"2024-02-01T00:00:00\", 7419.6, 110, 110, [\"ok\", \"bad\"]], [\"2024-03-01T00:00:00\", 11469.280000000008, 162, 162, [\"ok\", \"bad\"]], [\"2024-04-01T00:00:00\", 11767.950000000003, 163, 163, [\"bad\", \"ok\"]], [\"2024-05-01T00:00:00\", 9366.480000000001, 142, 142, [\"bad\", \"ok\"]], [\"2024-06-01T00:00:00\", 9352.83, 142, 142, [\"bad\", \"ok\"]], [\"2024-07-01T00:00:00\", 10177.420000000004, 159, 159, [\"ok\", \"bad\"]], [\"2024-09-01T00:00:00\", 9259.910000000003, 143, 143, [\"ok\", \"bad\"]], [\"2024-10-01T00:00:00\", 8958.220000000005, 134, 134, [\"bad\", \"ok\"]], [\"2024-11-01T00:00:00\", 9247.110000000002, 148, 148, [\"bad\", \"ok\"]], [\"2024-12-01T00:00:00\", 10371.18, 146, 146, [\"bad\", \"ok\"]], [\"2025-01-01T00:00:00\", 10070.12, 159, 159, [\"ok\", \"bad\"]], [\"2025-02-01T00:00:00\", 8920.94, 144, 144, [\"ok\", \"bad\"]], [\"2025-03-01T00:00:00\", 9816.199999999999, 146, 146, [\"bad\", \"ok\"]]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "m",
      "sum(amount)",
      "count_star()",
-     "count(amount)"
+     "count(amount)",
+     "list(DISTINCT status)"
     ],
     "rows": [
      [
       "2024-01-01T00:00:00",
       8795.049999999997,
       135,
-      135
+      135,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2024-02-01T00:00:00",
       7419.6,
       110,
-      110
+      110,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2024-03-01T00:00:00",
       11469.280000000008,
       162,
-      162
+      162,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2024-04-01T00:00:00",
       11767.950000000003,
       163,
-      163
+      163,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2024-05-01T00:00:00",
       9366.480000000001,
       142,
-      142
+      142,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2024-06-01T00:00:00",
       9352.83,
       142,
-      142
+      142,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2024-07-01T00:00:00",
       10177.420000000004,
       159,
-      159
+      159,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2024-09-01T00:00:00",
       9259.910000000003,
       143,
-      143
+      143,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2024-10-01T00:00:00",
       8958.220000000005,
       134,
-      134
+      134,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2024-11-01T00:00:00",
       9247.110000000002,
       148,
-      148
+      148,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2024-12-01T00:00:00",
       10371.18,
       146,
-      146
+      146,
+      [
+       "bad",
+       "ok"
+      ]
      ],
      [
       "2025-01-01T00:00:00",
       10070.12,
       159,
-      159
+      159,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2025-02-01T00:00:00",
       8920.94,
       144,
-      144
+      144,
+      [
+       "ok",
+       "bad"
+      ]
      ],
      [
       "2025-03-01T00:00:00",
       9816.199999999999,
       146,
-      146
+      146,
+      [
+       "bad",
+       "ok"
+      ]
      ]
     ],
     "warnings": []
@@ -382,65 +439,39 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*) from orders group by 1"
+    "sql": "select strftime(order_date,'%Y-%m') m, sum(amount)::varchar from orders where year(order_date) in (2024,2025) and month(order_date)<=3 group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\"], \"rows\": [[\"bad\", 606], [\"ok\", 4410]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "status",
-     "count_star()"
-    ],
-    "rows": [
-     [
-      "bad",
-      606
-     ],
-     [
-      "ok",
-      4410
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select strftime(order_date,'%Y-%m') m, sum(amount) from orders where order_date >= '2024-01-01' and order_date < '2025-04-01' and month(order_date)<=3 group by 1 order by 1"
-   },
-   "result_text": "{\"columns\": [\"m\", \"sum(amount)\"], \"rows\": [[\"2024-01\", 8795.049999999997], [\"2024-02\", 7419.6], [\"2024-03\", 11469.280000000008], [\"2025-01\", 10070.12], [\"2025-02\", 8920.94], [\"2025-03\", 9816.199999999999]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"m\", \"CAST(sum(amount) AS VARCHAR)\"], \"rows\": [[\"2024-01\", \"8795.049999999997\"], [\"2024-02\", \"7419.6\"], [\"2024-03\", \"11469.280000000008\"], [\"2025-01\", \"10070.12\"], [\"2025-02\", \"8920.94\"], [\"2025-03\", \"9816.199999999999\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "m",
-     "sum(amount)"
+     "CAST(sum(amount) AS VARCHAR)"
     ],
     "rows": [
      [
       "2024-01",
-      8795.049999999997
+      "8795.049999999997"
      ],
      [
       "2024-02",
-      7419.6
+      "7419.6"
      ],
      [
       "2024-03",
-      11469.280000000008
+      "11469.280000000008"
      ],
      [
       "2025-01",
-      10070.12
+      "10070.12"
      ],
      [
       "2025-02",
-      8920.94
+      "8920.94"
      ],
      [
       "2025-03",
-      9816.199999999999
+      "9816.199999999999"
      ]
     ],
     "warnings": []
@@ -472,7 +503,7 @@
       11469.280000000008
      ]
     ],
-    "message": "Revenue is the sum of orders.amount for each month of Q1 2025, shown next to the same month of 2024. All orders are included regardless of status, including the ones marked 'bad'."
+    "message": "Revenue is the sum of orders.amount for every order, whatever its status, since the question doesn't ask for a filter. The prior-year column is the same month in 2024."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -482,14 +513,14 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 426,
-  "cache_read_tokens": 4586,
-  "cache_write_tokens": 2158,
+  "output_tokens": 355,
+  "cache_read_tokens": 4590,
+  "cache_write_tokens": 2155,
   "partial": false
  },
- "cost_usd": 0.020251199999999997,
- "duration_s": 10.683527624001727,
- "turns": 7,
+ "cost_usd": 0.018817,
+ "duration_s": 8.241376243997365,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

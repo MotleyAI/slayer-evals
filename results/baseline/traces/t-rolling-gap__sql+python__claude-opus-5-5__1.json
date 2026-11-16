@@ -278,7 +278,7 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select date_trunc('month',order_date) m, sum(amount), count(*), count(amount) from orders where order_date >= '2024-06-01' and order_date < '2025-01-01' group by 1 order by 1"
+    "sql": "select date_trunc('month',order_date) m, sum(amount), count(*), count(amount) from orders where order_date between '2024-06-01' and '2024-12-31' or order_date is null group by 1 order by 1"
    },
    "result_text": "{\"columns\": [\"m\", \"sum(amount)\", \"count_star()\", \"count(amount)\"], \"rows\": [[\"2024-06-01T00:00:00\", 9352.83, 142, 142], [\"2024-07-01T00:00:00\", 10177.420000000004, 159, 159], [\"2024-09-01T00:00:00\", 9259.910000000003, 143, 143], [\"2024-10-01T00:00:00\", 8958.220000000005, 134, 134], [\"2024-11-01T00:00:00\", 9247.110000000002, 148, 148], [\"2024-12-01T00:00:00\", 10371.18, 146, 146]], \"truncated\": false}",
    "is_error": false,
@@ -334,55 +334,13 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), min(order_date), max(order_date) from orders group by 1"
+    "sql": "select m, (select sum(amount) from orders where order_date >= m - interval 2 month and order_date < m + interval 1 month) rev from (select unnest([date '2024-09-01', date '2024-10-01', date '2024-11-01', date '2024-12-01']) m) order by m"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"min(order_date)\", \"max(order_date)\"], \"rows\": [[\"bad\", 606, \"2023-01-01\", \"2025-12-31\"], [\"ok\", 4410, \"2023-01-01\", \"2025-12-31\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"m\", \"rev\"], \"rows\": [[\"2024-09-01\", 19437.33000000001], [\"2024-10-01\", 18218.13], [\"2024-11-01\", 27465.239999999994], [\"2024-12-01\", 28576.509999999984]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "status",
-     "count_star()",
-     "min(order_date)",
-     "max(order_date)"
-    ],
-    "rows": [
-     [
-      "bad",
-      606,
-      "2023-01-01",
-      "2025-12-31"
-     ],
-     [
-      "ok",
-      4410,
-      "2023-01-01",
-      "2025-12-31"
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with m as (select date_trunc('month',order_date)::date m, sum(amount) r from orders group by 1)\nselect x::date month, (select sum(r) from m where m.m > x - interval 3 month and m.m <= x) rev\nfrom unnest([date '2024-09-01', date '2024-10-01', date '2024-11-01', date '2024-12-01']) t(x) order by 1"
-   },
-   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 2: select x::date month, (select sum(r) from m where m.m > x - interval 3...\n                       ^",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with m as (select date_trunc('month',order_date)::date m, sum(amount) r from orders group by 1)\nselect x::date as mon, (select sum(r) from m where m.m > x - interval 3 month and m.m <= x) rev\nfrom unnest([date '2024-09-01', date '2024-10-01', date '2024-11-01', date '2024-12-01']) t(x) order by 1"
-   },
-   "result_text": "{\"columns\": [\"mon\", \"rev\"], \"rows\": [[\"2024-09-01\", 19437.33000000001], [\"2024-10-01\", 18218.13000000001], [\"2024-11-01\", 27465.240000000013], [\"2024-12-01\", 28576.51000000001]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "mon",
+     "m",
      "rev"
     ],
     "rows": [
@@ -392,15 +350,15 @@
      ],
      [
       "2024-10-01",
-      18218.13000000001
+      18218.13
      ],
      [
       "2024-11-01",
-      27465.240000000013
+      27465.239999999994
      ],
      [
       "2024-12-01",
-      28576.51000000001
+      28576.509999999984
      ]
     ],
     "warnings": []
@@ -412,7 +370,7 @@
    "args": {
     "columns": [
      "month",
-     "revenue_3_months"
+     "revenue_3_month"
     ],
     "rows": [
      [
@@ -421,18 +379,18 @@
      ],
      [
       "2024-10",
-      18218.13000000001
+      18218.13
      ],
      [
       "2024-11",
-      27465.240000000013
+      27465.239999999994
      ],
      [
       "2024-12",
-      28576.51000000001
+      28576.509999999984
      ]
     ],
-    "message": "Each figure is the total of orders.amount over three calendar months ending with that month, counting orders of every status ('ok' and 'bad'). There are no orders at all in August 2024, so August adds 0. That is why September (Jul+Aug+Sep) and October (Aug+Sep+Oct) are only about two months' worth of revenue."
+    "message": "Each value is the total of orders.amount over three calendar months ending in that month, all order statuses included. There are no orders in August 2024, so the September and October totals are lower: they cover only two months that have orders. September is July plus September, and October is September plus October."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -441,15 +399,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 8,
-  "output_tokens": 703,
-  "cache_read_tokens": 7523,
-  "cache_write_tokens": 2319,
+  "input_tokens": 6,
+  "output_tokens": 414,
+  "cache_read_tokens": 4578,
+  "cache_write_tokens": 1751,
   "partial": false
  },
- "cost_usd": 0.0271916,
- "duration_s": 14.360841335990699,
- "turns": 8,
+ "cost_usd": 0.0179746,
+ "duration_s": 9.695436230977066,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

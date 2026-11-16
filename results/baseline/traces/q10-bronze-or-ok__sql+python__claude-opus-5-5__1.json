@@ -278,30 +278,32 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select list(distinct tier) from customers) t, (select list(distinct status) from orders) s, (select count(*) from customers where tier='bronze' or id in (select customer_id from orders where status='ok')) n, (select count(*)-count(distinct id) from customers) dup"
+    "sql": "select (select list(distinct tier) from customers), (select list(distinct status) from orders),\n(select count(*) from customers c where c.tier='bronze' or exists(select 1 from orders o where o.customer_id=c.id and o.status='ok')),\n(select count(*) from customers), (select count(distinct id) from customers)"
    },
-   "result_text": "{\"columns\": [\"t\", \"s\", \"n\", \"dup\"], \"rows\": [[[\"gold\", \"silver\", \"bronze\"], [\"ok\", \"bad\"], 201, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"(SELECT list(DISTINCT tier) FROM customers)\", \"(SELECT list(DISTINCT status) FROM orders)\", \"(SELECT count_star() FROM customers AS c WHERE ((c.tier = 'bronze') OR EXISTS(SELECT 1 FROM orders AS o WHERE ((o.customer_id = c.id) AND (o.status = 'ok')))))\", \"(SELECT count_star() FROM customers)\", \"(SELECT count(DISTINCT id) FROM customers)\"], \"rows\": [[[\"silver\", \"gold\", \"bronze\"], [\"bad\", \"ok\"], 201, 202, 202]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "t",
-     "s",
-     "n",
-     "dup"
+     "(SELECT list(DISTINCT tier) FROM customers)",
+     "(SELECT list(DISTINCT status) FROM orders)",
+     "(SELECT count_star() FROM customers AS c WHERE ((c.tier = 'bronze') OR EXISTS(SELECT 1 FROM orders AS o WHERE ((o.customer_id = c.id) AND (o.status = 'ok')))))",
+     "(SELECT count_star() FROM customers)",
+     "(SELECT count(DISTINCT id) FROM customers)"
     ],
     "rows": [
      [
       [
-       "gold",
        "silver",
+       "gold",
        "bronze"
       ],
       [
-       "ok",
-       "bad"
+       "bad",
+       "ok"
       ],
       201,
-      0
+      202,
+      202
      ]
     ],
     "warnings": []
@@ -319,7 +321,7 @@
       201
      ]
     ],
-    "message": "201 distinct customers are either in the bronze tier or have at least one order with status 'ok'. Customers who meet both conditions are counted once."
+    "message": "201 of the 202 customers are either in the bronze tier or have at least one order with status 'ok'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -328,14 +330,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 221,
-  "cache_read_tokens": 2221,
-  "cache_write_tokens": 1371,
+  "input_tokens": 6,
+  "output_tokens": 423,
+  "cache_read_tokens": 4554,
+  "cache_write_tokens": 1788,
   "partial": false
  },
- "cost_usd": 0.011735200000000001,
- "duration_s": 8.580741929996293,
+ "cost_usd": 0.0183348,
+ "duration_s": 7.078603046014905,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

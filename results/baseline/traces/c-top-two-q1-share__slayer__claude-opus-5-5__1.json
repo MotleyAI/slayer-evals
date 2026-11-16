@@ -4,9 +4,10 @@
   {
    "tool": "inspect",
    "args": {
-    "entity_type": "model"
+    "entity_type": "model",
+    "compact": false
    },
-   "result_text": "# Datasource: `bench` — 13 model(s)\n- `campaign_members` (3 cols; joins: `campaigns`, `customers`)\n- `campaigns` (4 cols; joins: `campaign_members`)\n- `cities` (4 cols; joins: `customers`, `regions`)\n- `customers` (7 cols; joins: `campaign_members`, `cities`, `orders`, `regions`, `returns`)\n- `events` (3 cols; joins: _(none)_)\n- `monthly_rev` (2 cols; joins: _(none)_)\n- `order_items` (5 cols; joins: `orders`, `products`)\n- `orders` (5 cols; joins: `customers`, `order_items`)\n- `orders_flat` (10 cols; joins: _(none)_)\n- `products` (4 cols; joins: `order_items`)\n- `regions` (2 cols; joins: `cities`, `customers`)\n- `returns` (4 cols; joins: `customers`)\n- `time_spine` (1 cols; joins: _(none)_)",
+   "result_text": "# Datasource: `bench` — 13 model(s)\n\n## `campaign_members`\n**Columns (3):**\n\n| name | type |\n| --- | --- |\n| campaign_id | DOUBLE |\n| customer_id | DOUBLE |\n| joined_date | DATE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `campaigns`, `customers`\n\n## `campaigns`\n**Columns (4):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| name | TEXT |\n| channel | TEXT |\n| start_date | DATE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `campaign_members`\n\n## `cities`\n**Columns (4):**\n\n| name | type |\n| --- | --- |\n| city | TEXT |\n| region_id | DOUBLE |\n| population | DOUBLE |\n| size_class | TEXT |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `customers`, `regions`\n\n## `customers`\n**Columns (7):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| name | TEXT |\n| region_id | DOUBLE |\n| city | TEXT |\n| tier | TEXT |\n| credit | DOUBLE |\n| discount | DOUBLE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `campaign_members`, `cities`, `orders`, `regions`, `returns`\n\n## `events`\n**Columns (3):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| amount | DOUBLE |\n| event_ts | TIMESTAMP |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** _(none)_\n\n## `monthly_rev`\n**Columns (2):**\n\n| name | type |\n| --- | --- |\n| order_date | TIMESTAMP |\n| rev | DOUBLE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** _(none)_\n\n## `order_items`\n**Columns (5):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| order_id | DOUBLE |\n| product_id | DOUBLE |\n| quantity | DOUBLE |\n| line_amount | DOUBLE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `orders`, `products`\n\n## `orders`\n**Columns (5):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| customer_id | DOUBLE |\n| amount | DOUBLE |\n| status | TEXT |\n| order_date | DATE |\n\n**Measures (1):**\n\n| name | formula |\n| --- | --- |\n| aov | sum(amount) / count(*) |\n\n**Joins to:** `customers`, `order_items`\n\n## `orders_flat`\n**Columns (10):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| customer_id | DOUBLE |\n| amount | DOUBLE |\n| status | TEXT |\n| order_date | DATE |\n| region | TEXT |\n| city | TEXT |\n| tier | TEXT |\n| credit | DOUBLE |\n| discount | DOUBLE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** _(none)_\n\n## `products`\n**Columns (4):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| name | TEXT |\n| category | TEXT |\n| list_price | DOUBLE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `order_items`\n\n## `regions`\n**Columns (2):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| name | TEXT |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `cities`, `customers`\n\n## `returns`\n**Columns (4):**\n\n| name | type |\n| --- | --- |\n| id | DOUBLE |\n| customer_id | DOUBLE |\n| amount | DOUBLE |\n| return_date | DATE |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** `customers`\n\n## `time_spine`\nBuilt-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='bench.time_spine', entity_type='model').\n**Columns (1):**\n\n| name | type |\n| --- | --- |\n| timestamp | TIMESTAMP |\n\n**Measures (0):**\n\n_(none)_\n\n**Joins to:** _(none)_",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -14,45 +15,18 @@
   {
    "tool": "inspect",
    "args": {
-    "entity_type": "model",
+    "entity_type": "column",
     "reference": [
-     "customers",
-     "orders",
-     "cities",
-     "regions"
-    ],
-    "compact": false
+     "bench.customers.region_id",
+     "bench.customers.city",
+     "bench.regions.name",
+     "bench.orders.status",
+     "bench.orders.amount"
+    ]
    },
-   "result_text": "## bench.customers\n# Model: `customers`\n\n- **data_source:** `bench`\n- **sql_table:** `customers`\n- **row_count:** 202\n\n## Columns (7)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| name | TEXT | — | all | Finn Ek, Ella Ito, Gia Greco, Gia Kovac, Ines Dahl, Milo Ek, Milo Jansen, Dan Berg, Dan Greco, Dan Moreau, Hugo Berg, Ines Greco, Ines Ito, Ines Moreau, Jon Lund, Kai Costa, Nora Berg, Ben Berg, Ben Ito, Ben Kovac ... (50+ distinct) |\n| region_id | DOUBLE | — | all | 1 .. 4 |\n| city | TEXT | — | all | Oslo, Rome, Bergen, Prague, Vienna, Lisbon, Naples, Porto, Trondheim, Paris |\n| tier | TEXT | — | all | bronze, silver, gold |\n| credit | DOUBLE | — | all | 100.0 .. 1000.0 |\n| discount | DOUBLE | — | all | 0.0 .. 10.0 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (5)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| regions | region_id = id | many_to_one |\n| cities | city = city; region_id = region_id | many_to_one |\n| campaign_members | id = customer_id | one_to_many |\n| orders | id = customer_id | one_to_many |\n| returns | id = customer_id | one_to_many |\n\n## Data Profile\n\n| name | city | _count | region_id_avg | tier_count_distinct | credit_avg | discount_avg |\n| --- | --- | --- | --- | --- | --- | --- |\n| Gia Kovac | Vienna | 2 | 3.0 | 2 | 680.0 | 1.0 |\n| Milo Lund | Oslo | 1 | 1.0 | 1 | 180.0 | 5.0 |\n| Ben Jansen | Lisbon | 1 | 4.0 | 1 | 970.0 | 2.0 |\n\n---\n\n## bench.orders\n# Model: `orders`\n\n- **data_source:** `bench`\n- **sql_table:** `orders`\n- **row_count:** 5,016\n\n## Columns (5)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| customer_id | DOUBLE | — | all | 1 .. 9002 |\n| amount | DOUBLE | — | all | 6.54 .. 416.89 |\n| status | TEXT | — | all | ok, bad |\n| order_date | DATE | — | all | 2023-01-01 .. 2025-12-31 |\n\n## Measures (1)\n\n| name | formula |\n| --- | --- |\n| aov | sum(amount) / count(*) |\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer_id = id | many_to_one |\n| order_items | id = order_id | one_to_many |\n\n## Data Profile\n\n| status | _count | customer_id_avg | amount_avg | order_date_count_distinct |\n| --- | --- | --- | --- | --- |\n| ok | 4410 | 121.4325613079019 | 66.82710884353732 | 1044 |\n| bad | 606 | 105.15346534653466 | 62.67475247524759 | 460 |\n\n## Saved queries (1)\n\n- `monthly_rev`\n\n---\n\n## bench.cities\n# Model: `cities`\n\n- **data_source:** `bench`\n- **sql_table:** `cities`\n- **row_count:** 10\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| city | TEXT | yes | all | Oslo, Bergen, Lisbon, Naples, Porto, Prague, Rome, Trondheim, Vienna |\n| region_id | DOUBLE | yes | all | 1 .. 4 |\n| population | DOUBLE | — | all | 3000 .. 2800000 |\n| size_class | TEXT | — | all | large, medium, small |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| regions | region_id = id | many_to_one |\n| customers | city = city; region_id = region_id | one_to_many |\n\n## Data Profile\n\n| city | size_class | _count | region_id_avg | population_avg |\n| --- | --- | --- | --- | --- |\n| Naples | large | 1 | 2.0 | 900000.0 |\n| Oslo | large | 1 | 1.0 | 700000.0 |\n| Trondheim | medium | 1 | 1.0 | 210000.0 |\n\n---\n\n## bench.regions\n# Model: `regions`\n\n- **data_source:** `bench`\n- **sql_table:** `regions`\n- **row_count:** 5\n\n## Columns (2)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| name | TEXT | — | all | Arctic, East, North, South, West |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| cities | id = region_id | one_to_many |\n| customers | id = region_id | one_to_many |\n\n## Data Profile\n\n| name | _count |\n| --- | --- |\n| East | 1 |\n| West | 1 |\n| North | 1 |",
+   "result_text": "## bench.customers.region_id\n\n\n---\n\n## bench.customers.city\n\n\n---\n\n## bench.regions.name\n\n\n---\n\n## bench.orders.status\n\n\n---\n\n## bench.orders.amount\n",
    "is_error": false,
    "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "customers",
-     "dimensions": [
-      "id"
-     ],
-     "measures": [
-      "count(*)",
-      "count_distinct(region_id)"
-     ],
-     "filters": [
-      "count(*) > 1"
-     ]
-    },
-    "format": "json"
-   },
-   "result_text": "{\"data\": [], \"attributes\": {\"dimensions\": {}, \"measures\": {\"customers._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"customers.region_id_count_distinct\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
-   "is_error": false,
-   "parsed": {
-    "columns": [],
-    "rows": [],
-    "warnings": []
-   },
    "audit": null
   },
   {
@@ -61,191 +35,140 @@
     "query": {
      "source_model": "orders",
      "dimensions": [
-      "customers.region_id",
       "customers.regions.name",
       "customer_id"
      ],
      "measures": [
       {
        "formula": "sum(amount)",
-       "name": "rev"
-      }
-     ],
-     "time_dimensions": [
-      {
-       "dimension": "order_date",
-       "granularity": "quarter",
-       "date_range": [
-        "2025-01-01",
-        "2025-03-31"
-       ]
+       "name": "revenue"
       }
      ],
      "filters": [
-      "customers.region_id is not null"
+      "order_date >= '2025-01-01'",
+      "order_date < '2025-04-01'"
      ],
      "order": [
       {
-       "column": "customers.region_id"
+       "column": "customers.regions.name"
       },
       {
-       "column": "rev",
+       "column": "revenue",
        "direction": "desc"
       }
      ]
     },
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 160, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 560.69}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 80, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 363.83000000000004}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 96, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 346.77}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 28, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 335.65}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 138, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 333.63}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 60, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 311.02}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 169, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 292.0}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 94, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 290.39}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 137, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 287.85}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 15, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 287.71000000000004}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 193, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 276.17}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 135, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 266.45}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 129, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 265.61}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 172, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 264.63}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 130, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 226.29000000000002}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 148, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 220.84999999999997}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 126, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 215.32999999999998}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 87, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 214.75}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 191, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 204.85}, {\"orders.customers.region_id\": 1, \"orders.customers.regions.name\": \"North\", \"orders.customer_id\": 180, \"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 187.66000000000003}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
+   "result_text": "SQL:\nSELECT\n  customers__regions.name AS \"orders.customers.regions.name\",\n  orders.customer_id AS \"orders.customer_id\",\n  CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\nFROM orders AS orders\nLEFT JOIN customers AS customers\n  ON orders.customer_id = customers.id\nLEFT JOIN regions AS customers__regions\n  ON customers.region_id = customers__regions.id\nWHERE\n  orders.order_date >= CAST('2025-01-01' AS DATE)\n  AND orders.order_date < CAST('2025-04-01' AS DATE)\nGROUP BY\n  customers__regions.name,\n  orders.customer_id\nORDER BY\n  \"orders.customers.regions.name\" ASC,\n  \"orders.revenue\" DESC\nLIMIT 21\n\n{\"data\": [{\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 5, \"orders.revenue\": 497.0300000000001}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 123, \"orders.revenue\": 463.62}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 21, \"orders.revenue\": 451.54999999999995}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 167, \"orders.revenue\": 351.49}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 119, \"orders.revenue\": 344.88}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 45, \"orders.revenue\": 287.47}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 125, \"orders.revenue\": 257.75}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 199, \"orders.revenue\": 251.0}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 97, \"orders.revenue\": 229.82}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 175, \"orders.revenue\": 219.92000000000002}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 187, \"orders.revenue\": 215.94000000000003}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 143, \"orders.revenue\": 208.24}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 100, \"orders.revenue\": 206.21}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 170, \"orders.revenue\": 196.8}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 86, \"orders.revenue\": 193.39}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 68, \"orders.revenue\": 182.99}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 112, \"orders.revenue\": 179.68}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 168, \"orders.revenue\": 168.76}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 27, \"orders.revenue\": 167.35}, {\"orders.customers.regions.name\": \"East\", \"orders.customer_id\": 121, \"orders.revenue\": 165.27}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "orders.customers.region_id",
      "orders.customers.regions.name",
      "orders.customer_id",
-     "orders.order_date",
-     "orders.rev"
+     "orders.revenue"
     ],
     "rows": [
      [
-      1,
-      "North",
-      160,
-      "2025-01-01 00:00:00",
-      560.69
+      "East",
+      5,
+      497.0300000000001
      ],
      [
-      1,
-      "North",
-      80,
-      "2025-01-01 00:00:00",
-      363.83000000000004
+      "East",
+      123,
+      463.62
      ],
      [
-      1,
-      "North",
-      96,
-      "2025-01-01 00:00:00",
-      346.77
+      "East",
+      21,
+      451.54999999999995
      ],
      [
-      1,
-      "North",
-      28,
-      "2025-01-01 00:00:00",
-      335.65
+      "East",
+      167,
+      351.49
      ],
      [
-      1,
-      "North",
-      138,
-      "2025-01-01 00:00:00",
-      333.63
+      "East",
+      119,
+      344.88
      ],
      [
-      1,
-      "North",
-      60,
-      "2025-01-01 00:00:00",
-      311.02
+      "East",
+      45,
+      287.47
      ],
      [
-      1,
-      "North",
-      169,
-      "2025-01-01 00:00:00",
-      292.0
+      "East",
+      125,
+      257.75
      ],
      [
-      1,
-      "North",
-      94,
-      "2025-01-01 00:00:00",
-      290.39
+      "East",
+      199,
+      251.0
      ],
      [
-      1,
-      "North",
-      137,
-      "2025-01-01 00:00:00",
-      287.85
+      "East",
+      97,
+      229.82
      ],
      [
-      1,
-      "North",
-      15,
-      "2025-01-01 00:00:00",
-      287.71000000000004
+      "East",
+      175,
+      219.92000000000002
      ],
      [
-      1,
-      "North",
-      193,
-      "2025-01-01 00:00:00",
-      276.17
+      "East",
+      187,
+      215.94000000000003
      ],
      [
-      1,
-      "North",
-      135,
-      "2025-01-01 00:00:00",
-      266.45
+      "East",
+      143,
+      208.24
      ],
      [
-      1,
-      "North",
-      129,
-      "2025-01-01 00:00:00",
-      265.61
+      "East",
+      100,
+      206.21
      ],
      [
-      1,
-      "North",
-      172,
-      "2025-01-01 00:00:00",
-      264.63
+      "East",
+      170,
+      196.8
      ],
      [
-      1,
-      "North",
-      130,
-      "2025-01-01 00:00:00",
-      226.29000000000002
+      "East",
+      86,
+      193.39
      ],
      [
-      1,
-      "North",
-      148,
-      "2025-01-01 00:00:00",
-      220.84999999999997
+      "East",
+      68,
+      182.99
      ],
      [
-      1,
-      "North",
-      126,
-      "2025-01-01 00:00:00",
-      215.32999999999998
+      "East",
+      112,
+      179.68
      ],
      [
-      1,
-      "North",
-      87,
-      "2025-01-01 00:00:00",
-      214.75
+      "East",
+      168,
+      168.76
      ],
      [
-      1,
-      "North",
-      191,
-      "2025-01-01 00:00:00",
-      204.85
+      "East",
+      27,
+      167.35
      ],
      [
-      1,
-      "North",
-      180,
-      "2025-01-01 00:00:00",
-      187.66000000000003
+      "East",
+      121,
+      165.27
      ]
     ],
     "warnings": [
@@ -258,10 +181,20 @@
    "audit": null
   },
   {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "memory",
+    "reference": "memory:help.intro"
+   },
+   "result_text": "What SLayer is, the judgment calls queries require, and the deep-dive topics.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
    "tool": "search",
    "args": {
-    "question": "top N per group rank partition_by share of total",
-    "max_results": 5
+    "question": "rank within partition top N per group share of total"
    },
    "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.models\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Authoring models: columns, saved measures, custom aggregations, joins, filters, query-backed models, result keys.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.time_spine\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Built-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='bench.time_spine', entity_type='model').\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.workflow\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Tool-chaining for discovery, query building, and connecting databases, plus an error decoder.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.intro\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"What SLayer is, the judgment calls queries require, and the deep-dive topics.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
    "is_error": false,
@@ -277,58 +210,51 @@
       "source_model": "orders",
       "dimensions": [
        {
-        "expression": "customers.region_id",
-        "name": "region_id"
-       },
-       {
         "expression": "customers.regions.name",
-        "name": "region_name"
+        "name": "region"
        },
        "customer_id"
       ],
       "measures": [
        {
         "formula": "sum(amount)",
-        "name": "rev"
+        "name": "revenue"
        }
       ],
       "filters": [
-       "customers.region_id is not null",
        "order_date >= '2025-01-01'",
-       "order_date < '2025-04-01'"
+       "order_date < '2025-04-01'",
+       "customers.regions.name IS NOT NULL"
       ]
      },
      {
       "source_model": "s1",
       "dimensions": [
-       "region_id",
-       "region_name",
+       "region",
        "customer_id",
-       "rev",
+       "revenue",
        {
-        "expression": "sum(rev, partition_by=region_id)",
-        "name": "region_rev"
+        "expression": "revenue / sum(revenue, partition_by=[region])",
+        "name": "share"
        },
        {
-        "expression": "rank(rev, partition_by=region_id)",
-        "name": "rk"
+        "expression": "rank(revenue, partition_by=[region])",
+        "name": "rnk"
        }
-      ],
-      "filters": [
-       "rk <= 2"
       ],
       "order": [
        {
-        "column": "region_id"
+        "column": "region"
        },
        {
-        "column": "rev",
+        "column": "revenue",
         "direction": "desc"
        }
       ]
      }
     ],
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
    "result_text": "Error executing tool query: TransformArgumentError: Transform 'rank' needs an ordering direction.\n  suggestion: pass direction='asc' (lowest first) or direction='desc' (highest first), e.g. rank(sum(amount), direction='desc').",
    "is_error": true,
@@ -344,132 +270,66 @@
       "source_model": "orders",
       "dimensions": [
        {
-        "expression": "customers.region_id",
-        "name": "region_id"
-       },
-       {
         "expression": "customers.regions.name",
-        "name": "region_name"
+        "name": "region"
        },
        "customer_id"
       ],
       "measures": [
        {
         "formula": "sum(amount)",
-        "name": "rev"
+        "name": "revenue"
        }
       ],
       "filters": [
-       "customers.region_id is not null",
        "order_date >= '2025-01-01'",
-       "order_date < '2025-04-01'"
+       "order_date < '2025-04-01'",
+       "customers.regions.name IS NOT NULL"
       ]
      },
      {
+      "name": "s2",
       "source_model": "s1",
       "dimensions": [
-       "region_id",
-       "region_name",
+       "region",
        "customer_id",
-       "rev",
+       "revenue",
        {
-        "expression": "sum(rev, partition_by=region_id)",
-        "name": "region_rev"
-       },
-       {
-        "expression": "rank(rev, partition_by=region_id, direction='desc')",
-        "name": "rk"
-       }
-      ],
-      "filters": [
-       "rk <= 2"
-      ],
-      "order": [
-       {
-        "column": "region_id"
-       },
-       {
-        "column": "rev",
-        "direction": "desc"
-       }
-      ]
-     }
-    ],
-    "format": "json"
-   },
-   "result_text": "Error executing tool query: ComputedDimensionError: The transform 'rank' inside the computed dimension must take an aggregate input — a transform acts on aggregates, e.g. rank(sum(amount, partition_by=city)).\n  at dimension 'rk'",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": [
-     {
-      "name": "s1",
-      "source_model": "orders",
-      "dimensions": [
-       {
-        "expression": "customers.region_id",
-        "name": "region_id"
-       },
-       {
-        "expression": "customers.regions.name",
-        "name": "region_name"
-       },
-       "customer_id"
-      ],
-      "measures": [
-       {
-        "formula": "sum(amount)",
-        "name": "rev"
-       }
-      ],
-      "filters": [
-       "customers.region_id is not null",
-       "order_date >= '2025-01-01'",
-       "order_date < '2025-04-01'"
-      ]
-     },
-     {
-      "source_model": "s1",
-      "dimensions": [
-       "region_id",
-       "region_name",
-       "customer_id"
-      ],
-      "measures": [
-       {
-        "formula": "sum(rev)",
-        "name": "crev"
-       },
-       {
-        "formula": "sum(rev) / sum(rev, partition_by=region_id)",
+        "expression": "revenue / sum(revenue, partition_by=[region])",
         "name": "share"
        },
        {
-        "formula": "rank(sum(rev), partition_by=region_id, direction='desc')",
-        "name": "rk"
+        "expression": "rank(revenue, partition_by=[region], direction='desc')",
+        "name": "rnk"
        }
+      ]
+     },
+     {
+      "source_model": "s2",
+      "dimensions": [
+       "region",
+       "customer_id",
+       "revenue",
+       "share",
+       "rnk"
       ],
       "filters": [
-       "rk <= 2"
+       "rnk <= 2"
       ],
       "order": [
        {
-        "column": "region_id"
+        "column": "region"
        },
        {
-        "column": "crev",
-        "direction": "desc"
+        "column": "rnk"
        }
       ]
      }
     ],
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "Error executing tool query: stage 'orders': rendered output columns ['customers__region_id', 'customers__regions__name', 'customer_id', 'rev'] do not match the expected schema ['region_id', 'region_name', 'customer_id', 'rev'].",
+   "result_text": "Error executing tool query: ComputedDimensionError: The transform 'rank' inside the computed dimension must take an aggregate input — a transform acts on aggregates, e.g. rank(sum(amount, partition_by=city)).\n  at dimension 'rnk'",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -482,105 +342,148 @@
       "name": "s1",
       "source_model": "orders",
       "dimensions": [
-       "customers.region_id",
+       {
+        "expression": "customers.regions.name",
+        "name": "region"
+       },
+       "customer_id"
+      ],
+      "measures": [
+       {
+        "formula": "sum(amount)",
+        "name": "revenue"
+       }
+      ],
+      "filters": [
+       "order_date >= '2025-01-01'",
+       "order_date < '2025-04-01'",
+       "customers.regions.name IS NOT NULL"
+      ]
+     },
+     {
+      "name": "s2",
+      "source_model": "s1",
+      "dimensions": [
+       "region",
+       "customer_id",
+       "revenue",
+       {
+        "expression": "revenue / sum(revenue, partition_by=[region])",
+        "name": "share"
+       },
+       {
+        "expression": "rank(sum(revenue, partition_by=[region, customer_id]), partition_by=[region], direction='desc')",
+        "name": "rnk"
+       }
+      ]
+     },
+     {
+      "source_model": "s2",
+      "dimensions": [
+       "region",
+       "customer_id",
+       "revenue",
+       "share",
+       "rnk"
+      ],
+      "filters": [
+       "rnk <= 2"
+      ],
+      "order": [
+       {
+        "column": "region"
+       },
+       {
+        "column": "rnk"
+       }
+      ]
+     }
+    ],
+    "format": "json",
+    "show_sql": true
+   },
+   "result_text": "Error executing tool query: stage 'orders': rendered output columns ['customers__regions__name', 'customer_id', 'revenue'] do not match the expected schema ['region', 'customer_id', 'revenue'].",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": [
+     {
+      "name": "s1",
+      "source_model": "orders",
+      "dimensions": [
        "customers.regions.name",
        "customer_id"
       ],
       "measures": [
        {
         "formula": "sum(amount)",
-        "name": "rev"
+        "name": "revenue"
        }
       ],
       "filters": [
-       "customers.region_id is not null",
        "order_date >= '2025-01-01'",
-       "order_date < '2025-04-01'"
+       "order_date < '2025-04-01'",
+       "customers.regions.name IS NOT NULL"
       ]
      },
      {
+      "name": "s2",
       "source_model": "s1",
       "dimensions": [
-       "customers__region_id",
        "customers__regions__name",
-       "customer_id"
-      ],
-      "measures": [
+       "customer_id",
+       "revenue",
        {
-        "formula": "sum(rev)",
-        "name": "crev"
-       },
-       {
-        "formula": "sum(rev) / sum(rev, partition_by=customers__region_id)",
+        "expression": "revenue / sum(revenue, partition_by=[customers__regions__name])",
         "name": "share"
        },
        {
-        "formula": "rank(sum(rev), partition_by=customers__region_id, direction='desc')",
-        "name": "rk"
+        "expression": "rank(sum(revenue, partition_by=[customers__regions__name, customer_id]), partition_by=[customers__regions__name], direction='desc')",
+        "name": "rnk"
        }
+      ]
+     },
+     {
+      "source_model": "s2",
+      "dimensions": [
+       "customers__regions__name",
+       "customer_id",
+       "revenue",
+       "share",
+       "rnk"
       ],
       "filters": [
-       "rk <= 2"
+       "rnk <= 2"
       ],
       "order": [
        {
-        "column": "customers__region_id"
+        "column": "customers__regions__name"
        },
        {
-        "column": "crev",
-        "direction": "desc"
+        "column": "rnk"
        }
       ]
      }
     ],
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"s1.customers__region_id\": 1, \"s1.customers__regions__name\": \"North\", \"s1.customer_id\": 160, \"s1.crev\": 560.69, \"s1.share\": 0.0664843758337375, \"s1.rk\": 1}, {\"s1.customers__region_id\": 1, \"s1.customers__regions__name\": \"North\", \"s1.customer_id\": 80, \"s1.crev\": 363.83000000000004, \"s1.share\": 0.04314150503770124, \"s1.rk\": 2}, {\"s1.customers__region_id\": 2, \"s1.customers__regions__name\": \"South\", \"s1.customer_id\": 17, \"s1.crev\": 506.37, \"s1.share\": 0.05058838456243551, \"s1.rk\": 1}, {\"s1.customers__region_id\": 2, \"s1.customers__regions__name\": \"South\", \"s1.customer_id\": 30, \"s1.crev\": 495.0, \"s1.share\": 0.04945247617040025, \"s1.rk\": 2}, {\"s1.customers__region_id\": 3, \"s1.customers__regions__name\": \"East\", \"s1.customer_id\": 5, \"s1.crev\": 497.0300000000001, \"s1.share\": 0.07538455938337028, \"s1.rk\": 1}, {\"s1.customers__region_id\": 3, \"s1.customers__regions__name\": \"East\", \"s1.customer_id\": 123, \"s1.crev\": 463.62, \"s1.share\": 0.07031726338715596, \"s1.rk\": 2}, {\"s1.customers__region_id\": 4, \"s1.customers__regions__name\": \"West\", \"s1.customer_id\": 63, \"s1.crev\": 405.08, \"s1.share\": 0.10742035226917142, \"s1.rk\": 1}, {\"s1.customers__region_id\": 4, \"s1.customers__regions__name\": \"West\", \"s1.customer_id\": 55, \"s1.crev\": 332.75, \"s1.share\": 0.08823966183856717, \"s1.rk\": 2}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"s1.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"s1.rk\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH __slayer_stage_s1 AS (\n  SELECT\n    _stage_inner.\"orders.customers.regions.name\" AS \"customers__regions__name\",\n    _stage_inner.\"orders.customer_id\" AS \"customer_id\",\n    _stage_inner.\"orders.revenue\" AS \"revenue\"\n  FROM (\n    SELECT\n      customers__regions.name AS \"orders.customers.regions.name\",\n      orders.customer_id AS \"orders.customer_id\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n    FROM orders AS orders\n    LEFT JOIN customers AS customers\n      ON orders.customer_id = customers.id\n    LEFT JOIN regions AS customers__regions\n      ON customers.region_id = customers__regions.id\n    WHERE\n      orders.order_date >= CAST('2025-01-01' AS DATE)\n      AND orders.order_date < CAST('2025-04-01' AS DATE)\n      AND NOT customers__regions.name IS NULL\n    GROUP BY\n      customers__regions.name,\n      orders.customer_id\n  ) AS _stage_inner\n), _cm_revenue_sum_partition_by_customers__regions__name AS (\n  SELECT\n    _stage_inner.\"s1.customers__regions__name\" AS \"customers__regions__name\",\n    _stage_inner.\"s1.revenue_sum_partition_by_customers__regions__name\" AS \"revenue_sum_partition_by_customers__regions__name\"\n  FROM (\n    SELECT\n      s1.customers__regions__name AS \"s1.customers__regions__name\",\n      SUM(s1.revenue) AS \"s1.revenue_sum_partition_by_customers__regions__name\"\n    FROM __slayer_stage_s1 AS s1\n    GROUP BY\n      s1.customers__regions__name\n  ) AS _stage_inner\n), base_2 AS (\n  SELECT\n    s1.customer_id AS \"s1.customer_id\",\n    s1.customers__regions__name AS \"s1.customers__regions__name\",\n    SUM(s1.revenue) AS \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\"\n  FROM __slayer_stage_s1 AS s1\n  GROUP BY\n    s1.customer_id,\n    s1.customers__regions__name\n), step1 AS (\n  SELECT\n    \"s1.customer_id\",\n    \"s1.customers__regions__name\",\n    \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\",\n    CASE\n      WHEN \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\" IS NULL\n      THEN NULL\n      ELSE RANK() OVER (\n        PARTITION BY \"s1.customers__regions__name\", CASE\n          WHEN \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\" IS NULL\n          THEN 1\n          ELSE 0\n        END\n        ORDER BY \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\" DESC\n      )\n    END AS \"s1.rank\"\n  FROM base_2\n), _cm_rank AS (\n  SELECT\n    _stage_inner.\"s1.customer_id\" AS \"customer_id\",\n    _stage_inner.\"s1.customers__regions__name\" AS \"customers__regions__name\",\n    _stage_inner.\"s1.rank\" AS \"rank\"\n  FROM (\n    SELECT\n      \"s1.customer_id\",\n      \"s1.customers__regions__name\",\n      \"s1.rank\"\n    FROM (\n      SELECT\n        \"s1.customer_id\",\n        \"s1.customers__regions__name\",\n        \"s1.revenue_sum_partition_by_customer_id_customers__regions__name\",\n        \"s1.rank\"\n      FROM step1\n    ) AS _outer\n  ) AS _stage_inner\n), __slayer_stage_s2 AS (\n  SELECT\n    _stage_inner.\"s1.customers__regions__name\" AS \"customers__regions__name\",\n    _stage_inner.\"s1.customer_id\" AS \"customer_id\",\n    _stage_inner.\"s1.revenue\" AS \"revenue\",\n    _stage_inner.\"s1.share\" AS \"share\",\n    _stage_inner.\"s1.rnk\" AS \"rnk\"\n  FROM (\n    SELECT\n      s1.customers__regions__name AS \"s1.customers__regions__name\",\n      s1.customer_id AS \"s1.customer_id\",\n      s1.revenue AS \"s1.revenue\",\n      s1.revenue / _cm_revenue_sum_partition_by_customers__regions__name.\"revenue_sum_partition_by_customers__regions__name\" AS \"s1.share\",\n      _cm_rank.\"rank\" AS \"s1.rnk\"\n    FROM __slayer_stage_s1 AS s1\n    LEFT JOIN _cm_revenue_sum_partition_by_customers__regions__name\n      ON s1.customers__regions__name IS NOT DISTINCT FROM _cm_revenue_sum_partition_by_customers__regions__name.\"customers__regions__name\"\n    LEFT JOIN _cm_rank\n      ON s1.customer_id IS NOT DISTINCT FROM _cm_rank.\"customer_id\"\n      AND s1.customers__regions__name IS NOT DISTINCT FROM _cm_rank.\"customers__regions__name\"\n    GROUP BY\n      s1.customers__regions__name,\n      s1.customer_id,\n      s1.revenue,\n      s1.revenue / _cm_revenue_sum_partition_by_customers__regions__name.\"revenue_sum_partition_by_customers__regions__name\",\n      _cm_rank.\"rank\"\n  ) AS _stage_inner\n)\nSELECT\n  s2.customers__regions__name AS \"s2.customers__regions__name\",\n  s2.customer_id AS \"s2.customer_id\",\n  s2.revenue AS \"s2.revenue\",\n  s2.share AS \"s2.share\",\n  s2.rnk AS \"s2.rnk\"\nFROM __slayer_stage_s2 AS s2\nWHERE\n  s2.rnk <= 2\nGROUP BY\n  s2.customers__regions__name,\n  s2.customer_id,\n  s2.revenue,\n  s2.share,\n  s2.rnk\nORDER BY\n  \"s2.customers__regions__name\" ASC,\n  \"s2.rnk\" ASC\nLIMIT 21\n\n[{\"s2.customers__regions__name\": \"East\", \"s2.customer_id\": 5, \"s2.revenue\": 497.0300000000001, \"s2.share\": 0.07538455938337028, \"s2.rnk\": 1}, {\"s2.customers__regions__name\": \"East\", \"s2.customer_id\": 123, \"s2.revenue\": 463.62, \"s2.share\": 0.07031726338715596, \"s2.rnk\": 2}, {\"s2.customers__regions__name\": \"North\", \"s2.customer_id\": 160, \"s2.revenue\": 560.69, \"s2.share\": 0.06648437583373751, \"s2.rnk\": 1}, {\"s2.customers__regions__name\": \"North\", \"s2.customer_id\": 80, \"s2.revenue\": 363.83000000000004, \"s2.share\": 0.043141505037701255, \"s2.rnk\": 2}, {\"s2.customers__regions__name\": \"South\", \"s2.customer_id\": 17, \"s2.revenue\": 506.37, \"s2.share\": 0.050588384562435515, \"s2.rnk\": 1}, {\"s2.customers__regions__name\": \"South\", \"s2.customer_id\": 30, \"s2.revenue\": 495.0, \"s2.share\": 0.04945247617040026, \"s2.rnk\": 2}, {\"s2.customers__regions__name\": \"West\", \"s2.customer_id\": 63, \"s2.revenue\": 405.08, \"s2.share\": 0.10742035226917142, \"s2.rnk\": 1}, {\"s2.customers__regions__name\": \"West\", \"s2.customer_id\": 55, \"s2.revenue\": 332.75, \"s2.share\": 0.08823966183856717, \"s2.rnk\": 2}]",
    "is_error": false,
    "parsed": {
     "columns": [
-     "s1.customers__region_id",
-     "s1.customers__regions__name",
-     "s1.customer_id",
-     "s1.crev",
-     "s1.share",
-     "s1.rk"
+     "s2.customers__regions__name",
+     "s2.customer_id",
+     "s2.revenue",
+     "s2.share",
+     "s2.rnk"
     ],
     "rows": [
      [
-      1,
-      "North",
-      160,
-      560.69,
-      0.0664843758337375,
-      1
-     ],
-     [
-      1,
-      "North",
-      80,
-      363.83000000000004,
-      0.04314150503770124,
-      2
-     ],
-     [
-      2,
-      "South",
-      17,
-      506.37,
-      0.05058838456243551,
-      1
-     ],
-     [
-      2,
-      "South",
-      30,
-      495.0,
-      0.04945247617040025,
-      2
-     ],
-     [
-      3,
       "East",
       5,
       497.0300000000001,
@@ -588,7 +491,6 @@
       1
      ],
      [
-      3,
       "East",
       123,
       463.62,
@@ -596,7 +498,34 @@
       2
      ],
      [
-      4,
+      "North",
+      160,
+      560.69,
+      0.06648437583373751,
+      1
+     ],
+     [
+      "North",
+      80,
+      363.83000000000004,
+      0.043141505037701255,
+      2
+     ],
+     [
+      "South",
+      17,
+      506.37,
+      0.050588384562435515,
+      1
+     ],
+     [
+      "South",
+      30,
+      495.0,
+      0.04945247617040026,
+      2
+     ],
+     [
       "West",
       63,
       405.08,
@@ -604,7 +533,6 @@
       1
      ],
      [
-      4,
       "West",
       55,
       332.75,
@@ -619,84 +547,63 @@
   {
    "tool": "submit_answer",
    "args": {
-    "columns": "[\"region_id\", \"region_name\", \"customer_id\", \"revenue\", \"share_of_region_revenue\"]",
-    "rows": "[[1, \"North\", 160, 560.69, 0.0664843758337375], [1, \"North\", 80, 363.83, 0.04314150503770124], [2, \"South\", 17, 506.37, 0.05058838456243551], [2, \"South\", 30, 495.0, 0.04945247617040025], [3, \"East\", 5, 497.03, 0.07538455938337028], [3, \"East\", 123, 463.62, 0.07031726338715596], [4, \"West\", 63, 405.08, 0.10742035226917142], [4, \"West\", 55, 332.75, 0.08823966183856717]]",
-    "message": "Q1 2025 (orders dated 1 Jan–31 Mar 2025): for each region, the two customers with the highest revenue, with each one's share of the region's revenue. Revenue is the sum of order amounts across all order statuses. Customers without a region and orders that don't match any customer are left out. Each region's total is the revenue of all its customers with a region, not just the top two."
-   },
-   "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "submit_answer",
-   "args": {
     "columns": [
-     "region_id",
-     "region_name",
+     "region",
      "customer_id",
      "revenue",
-     "share_of_region_revenue"
+     "share"
     ],
     "rows": [
      [
-      1,
-      "North",
-      160,
-      560.69,
-      0.0664843758337375
-     ],
-     [
-      1,
-      "North",
-      80,
-      363.83,
-      0.04314150503770124
-     ],
-     [
-      2,
-      "South",
-      17,
-      506.37,
-      0.05058838456243551
-     ],
-     [
-      2,
-      "South",
-      30,
-      495,
-      0.04945247617040025
-     ],
-     [
-      3,
       "East",
       5,
-      497.03,
+      497.0300000000001,
       0.07538455938337028
      ],
      [
-      3,
       "East",
       123,
       463.62,
       0.07031726338715596
      ],
      [
-      4,
+      "North",
+      160,
+      560.69,
+      0.06648437583373751
+     ],
+     [
+      "North",
+      80,
+      363.83000000000004,
+      0.043141505037701255
+     ],
+     [
+      "South",
+      17,
+      506.37,
+      0.050588384562435515
+     ],
+     [
+      "South",
+      30,
+      495,
+      0.04945247617040026
+     ],
+     [
       "West",
       63,
       405.08,
       0.10742035226917142
      ],
      [
-      4,
       "West",
       55,
       332.75,
       0.08823966183856717
      ]
     ],
-    "message": "Q1 2025 (orders dated 1 Jan–31 Mar 2025): for each region, the two customers with the highest revenue, with each one's share of the region's revenue. Revenue is the sum of order amounts across all order statuses. Customers without a region and orders that don't match any customer are left out. Each region's total is the revenue of all its customers with a region, not just the top two."
+    "message": "Top two customers by revenue in each region for Q1 2025 (1 Jan to 31 Mar), with each one's share of the region's Q1 revenue. Orders of every status are counted; customers without a region are left out."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -705,15 +612,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 20,
-  "output_tokens": 3134,
-  "cache_read_tokens": 279250,
-  "cache_write_tokens": 10179,
+  "input_tokens": 18,
+  "output_tokens": 2738,
+  "cache_read_tokens": 243133,
+  "cache_write_tokens": 7521,
   "partial": false
  },
- "cost_usd": 0.16950500000000002,
- "duration_s": 40.354020831990056,
- "turns": 13,
+ "cost_usd": 0.14106359999999998,
+ "duration_s": 34.946774562995415,
+ "turns": 12,
  "end_reason": "submitted",
  "error": null
 }

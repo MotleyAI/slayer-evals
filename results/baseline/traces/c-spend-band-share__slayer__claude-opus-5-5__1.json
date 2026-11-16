@@ -29,68 +29,28 @@
      "source_model": "orders",
      "dimensions": [
       {
-       "expression": "CASE WHEN customer_id IS NOT NULL AND sum(amount, partition_by=customer_id) > 2000 THEN 'high' ELSE 'other' END",
+       "expression": "case when customer_id is not null and sum(amount, partition_by=customer_id) > 2000 then 'high' else 'other' end",
        "name": "grp"
       }
      ],
      "measures": [
       {
        "formula": "sum(amount)",
-       "name": "revenue"
+       "name": "rev"
       }
      ]
     },
     "format": "json",
     "show_sql": true
    },
-   "result_text": "SQL:\nWITH _cm_amount_sum_partition_by_customer_id AS (\n  SELECT\n    _stage_inner.\"orders.customer_id\" AS \"customer_id\",\n    _stage_inner.\"orders.amount_sum_partition_by_customer_id\" AS \"amount_sum_partition_by_customer_id\"\n  FROM (\n    SELECT\n      orders.customer_id AS \"orders.customer_id\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.amount_sum_partition_by_customer_id\"\n    FROM orders AS orders\n    GROUP BY\n      orders.customer_id\n  ) AS _stage_inner\n)\nSELECT\n  \"orders.grp\",\n  \"orders.revenue\"\nFROM (\n  SELECT\n    CASE\n      WHEN NOT orders.customer_id IS NULL\n      AND _cm_amount_sum_partition_by_customer_id.\"amount_sum_partition_by_customer_id\" > 2000\n      THEN 'high'\n      ELSE 'other'\n    END AS \"orders.grp\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\",\n    orders.customer_id AS \"orders.customer_id\"\n  FROM orders AS orders\n  LEFT JOIN _cm_amount_sum_partition_by_customer_id\n    ON orders.customer_id IS NOT DISTINCT FROM _cm_amount_sum_partition_by_customer_id.\"customer_id\"\n  GROUP BY\n    CASE\n      WHEN NOT orders.customer_id IS NULL\n      AND _cm_amount_sum_partition_by_customer_id.\"amount_sum_partition_by_customer_id\" > 2000\n      THEN 'high'\n      ELSE 'other'\n    END,\n    orders.customer_id\n) AS _outer\nLIMIT 21\n\n{\"data\": [{\"orders.grp\": \"high\", \"orders.revenue\": 3419.0}, {\"orders.grp\": \"high\", \"orders.revenue\": 2482.87}, {\"orders.grp\": \"other\", \"orders.revenue\": 1971.2600000000002}, {\"orders.grp\": \"other\", \"orders.revenue\": 1836.9900000000002}, {\"orders.grp\": \"high\", \"orders.revenue\": 2778.9600000000005}, {\"orders.grp\": \"other\", \"orders.revenue\": 1938.0900000000001}, {\"orders.grp\": \"other\", \"orders.revenue\": 950.9100000000001}, {\"orders.grp\": \"other\", \"orders.revenue\": 1683.87}, {\"orders.grp\": \"other\", \"orders.revenue\": 998.7700000000001}, {\"orders.grp\": \"other\", \"orders.revenue\": 1071.85}, {\"orders.grp\": \"other\", \"orders.revenue\": 1262.9399999999998}, {\"orders.grp\": \"other\", \"orders.revenue\": 553.23}, {\"orders.grp\": \"other\", \"orders.revenue\": 1188.2900000000002}, {\"orders.grp\": \"high\", \"orders.revenue\": 3234.6600000000003}, {\"orders.grp\": \"other\", \"orders.revenue\": 1685.8600000000004}, {\"orders.grp\": \"other\", \"orders.revenue\": 1327.8900000000003}, {\"orders.grp\": \"high\", \"orders.revenue\": 2106.4100000000008}, {\"orders.grp\": \"high\", \"orders.revenue\": 2280.1099999999997}, {\"orders.grp\": \"high\", \"orders.revenue\": 2493.92}, {\"orders.grp\": \"other\", \"orders.revenue\": 902.2399999999999}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
+   "result_text": "SQL:\nWITH _cm_amount_sum_partition_by_customer_id AS (\n  SELECT\n    _stage_inner.\"orders.customer_id\" AS \"customer_id\",\n    _stage_inner.\"orders.amount_sum_partition_by_customer_id\" AS \"amount_sum_partition_by_customer_id\"\n  FROM (\n    SELECT\n      orders.customer_id AS \"orders.customer_id\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.amount_sum_partition_by_customer_id\"\n    FROM orders AS orders\n    GROUP BY\n      orders.customer_id\n  ) AS _stage_inner\n)\nSELECT\n  \"orders.grp\",\n  \"orders.rev\"\nFROM (\n  SELECT\n    CASE\n      WHEN NOT orders.customer_id IS NULL\n      AND _cm_amount_sum_partition_by_customer_id.\"amount_sum_partition_by_customer_id\" > 2000\n      THEN 'high'\n      ELSE 'other'\n    END AS \"orders.grp\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\",\n    orders.customer_id AS \"orders.customer_id\"\n  FROM orders AS orders\n  LEFT JOIN _cm_amount_sum_partition_by_customer_id\n    ON orders.customer_id IS NOT DISTINCT FROM _cm_amount_sum_partition_by_customer_id.\"customer_id\"\n  GROUP BY\n    CASE\n      WHEN NOT orders.customer_id IS NULL\n      AND _cm_amount_sum_partition_by_customer_id.\"amount_sum_partition_by_customer_id\" > 2000\n      THEN 'high'\n      ELSE 'other'\n    END,\n    orders.customer_id\n) AS _outer\nLIMIT 21\n\n{\"data\": [{\"orders.grp\": \"other\", \"orders.rev\": 1262.9399999999998}, {\"orders.grp\": \"other\", \"orders.rev\": 553.23}, {\"orders.grp\": \"other\", \"orders.rev\": 1188.2900000000002}, {\"orders.grp\": \"high\", \"orders.rev\": 3234.6600000000003}, {\"orders.grp\": \"other\", \"orders.rev\": 1685.8600000000004}, {\"orders.grp\": \"other\", \"orders.rev\": 1327.8900000000003}, {\"orders.grp\": \"high\", \"orders.rev\": 2106.4100000000008}, {\"orders.grp\": \"high\", \"orders.rev\": 2280.1099999999997}, {\"orders.grp\": \"high\", \"orders.rev\": 2493.92}, {\"orders.grp\": \"other\", \"orders.rev\": 902.2399999999999}, {\"orders.grp\": \"other\", \"orders.rev\": 770.4100000000001}, {\"orders.grp\": \"other\", \"orders.rev\": 1041.44}, {\"orders.grp\": \"other\", \"orders.rev\": 339.36}, {\"orders.grp\": \"other\", \"orders.rev\": 677.83}, {\"orders.grp\": \"high\", \"orders.rev\": 2008.07}, {\"orders.grp\": \"high\", \"orders.rev\": 2730.14}, {\"orders.grp\": \"other\", \"orders.rev\": 886.7799999999997}, {\"orders.grp\": \"other\", \"orders.rev\": 1768.5799999999997}, {\"orders.grp\": \"other\", \"orders.rev\": 1563.5999999999995}, {\"orders.grp\": \"high\", \"orders.rev\": 3117.9499999999994}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.grp",
-     "orders.revenue"
+     "orders.rev"
     ],
     "rows": [
-     [
-      "high",
-      3419.0
-     ],
-     [
-      "high",
-      2482.87
-     ],
-     [
-      "other",
-      1971.2600000000002
-     ],
-     [
-      "other",
-      1836.9900000000002
-     ],
-     [
-      "high",
-      2778.9600000000005
-     ],
-     [
-      "other",
-      1938.0900000000001
-     ],
-     [
-      "other",
-      950.9100000000001
-     ],
-     [
-      "other",
-      1683.87
-     ],
-     [
-      "other",
-      998.7700000000001
-     ],
-     [
-      "other",
-      1071.85
-     ],
      [
       "other",
       1262.9399999999998
@@ -130,6 +90,46 @@
      [
       "other",
       902.2399999999999
+     ],
+     [
+      "other",
+      770.4100000000001
+     ],
+     [
+      "other",
+      1041.44
+     ],
+     [
+      "other",
+      339.36
+     ],
+     [
+      "other",
+      677.83
+     ],
+     [
+      "high",
+      2008.07
+     ],
+     [
+      "high",
+      2730.14
+     ],
+     [
+      "other",
+      886.7799999999997
+     ],
+     [
+      "other",
+      1768.5799999999997
+     ],
+     [
+      "other",
+      1563.5999999999995
+     ],
+     [
+      "high",
+      3117.9499999999994
      ]
     ],
     "warnings": [
@@ -149,15 +149,16 @@
       "name": "s1",
       "source_model": "orders",
       "dimensions": [
+       "id",
        {
-        "expression": "CASE WHEN customer_id IS NOT NULL AND sum(amount, partition_by=customer_id) > 2000 THEN 'high' ELSE 'other' END",
+        "expression": "case when customer_id is not null and sum(amount, partition_by=customer_id) > 2000 then 'high' else 'other' end",
         "name": "grp"
        }
       ],
       "measures": [
        {
         "formula": "sum(amount)",
-        "name": "revenue"
+        "name": "rev"
        }
       ]
      },
@@ -168,64 +169,36 @@
       ],
       "measures": [
        {
-        "formula": "sum(revenue)",
-        "name": "rev"
+        "formula": "sum(rev)",
+        "name": "revenue"
+       },
+       {
+        "formula": "sum(rev) / sum(rev, partition_by=[])",
+        "name": "share"
        }
       ]
      }
     ],
     "format": "json"
    },
-   "result_text": "[{\"s1.grp\": \"high\", \"s1.rev\": 194165.78}, {\"s1.grp\": \"other\", \"s1.rev\": 138522.67}]",
+   "result_text": "{\"data\": [{\"s1.grp\": \"other\", \"s1.revenue\": 138522.67, \"s1.share\": 0.41637354708286395}, {\"s1.grp\": \"high\", \"s1.revenue\": 194165.77999999997, \"s1.share\": 0.5836264529171361}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"s1.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "s1.grp",
-     "s1.rev"
+     "s1.revenue",
+     "s1.share"
     ],
     "rows": [
-     [
-      "high",
-      194165.78
-     ],
      [
       "other",
-      138522.67
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "orders",
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "t"
-      },
-      {
-       "formula": "count(*)",
-       "name": "n"
-      }
-     ]
-    },
-    "format": "json"
-   },
-   "result_text": "{\"data\": [{\"orders.t\": 332688.45000000036, \"orders.n\": 5016}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "orders.t",
-     "orders.n"
-    ],
-    "rows": [
+      138522.67,
+      0.41637354708286395
+     ],
      [
-      332688.45000000036,
-      5016
+      "high",
+      194165.77999999997,
+      0.5836264529171361
      ]
     ],
     "warnings": []
@@ -236,8 +209,8 @@
    "tool": "submit_answer",
    "args": {
     "columns": "[\"group\", \"revenue\", \"share\"]",
-    "rows": "[[\"high\", 194165.78, 0.583626], [\"other\", 138522.67, 0.416374]]",
-    "message": "High-spend customers account for about 58.4% of total revenue and all other orders for about 41.6%. Total revenue is 332,688.45 across 5,016 orders, and the two groups add up to that total."
+    "rows": "[[\"high\", 194165.77999999997, 0.5836264529171361], [\"other\", 138522.67, 0.41637354708286395]]",
+    "message": "High-spend customers account for about 58.4% of total revenue (194,165.78 of 332,688.45). All other orders account for about 41.6% (138,522.67). Revenue is the sum of order amounts across all orders, whatever their status. A customer counts as high-spend if their orders add up to more than 2000. Orders with no customer are in 'other'."
    },
    "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
    "is_error": true,
@@ -255,16 +228,16 @@
     "rows": [
      [
       "high",
-      194165.78,
-      0.583626
+      194165.77999999997,
+      0.5836264529171361
      ],
      [
       "other",
       138522.67,
-      0.416374
+      0.41637354708286395
      ]
     ],
-    "message": "High-spend customers account for about 58.4% of total revenue and all other orders for about 41.6%. Total revenue is 332,688.45 across 5,016 orders, and the two groups add up to that total."
+    "message": "High-spend customers account for about 58.4% of total revenue (194,165.78 of 332,688.45). All other orders account for about 41.6% (138,522.67). Revenue is the sum of order amounts across all orders, whatever their status. A customer counts as high-spend if their orders add up to more than 2000. Orders with no customer are in 'other'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -273,15 +246,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 12,
-  "output_tokens": 1252,
-  "cache_read_tokens": 148969,
-  "cache_write_tokens": 3901,
+  "input_tokens": 10,
+  "output_tokens": 1125,
+  "cache_read_tokens": 122283,
+  "cache_write_tokens": 3761,
   "partial": false
  },
- "cost_usd": 0.0743868,
- "duration_s": 19.946553072004463,
- "turns": 9,
+ "cost_usd": 0.0658016,
+ "duration_s": 17.94598820596002,
+ "turns": 8,
  "end_reason": "submitted",
  "error": null
 }

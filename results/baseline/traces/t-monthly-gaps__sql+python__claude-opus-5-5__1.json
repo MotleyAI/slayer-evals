@@ -278,54 +278,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select generate_series as m from generate_series(date '2024-01-01', date '2024-12-01', interval 1 month)),\nr as (select date_trunc('month', order_date) m, sum(amount) rev from orders where order_date >= '2024-01-01' and order_date < '2025-01-01' group by 1)\nselect strftime(m.m,'%Y-%m') month, coalesce(rev,0) revenue, sum(coalesce(rev,0)) over (order by m.m) running_total from m left join r on r.m=m.m order by 1"
+    "sql": "with m as (select generate_series as m from generate_series(1,12)),\nr as (select month(order_date) mo, sum(amount) rev from orders where year(order_date)=2024 group by 1)\nselect m.m as month, coalesce(rev,0) revenue, sum(coalesce(rev,0)) over (order by m.m) running_total from m left join r on r.mo=m.m order by 1"
    },
-   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 3: select strftime(m.m,'%Y-%m') month, coalesce(rev,0) revenue, sum(coalesce(rev,0)) over...\n                                     ^",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select status, count(*), count(amount), min(order_date), max(order_date) from orders group by 1"
-   },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(amount)\", \"min(order_date)\", \"max(order_date)\"], \"rows\": [[\"ok\", 4410, 4410, \"2023-01-01\", \"2025-12-31\"], [\"bad\", 606, 606, \"2023-01-01\", \"2025-12-31\"]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "status",
-     "count_star()",
-     "count(amount)",
-     "min(order_date)",
-     "max(order_date)"
-    ],
-    "rows": [
-     [
-      "ok",
-      4410,
-      4410,
-      "2023-01-01",
-      "2025-12-31"
-     ],
-     [
-      "bad",
-      606,
-      606,
-      "2023-01-01",
-      "2025-12-31"
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with m as (select generate_series as mo from generate_series(date '2024-01-01', date '2024-12-01', interval 1 month)),\nr as (select date_trunc('month', order_date) mo, sum(amount) rev from orders where order_date >= '2024-01-01' and order_date < '2025-01-01' group by 1)\nselect strftime(m.mo,'%Y-%m') as \"month\", coalesce(rev,0) revenue, sum(coalesce(rev,0)) over (order by m.mo) running_total from m left join r on r.mo=m.mo order by 1"
-   },
-   "result_text": "{\"columns\": [\"month\", \"revenue\", \"running_total\"], \"rows\": [[\"2024-01\", 8795.049999999997, 8795.049999999997], [\"2024-02\", 7419.6, 16214.649999999998], [\"2024-03\", 11469.280000000008, 27683.930000000008], [\"2024-04\", 11767.950000000003, 39451.88000000001], [\"2024-05\", 9366.480000000001, 48818.360000000015], [\"2024-06\", 9352.83, 58171.19000000002], [\"2024-07\", 10177.420000000004, 68348.61000000002], [\"2024-08\", 0.0, 68348.61000000002], [\"2024-09\", 9259.910000000003, 77608.52000000002], [\"2024-10\", 8958.220000000005, 86566.74000000002], [\"2024-11\", 9247.110000000002, 95813.85000000002], [\"2024-12\", 10371.18, 106185.03000000003]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"month\", \"revenue\", \"running_total\"], \"rows\": [[1, 8795.049999999997, 8795.049999999997], [2, 7419.6, 16214.649999999998], [3, 11469.280000000008, 27683.930000000008], [4, 11767.950000000003, 39451.88000000001], [5, 9366.480000000001, 48818.360000000015], [6, 9352.83, 58171.19000000002], [7, 10177.420000000004, 68348.61000000002], [8, 0.0, 68348.61000000002], [9, 9259.910000000003, 77608.52000000002], [10, 8958.220000000005, 86566.74000000002], [11, 9247.110000000002, 95813.85000000002], [12, 10371.18, 106185.03000000003]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -335,62 +290,62 @@
     ],
     "rows": [
      [
-      "2024-01",
+      1,
       8795.049999999997,
       8795.049999999997
      ],
      [
-      "2024-02",
+      2,
       7419.6,
       16214.649999999998
      ],
      [
-      "2024-03",
+      3,
       11469.280000000008,
       27683.930000000008
      ],
      [
-      "2024-04",
+      4,
       11767.950000000003,
       39451.88000000001
      ],
      [
-      "2024-05",
+      5,
       9366.480000000001,
       48818.360000000015
      ],
      [
-      "2024-06",
+      6,
       9352.83,
       58171.19000000002
      ],
      [
-      "2024-07",
+      7,
       10177.420000000004,
       68348.61000000002
      ],
      [
-      "2024-08",
+      8,
       0.0,
       68348.61000000002
      ],
      [
-      "2024-09",
+      9,
       9259.910000000003,
       77608.52000000002
      ],
      [
-      "2024-10",
+      10,
       8958.220000000005,
       86566.74000000002
      ],
      [
-      "2024-11",
+      11,
       9247.110000000002,
       95813.85000000002
      ],
      [
-      "2024-12",
+      12,
       10371.18,
       106185.03000000003
      ]
@@ -469,7 +424,7 @@
       106185.03000000003
      ]
     ],
-    "message": "Monthly 2024 revenue is the sum of orders.amount for every order, whatever its status ('ok' and 'bad' are both counted). August 2024 has no orders, so its revenue is 0. The running total starts from January 2024, and the year ends at 106,185.03."
+    "message": "Revenue for 2024 adds up to 106,185.03. There were no orders in August, so that month shows 0 and the running total stays flat there. Revenue is the total of orders.amount for every order in the month, whatever its status."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -478,15 +433,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 712,
-  "cache_read_tokens": 4604,
-  "cache_write_tokens": 1989,
+  "input_tokens": 4,
+  "output_tokens": 259,
+  "cache_read_tokens": 2248,
+  "cache_write_tokens": 1398,
   "partial": false
  },
- "cost_usd": 0.0251298,
- "duration_s": 18.29016704800597,
- "turns": 7,
+ "cost_usd": 0.0126356,
+ "duration_s": 8.393915550026577,
+ "turns": 5,
  "end_reason": "submitted",
  "error": null
 }

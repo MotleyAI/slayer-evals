@@ -278,20 +278,20 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from orders where customer_id is null) a,\n(select count(*) from orders o where customer_id is not null and not exists(select 1 from customers c where c.id=o.customer_id)) b,\n(select count(*) from customers where region_id is null) c,\n(select count(*) from customers c where region_id is not null and not exists(select 1 from regions r where r.id=c.region_id)) d,\n(select count(*)-count(distinct id) from customers) e,\n(select count(*)-count(distinct name) from regions) f,\n(select count(*)-count(distinct id) from regions) g,\n(select count(*) from customers where credit is null) h"
+    "sql": "select (select count(*) from orders where customer_id is null) null_cust,\n(select count(*) from orders o where customer_id not in (select id from customers)) orphan,\n(select count(*) from customers where region_id is null) cnull,\n(select count(*) from customers where region_id not in (select id from regions)) corph,\n(select count(*) from regions) nreg, (select count(distinct name) from regions) nname,\n(select count(*)-count(distinct id) from customers) dupc,\n(select count(*) from customers where credit is null) nullcred"
    },
-   "result_text": "{\"columns\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\", \"h\"], \"rows\": [[6, 0, 1, 0, 0, 0, 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"null_cust\", \"orphan\", \"cnull\", \"corph\", \"nreg\", \"nname\", \"dupc\", \"nullcred\"], \"rows\": [[6, 0, 1, 0, 5, 5, 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "a",
-     "b",
-     "c",
-     "d",
-     "e",
-     "f",
-     "g",
-     "h"
+     "null_cust",
+     "orphan",
+     "cnull",
+     "corph",
+     "nreg",
+     "nname",
+     "dupc",
+     "nullcred"
     ],
     "rows": [
      [
@@ -299,8 +299,8 @@
       0,
       1,
       0,
-      0,
-      0,
+      5,
+      5,
       0,
       0
      ]
@@ -312,9 +312,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with rev as (select r.name region, sum(o.amount) revenue from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by 1),\ncr as (select r.name region, sum(c.credit) credit from customers c left join regions r on r.id=c.region_id group by 1)\nselect coalesce(rev.region, cr.region) region, revenue, credit from rev full join cr on rev.region is not distinct from cr.region order by 1 nulls last"
+    "sql": "with rev as (select r.name region, sum(o.amount) revenue from orders o left join customers c on o.customer_id=c.id left join regions r on c.region_id=r.id group by 1),\ncr as (select r.name region, sum(c.credit) credit from customers c left join regions r on c.region_id=r.id group by 1),\nkeys as (select region from rev union select region from cr union select name from regions)\nselect k.region, rev.revenue, cr.credit from keys k left join rev on rev.region is not distinct from k.region left join cr on cr.region is not distinct from k.region order by 1 nulls last"
    },
-   "result_text": "{\"columns\": [\"region\", \"revenue\", \"credit\"], \"rows\": [[\"East\", 68738.69999999997, 24920.0], [\"North\", 109334.75999999994, 35740.0], [\"South\", 104269.89999999994, 32650.0], [\"West\", 49151.790000000015, 18020.0], [null, 1193.3, 500.0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"region\", \"revenue\", \"credit\"], \"rows\": [[\"Arctic\", null, null], [\"East\", 68738.69999999997, 24920.0], [\"North\", 109334.75999999994, 35740.0], [\"South\", 104269.89999999994, 32650.0], [\"West\", 49151.790000000015, 18020.0], [null, 1193.3, 500.0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -323,6 +323,11 @@
      "credit"
     ],
     "rows": [
+     [
+      "Arctic",
+      null,
+      null
+     ],
      [
       "East",
       68738.69999999997,
@@ -363,6 +368,11 @@
     ],
     "rows": [
      [
+      "Arctic",
+      null,
+      null
+     ],
+     [
       "East",
       68738.69999999997,
       24920
@@ -388,7 +398,7 @@
       500
      ]
     ],
-    "message": "I added up revenue and credit limits separately and then matched them by region. Doing it this way stops a customer's credit limit from being counted once for every order they placed, and it keeps customers who never ordered in the credit total.\n\nThe null row is the group with no known region. Its revenue comes from 6 orders that have no customer ID, plus any orders from one customer whose region is missing. Its 500.0 credit is that customer's limit."
+    "message": "I added up revenue and credit limits separately for each region and then joined the two results. This keeps a customer's credit limit from being counted once per order, and includes customers who never ordered. The null group holds two things: 6 orders with no customer ID, plus orders from the one customer whose region isn't recorded. Its credit total of 500 is that customer's limit. Arctic is listed as a region but has no customers or orders, so both of its values are null."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -398,13 +408,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 628,
-  "cache_read_tokens": 4631,
-  "cache_write_tokens": 1818,
+  "output_tokens": 653,
+  "cache_read_tokens": 4633,
+  "cache_write_tokens": 1798,
   "partial": false
  },
- "cost_usd": 0.0226002,
- "duration_s": 14.196722613007296,
+ "cost_usd": 0.0230006,
+ "duration_s": 12.638162404997274,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

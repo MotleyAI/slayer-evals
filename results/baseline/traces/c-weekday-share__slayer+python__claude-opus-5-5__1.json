@@ -25,179 +25,32 @@
   {
    "tool": "inspect",
    "args": {
-    "entity_type": "column",
-    "reference": [
-     "bench.orders.order_date",
-     "bench.orders.status",
-     "bench.orders.amount"
-    ]
+    "entity_type": "model",
+    "reference": "bench.orders",
+    "sections": [
+     "columns",
+     "measures"
+    ],
+    "show_sql": true
    },
-   "result_text": "## bench.orders.order_date\n\n\n---\n\n## bench.orders.status\n\n\n---\n\n## bench.orders.amount\n",
+   "result_text": "# `orders`\nColumns: id, customer_id, amount, status, order_date\nMeasures: aov\nAggregations: _(none)_\nJoins to: customers\nSaved queries: monthly_rev",
    "is_error": false,
    "parsed": null,
    "audit": null
   },
   {
-   "tool": "query",
+   "tool": "inspect_model",
    "args": {
-    "query": {
-     "source_model": "orders",
-     "time_dimensions": [
-      {
-       "dimension": "order_date",
-       "granularity": "day",
-       "date_range": [
-        "2025-01-01",
-        "2025-12-31"
-       ]
-      }
-     ],
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "rev"
-      }
-     ]
-    },
-    "format": "json",
-    "show_sql": true
-   },
-   "result_text": "SQL:\nSELECT\n  DATE_TRUNC('DAY', orders.order_date) AS \"orders.order_date\",\n  CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\nFROM orders AS orders\nWHERE\n  (\n    orders.order_date >= CAST('2025-01-01' AS DATE)\n    AND orders.order_date < CAST('2026-01-01' AS DATE)\n  )\nGROUP BY\n  DATE_TRUNC('DAY', orders.order_date)\nLIMIT 21\n\n{\"data\": [{\"orders.order_date\": \"2025-02-02 00:00:00\", \"orders.rev\": 545.76}, {\"orders.order_date\": \"2025-03-05 00:00:00\", \"orders.rev\": 463.43000000000006}, {\"orders.order_date\": \"2025-03-09 00:00:00\", \"orders.rev\": 439.37}, {\"orders.order_date\": \"2025-04-02 00:00:00\", \"orders.rev\": 275.72}, {\"orders.order_date\": \"2025-04-07 00:00:00\", \"orders.rev\": 513.81}, {\"orders.order_date\": \"2025-04-27 00:00:00\", \"orders.rev\": 251.37}, {\"orders.order_date\": \"2025-05-15 00:00:00\", \"orders.rev\": 281.71000000000004}, {\"orders.order_date\": \"2025-05-27 00:00:00\", \"orders.rev\": 261.41}, {\"orders.order_date\": \"2025-06-08 00:00:00\", \"orders.rev\": 403.44}, {\"orders.order_date\": \"2025-06-11 00:00:00\", \"orders.rev\": 422.14000000000004}, {\"orders.order_date\": \"2025-06-16 00:00:00\", \"orders.rev\": 419.78}, {\"orders.order_date\": \"2025-06-21 00:00:00\", \"orders.rev\": 156.02}, {\"orders.order_date\": \"2025-07-16 00:00:00\", \"orders.rev\": 196.8}, {\"orders.order_date\": \"2025-07-30 00:00:00\", \"orders.rev\": 260.03}, {\"orders.order_date\": \"2025-08-06 00:00:00\", \"orders.rev\": 319.5}, {\"orders.order_date\": \"2025-08-12 00:00:00\", \"orders.rev\": 232.36}, {\"orders.order_date\": \"2025-09-23 00:00:00\", \"orders.rev\": 136.25}, {\"orders.order_date\": \"2025-10-02 00:00:00\", \"orders.rev\": 521.8199999999999}, {\"orders.order_date\": \"2025-10-11 00:00:00\", \"orders.rev\": 330.59999999999997}, {\"orders.order_date\": \"2025-11-02 00:00:00\", \"orders.rev\": 182.54}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "orders.order_date",
-     "orders.rev"
-    ],
-    "rows": [
-     [
-      "2025-02-02 00:00:00",
-      545.76
-     ],
-     [
-      "2025-03-05 00:00:00",
-      463.43000000000006
-     ],
-     [
-      "2025-03-09 00:00:00",
-      439.37
-     ],
-     [
-      "2025-04-02 00:00:00",
-      275.72
-     ],
-     [
-      "2025-04-07 00:00:00",
-      513.81
-     ],
-     [
-      "2025-04-27 00:00:00",
-      251.37
-     ],
-     [
-      "2025-05-15 00:00:00",
-      281.71000000000004
-     ],
-     [
-      "2025-05-27 00:00:00",
-      261.41
-     ],
-     [
-      "2025-06-08 00:00:00",
-      403.44
-     ],
-     [
-      "2025-06-11 00:00:00",
-      422.14000000000004
-     ],
-     [
-      "2025-06-16 00:00:00",
-      419.78
-     ],
-     [
-      "2025-06-21 00:00:00",
-      156.02
-     ],
-     [
-      "2025-07-16 00:00:00",
-      196.8
-     ],
-     [
-      "2025-07-30 00:00:00",
-      260.03
-     ],
-     [
-      "2025-08-06 00:00:00",
-      319.5
-     ],
-     [
-      "2025-08-12 00:00:00",
-      232.36
-     ],
-     [
-      "2025-09-23 00:00:00",
-      136.25
-     ],
-     [
-      "2025-10-02 00:00:00",
-      521.8199999999999
-     ],
-     [
-      "2025-10-11 00:00:00",
-      330.59999999999997
-     ],
-     [
-      "2025-11-02 00:00:00",
-      182.54
-     ]
-    ],
-    "warnings": [
-     {
-      "kind": "truncated",
-      "message": "pass a higher 'limit' to get more rows"
-     }
+    "model_name": "orders",
+    "show_sql": true,
+    "sections": [
+     "columns",
+     "measures",
+     "samples"
     ]
    },
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "orders",
-     "dimensions": [
-      {
-       "expression": "isodow(order_date)",
-       "name": "dow"
-      }
-     ],
-     "filters": [
-      "order_date >= '2025-01-01'",
-      "order_date < '2026-01-01'"
-     ],
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "rev"
-      },
-      {
-       "formula": "sum(amount) / sum(amount, partition_by=[])",
-       "name": "share"
-      }
-     ],
-     "order": [
-      {
-       "column": {
-        "name": "dow"
-       }
-      }
-     ]
-    },
-    "format": "json",
-    "show_sql": true
-   },
-   "result_text": "Error executing tool query: Unknown aggregation 'isodow'. Known: ['avg', 'corr', 'count', 'count_distinct', 'count_distinct_approx', 'covar_pop', 'covar_samp', 'first', 'last', 'max', 'median', 'min', 'percentile', 'stddev_pop', 'stddev_samp', 'sum', 'var_pop', 'var_samp', 'weighted_avg'].",
-   "is_error": true,
+   "result_text": "# Model: `orders`\n\n- **data_source:** `bench`\n- **sql_table:** `orders`\n- **row_count:** 5,016\n\n## Columns (5)\n\n| name | type | primary_key | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | id | all | — |\n| customer_id | DOUBLE | — | customer_id | all | 1 .. 9002 |\n| amount | DOUBLE | — | amount | all | 6.54 .. 416.89 |\n| status | TEXT | — | status | all | ok, bad |\n| order_date | DATE | — | order_date | all | 2023-01-01 .. 2025-12-31 |\n\n## Measures (1)\n\n| name | formula |\n| --- | --- |\n| aov | sum(amount) / count(*) |\n\n## Joins (2 — names only)\n\n`customers`, `order_items`\n\n## Data Profile SQL\n\n```sql\nSELECT\n  orders.status AS \"orders.status\",\n  COUNT(*) AS \"orders._count\",\n  CAST(AVG(orders.customer_id) AS DOUBLE) AS \"orders.customer_id_avg\",\n  CAST(AVG(orders.amount) AS DOUBLE) AS \"orders.amount_avg\",\n  COUNT(DISTINCT orders.order_date) AS \"orders.order_date_count_distinct\"\nFROM orders AS orders\nGROUP BY\n  orders.status\nLIMIT 3\n```\n\n## Data Profile\n\n| status | _count | customer_id_avg | amount_avg | order_date_count_distinct |\n| --- | --- | --- | --- | --- |\n| ok | 4410 | 121.4325613079019 | 66.82710884353732 | 1044 |\n| bad | 606 | 105.15346534653466 | 62.67475247524759 | 460 |\n\n> Sections shown: columns, measures, samples.\n> Names-only: aggregations, joins.\n> Omitted: learnings, saved_queries.\n> Re-call inspect_model with `sections=[...]` to fetch.",
+   "is_error": false,
    "parsed": null,
    "audit": null
   },
@@ -218,19 +71,19 @@
      "dimensions": [
       "dow"
      ],
-     "filters": [
-      "order_date >= '2025-01-01'",
-      "order_date < '2026-01-01'"
-     ],
      "measures": [
       {
        "formula": "sum(amount)",
-       "name": "rev"
+       "name": "revenue"
       },
       {
        "formula": "sum(amount) / sum(amount, partition_by=[])",
        "name": "share"
       }
+     ],
+     "filters": [
+      "order_date >= '2025-01-01'",
+      "order_date < '2026-01-01'"
      ],
      "order": [
       {
@@ -240,15 +93,14 @@
       }
      ]
     },
-    "format": "json",
-    "show_sql": true
+    "format": "json"
    },
-   "result_text": "SQL:\nWITH _base AS (\n  SELECT\n    CAST(ISODOW(orders.order_date) AS INT) AS \"orders.dow\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n  FROM orders AS orders\n  WHERE\n    orders.order_date >= CAST('2025-01-01' AS DATE)\n    AND orders.order_date < CAST('2026-01-01' AS DATE)\n  GROUP BY\n    CAST(ISODOW(orders.order_date) AS INT)\n), _cm_orders__amount_sum_partition_by AS (\n  SELECT\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.amount_sum_partition_by\"\n  FROM orders AS orders\n  WHERE\n    orders.order_date >= CAST('2025-01-01' AS DATE)\n    AND orders.order_date < CAST('2026-01-01' AS DATE)\n)\nSELECT\n  _base.\"orders.dow\",\n  _base.\"orders.rev\",\n  _base.\"orders.rev\" / _cm_orders__amount_sum_partition_by.\"orders.amount_sum_partition_by\" AS \"orders.share\"\nFROM _base\nCROSS JOIN _cm_orders__amount_sum_partition_by\nORDER BY\n  _base.\"orders.dow\" ASC\nLIMIT 21\n\n{\"data\": [{\"orders.dow\": 1, \"orders.rev\": 17801.52, \"orders.share\": 0.15461315400665318}, {\"orders.dow\": 2, \"orders.rev\": 15026.919999999996, \"orders.share\": 0.13051466932069036}, {\"orders.dow\": 3, \"orders.rev\": 16595.06000000001, \"orders.share\": 0.14413457769503116}, {\"orders.dow\": 4, \"orders.rev\": 14658.31, \"orders.share\": 0.12731314750129563}, {\"orders.dow\": 5, \"orders.rev\": 16222.330000000007, \"orders.share\": 0.14089727206647248}, {\"orders.dow\": 6, \"orders.rev\": 16655.449999999993, \"orders.share\": 0.14465908843178057}, {\"orders.dow\": 7, \"orders.rev\": 18176.28, \"orders.share\": 0.15786809097807658}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.dow\": 1, \"orders.revenue\": 17801.52, \"orders.share\": 0.15461315400665318}, {\"orders.dow\": 2, \"orders.revenue\": 15026.919999999996, \"orders.share\": 0.13051466932069036}, {\"orders.dow\": 3, \"orders.revenue\": 16595.06000000001, \"orders.share\": 0.14413457769503116}, {\"orders.dow\": 4, \"orders.revenue\": 14658.31, \"orders.share\": 0.12731314750129563}, {\"orders.dow\": 5, \"orders.revenue\": 16222.330000000007, \"orders.share\": 0.14089727206647248}, {\"orders.dow\": 6, \"orders.revenue\": 16655.449999999993, \"orders.share\": 0.14465908843178057}, {\"orders.dow\": 7, \"orders.revenue\": 18176.28, \"orders.share\": 0.15786809097807658}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.dow",
-     "orders.rev",
+     "orders.revenue",
      "orders.share"
     ],
     "rows": [
@@ -298,7 +150,7 @@
     "columns": [
      "iso_day_of_week",
      "revenue",
-     "share_of_2025_revenue"
+     "share"
     ],
     "rows": [
      [
@@ -308,12 +160,12 @@
      ],
      [
       2,
-      15026.92,
+      15026.919999999996,
       0.13051466932069036
      ],
      [
       3,
-      16595.06,
+      16595.06000000001,
       0.14413457769503116
      ],
      [
@@ -323,12 +175,12 @@
      ],
      [
       5,
-      16222.33,
+      16222.330000000007,
       0.14089727206647248
      ],
      [
       6,
-      16655.45,
+      16655.449999999993,
       0.14465908843178057
      ],
      [
@@ -337,7 +189,7 @@
       0.15786809097807658
      ]
     ],
-    "message": "In 2025, Sunday (day 7) brought in the most revenue, at 18,176.28 or about 15.8% of the year. Monday (day 1) was close behind at 17,801.52 (about 15.5%). Thursday (day 4) was the lowest at 14,658.31 (about 12.7%). Revenue is the sum of order amounts for all orders dated in 2025, with no filter on order status. Days are numbered the ISO way, Monday = 1 through Sunday = 7. Each share is that day's revenue divided by the 2025 total, and the seven shares add up to 1."
+    "message": "2025 revenue (sum of orders.amount, all order statuses included) by ISO weekday (Mon=1..Sun=7), with each day's share of the total 2025 revenue."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -346,15 +198,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 12,
-  "output_tokens": 1100,
-  "cache_read_tokens": 147507,
-  "cache_write_tokens": 3493,
+  "input_tokens": 10,
+  "output_tokens": 775,
+  "cache_read_tokens": 121414,
+  "cache_write_tokens": 2637,
   "partial": false
  },
- "cost_usd": 0.06901439999999999,
- "duration_s": 20.995838431001175,
- "turns": 9,
+ "cost_usd": 0.053007799999999994,
+ "duration_s": 16.585268692986574,
+ "turns": 8,
  "end_reason": "submitted",
  "error": null
 }

@@ -46,7 +46,7 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}, {\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.size_class\": \"small\", \"orders.order_count\": 4194, \"orders.revenue\": 214999.39000000033}, {\"orders.size_class\": \"big\", \"orders.order_count\": 822, \"orders.revenue\": 117689.06000000017}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -56,14 +56,14 @@
     ],
     "rows": [
      [
-      "big",
-      822,
-      117689.06000000017
-     ],
-     [
       "small",
       4194,
       214999.39000000033
+     ],
+     [
+      "big",
+      822,
+      117689.06000000017
      ]
     ],
     "warnings": []
@@ -82,15 +82,15 @@
      [
       "big",
       822,
-      117689.06
+      117689.06000000017
      ],
      [
       "small",
       4194,
-      214999.39
+      214999.39000000033
      ]
     ],
-    "message": "Orders are classed with a CASE expression added only for this query ('big' if amount > 100, otherwise 'small'), so the stored model is unchanged. Big: 822 orders, revenue 117,689.06. Small: 4,194 orders, revenue 214,999.39."
+    "message": "Orders over 100 are 'big' and all other orders are 'small'. There are 822 big orders with 117,689.06 in revenue, and 4,194 small orders with 214,999.39 in revenue. The class was defined only inside the query, so the stored model was not changed. Any order with no amount would fall into 'small', because it isn't over 100."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -101,12 +101,12 @@
  "usage": {
   "input_tokens": 6,
   "output_tokens": 323,
-  "cache_read_tokens": 71642,
-  "cache_write_tokens": 1355,
+  "cache_read_tokens": 71722,
+  "cache_write_tokens": 1353,
   "partial": false
  },
- "cost_usd": 0.0275874,
- "duration_s": 12.412727627990535,
+ "cost_usd": 0.027593399999999997,
+ "duration_s": 10.461739740043413,
  "turns": 6,
  "end_reason": "submitted",
  "error": null
