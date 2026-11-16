@@ -8,13 +8,13 @@ SLayer MCP server verbatim in two tool profiles.
 
 ### Requirement: Agent contract
 An agent SHALL receive only the task prompt text, the profile name, and the trial environment (store path, database
-path, credentials, budgets, and in the Motley profiles the Motley MCP URL and the trial's Motley user id). It MUST NOT
-receive the task's covers, comparison rules, expectations, reference SLayer query, naive SQL or truth. It SHALL return a
-submission (`columns`, `rows`, `message`, or none) and a normalized trace: the profile; an ordered list of tool calls,
-each with tool name, arguments, raw result text, parsed result (columns and rows, warnings) when the tool is a SLayer or
-Motley `query` or the `sql` tool, an error flag, and for the Python tool its audit log; plus usage (input, output, cache
-read and cache write tokens), cost, duration, turn count and end reason (`submitted`, `max_turns`, `timeout`, `error`,
-`auto_fail`).
+path, credentials, budgets, in the Motley profiles the Motley MCP URL and the trial's Motley user id, and, for a
+`jaffle` task in `sql+python`, the Jaffle business rules text). It MUST NOT receive the task's dataset name, covers,
+comparison rules, expectations, reference SLayer query, naive SQL or truth. It SHALL return a submission (`columns`,
+`rows`, `message`, or none) and a normalized trace: the profile; an ordered list of tool calls, each with tool name,
+arguments, raw result text, parsed result (columns and rows, warnings) when the tool is a SLayer or Motley `query` or
+the `sql` tool, an error flag, and for the Python tool its audit log; plus usage (input, output, cache read and cache
+write tokens), cost, duration, turn count and end reason (`submitted`, `max_turns`, `timeout`, `error`, `auto_fail`).
 
 #### Scenario: Agent sees only the prompt
 - **WHEN** a trial is started for a task
@@ -23,6 +23,10 @@ read and cache write tokens), cost, duration, turn count and end reason (`submit
 #### Scenario: Motley trial environment
 - **WHEN** a trial is started in `motley`
 - **THEN** the agent's trial environment carries the Motley MCP URL and the trial's Motley user id, and still none of the task's other fields
+
+#### Scenario: Business rules only for raw SQL on Jaffle
+- **WHEN** a `jaffle` task's trials start in `sql+python`, `slayer` and `motley`, and a `bench` task's trial starts in `sql+python`
+- **THEN** only the `jaffle` task's `sql+python` trial environment carries the business rules text
 
 #### Scenario: Trace round-trip
 - **WHEN** a normalized trace is serialized to JSON and read back
@@ -39,9 +43,10 @@ environment (an allow-list; no Claude or Anthropic credentials). The Motley MCP 
 run's Motley URL, with the trial's Motley user id sent as the `X-Storyline-Dev-User-Id` header on every request and no
 credentials. Telemetry and non-essential traffic SHALL be disabled and the prompt-caching mode pinned. The system
 prompt SHALL be minimal, generic and identical across tasks and profiles, except that the SLayer and Motley profiles
-alone carry one sentence telling the agent to request `query` results as JSON so numbers are exact; it SHALL ask every
-agent to submit exact, unrounded values with null as the label of a group whose key is unknown; it MUST NOT mention
-SLayer or Motley features or tasks.
+alone carry one sentence telling the agent to request `query` results as JSON so numbers are exact, and that a trial
+environment carrying business rules text appends that text, verbatim, under a heading naming it as the business rules
+of the database; it SHALL ask every agent to submit exact, unrounded values with null as the label of a group whose key
+is unknown; it MUST NOT mention SLayer or Motley features or tasks.
 
 #### Scenario: Leaked server aborts
 - **WHEN** after connecting the session reports an MCP server the profile did not declare
@@ -64,8 +69,12 @@ SLayer or Motley features or tasks.
 - **THEN** the only data server configured is the Motley server at the run's Motley URL, every request to it carries `X-Storyline-Dev-User-Id` with the trial's user id, and a SLayer server reported after connecting aborts the trial
 
 #### Scenario: System prompt per profile
-- **WHEN** the system prompts of the five profiles are compared
+- **WHEN** the system prompts of the five profiles are compared for a trial environment without business rules
 - **THEN** they are equal apart from the JSON-results sentence, which appears in `slayer`, `slayer+python`, `motley` and `motley+python` only
+
+#### Scenario: Business rules in the system prompt
+- **WHEN** a session starts in `sql+python` with a trial environment carrying business rules text
+- **THEN** its system prompt is the `sql+python` prompt followed by the business rules heading and the text verbatim
 
 ### Requirement: Profiles
 Profile `slayer` SHALL expose every tool the SLayer MCP server advertises plus `submit_answer`. Profile
