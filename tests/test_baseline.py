@@ -44,7 +44,7 @@ def test_readme_summarises_the_baseline():
     assert "results/baseline" in readme
     for profile in DEFAULT_PROFILES:
         assert f"`{profile}`" in readme, profile
-    for suite in ("capability", "combo", "trap"):
+    for suite in ("capability", "combo", "trap", "jaffle"):
         assert suite in readme.lower(), suite
 
 
@@ -55,3 +55,42 @@ def test_failure_breakdown_by_profile_and_pitfall():
     kinds = {c for r in baseline_results() if not r.passed for c in r.covers if c in PITFALLS}
     for kind in kinds:
         assert kind in doc, kind
+
+
+def test_baseline_covers_the_jaffle_suite():
+    jaffle = {t.id for t in load_tasks(REPO / "tasks") if t.dataset == "jaffle"}
+    assert len(jaffle) == 24
+    results = baseline_results()
+    for profile in DEFAULT_PROFILES:
+        got = {r.task_id for r in results if r.profile == profile and r.dataset == "jaffle"}
+        assert got == jaffle, profile
+    assert all((r.dataset == "jaffle") == (r.task_id in jaffle) for r in results)
+
+
+def test_baseline_report_has_the_jaffle_suite():
+    report = (BASELINE / "report.md").read_text()
+    assert any(line.startswith("| jaffle |") for line in report.splitlines())
+
+
+def test_failure_breakdown_of_the_jaffle_suite_by_business_rule():
+    lines = (REPO / "docs" / "baseline-failures.md").read_text().splitlines()
+    start = next(i for i, x in enumerate(lines) if x.startswith("#") and "jaffle" in x.lower())
+    level = len(lines[start].split(" ", 1)[0])
+    end = next(
+        (
+            i
+            for i in range(start + 1, len(lines))
+            if lines[i].startswith("#") and len(lines[i].split(" ", 1)[0]) <= level
+        ),
+        len(lines),
+    )
+    section = "\n".join(lines[start:end])
+    assert "jaffle-" in section
+    failed = {r.task_id for r in baseline_results() if r.dataset == "jaffle" and not r.passed}
+    assert [t for t in sorted(failed) if t not in section] == []
+
+
+def test_readme_documents_the_jaffle_suite():
+    readme = (REPO / "README.md").read_text()
+    for text in ("--suites jaffle", "business rules", "system prompt", "search", "bench/", "jaffle/"):
+        assert text in readme, text

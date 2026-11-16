@@ -114,6 +114,19 @@ def make_task(**overrides: Any) -> Task:
     return Task.model_validate(doc)
 
 
+def make_jaffle_task(**overrides: Any) -> Task:
+    doc: dict[str, Any] = {
+        "id": "j-q02-orders-2025",
+        "dataset": "jaffle",
+        "prompt": "How many orders did we take in 2025?",
+        "truth_sql": "select count(*) as orders from orders",
+        "slayer_query": {"query": {"source_model": "orders", "measures": [{"formula": "count(*)", "name": "orders"}]}},
+        "compare": {"values": ["orders"]},
+    }
+    doc.update(overrides)
+    return Task.model_validate(doc)
+
+
 def write_task(directory: Path, doc: dict[str, Any], name: str | None = None) -> Path:
     path = directory / f"{name or doc.get('id', 'task')}.yaml"
     path.write_text(yaml.safe_dump(doc, sort_keys=False))

@@ -19,7 +19,7 @@ import pytest
 import slayer_evals.cli as cli_module
 import slayer_evals.runner.run as run_module
 from slayer_evals.cli import main
-from slayer_evals.core import DEFAULT_PROFILES, PROFILES, RunMetadata, Trace, TrialResult, trial_stem
+from slayer_evals.core import DATASET_SPECS, DEFAULT_PROFILES, PROFILES, RunMetadata, Trace, TrialResult, trial_stem
 from slayer_evals.dataset import BuiltDataset
 from slayer_evals.runner import MotleyWarmUpError, RunConfig, motley_user_id, run_benchmark
 from tests.fake_agents import STATE_ENV, recorded_runs
@@ -102,7 +102,7 @@ def motley(tmp_path_factory: pytest.TempPathFactory) -> Generator[FakeMotley]:
 def config(tmp_path: Path, built: BuiltDataset, tasks_dir: Path, **kw: Any) -> RunConfig:
     base: dict[str, Any] = {
         "tasks_dir": tasks_dir,
-        "dataset_dir": built.dir,
+        "dataset_dir": built.dir.parent,
         "out_dir": tmp_path / "runs",
         "agent": FAKE,
         "auth_mode": "api-key",
@@ -201,10 +201,10 @@ def test_seed_before_each_motley_trial(
     for var in CREDENTIALS:
         monkeypatch.setenv(var, f"secret-{var}")
     monkeypatch.setenv("SEED_ENV_MARKER", "inherited")
-    monkeypatch.chdir(built.dir.parent)
+    monkeypatch.chdir(built.dir.parent.parent)
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1"), task_doc("b", "Q4"))
     cfg = motley_config(
-        tmp_path, built, td, motley, "--sleep-from", "2", "--sleep", "3", dataset_dir=Path(built.dir.name)
+        tmp_path, built, td, motley, "--sleep-from", "2", "--sleep", "3", dataset_dir=Path(built.dir.parent.name)
     )
     run_dir = run_benchmark(cfg, environ=ENV)
     rs = results(run_dir)
@@ -230,6 +230,47 @@ def test_seed_before_each_motley_trial(
         for var in CREDENTIALS:
             assert var not in seed["env"], var
         assert seed["env"]["SEED_ENV_MARKER"] == "inherited"
+
+
+def jaffle_doc(tid: str, prompt: str = "ANSWER 7") -> dict[str, Any]:
+    doc = task_doc(tid, "Q1", prompt, dataset="jaffle")
+    del doc["covers"]
+    return doc
+
+
+def test_warm_up_per_dataset(
+    tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, agent_state: Path, motley: FakeMotley
+):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1"), jaffle_doc("j-a"))
+    run_dir = run_benchmark(motley_config(tmp_path, built, td, motley), environ=ENV)
+    seeds = seed_calls(tmp_path / "seeds")
+    warm = {s["user_id"]: s for s in seeds[:2]}
+    assert set(warm) == {motley_user_id(run_dir, "warm-up:bench"), motley_user_id(run_dir, "warm-up:jaffle")}
+    for dataset, b in (("bench", built), ("jaffle", built_jaffle)):
+        s = warm[motley_user_id(run_dir, f"warm-up:{dataset}")]
+        assert s["argv"][-4:] == ["--store", str(b.store_dir.absolute()), "--db", str(b.db_path.absolute())]
+    assert len(seeds) == 4
+    initialized = set(motley.user_ids_by_method()["initialize"])
+    assert initialized & set(warm)
+    assert all(r.passed for r in results(run_dir))
+
+
+def test_seed_jaffle_trial_with_its_database(
+    tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, agent_state: Path, motley: FakeMotley
+):
+    td = tasks_dir_with(tmp_path, jaffle_doc("j-a"))
+    run_dir = run_benchmark(motley_config(tmp_path, built, td, motley), environ=ENV)
+    seeds = seed_calls(tmp_path / "seeds")
+    assert [s["user_id"] for s in seeds[:1]] == [motley_user_id(run_dir, "warm-up:jaffle")]
+    (r,) = results(run_dir)
+    assert r.dataset == "jaffle"
+    uid = motley_user_id(run_dir, trial_stem(r.task_id, r.profile, r.model, r.trial))
+    (trial_seed,) = [s for s in seeds if s["user_id"] == uid]
+    (rec,) = recorded_runs(agent_state)
+    env = rec["input"]["env"]
+    assert trial_seed["argv"][-6:] == ["--user-id", uid, "--store", env["store_dir"], "--db", str(built_jaffle.db_path)]
+    assert Path(env["db_path"]).name == DATASET_SPECS["jaffle"].db_file
+    assert env.get("business_rules") is None
 
 
 def test_seed_failure_ends_the_trial(tmp_path: Path, built: BuiltDataset, agent_state: Path, motley: FakeMotley):
@@ -299,7 +340,8 @@ def test_interrupted_run_stops_the_seed(tmp_path: Path, built: BuiltDataset, mot
     env_file = tmp_path / ".env"
     env_file.write_text("ANTHROPIC_API_KEY=sk-ant-api-test\n")
     argv = ["run", "--api-key-auth", "--env-file", str(env_file), "--tasks-dir", str(td)]
-    argv += ["--dataset-dir", str(built.dir), "--out", str(tmp_path / "runs"), "--agent", FAKE, "--profiles", "motley"]
+    argv += ["--dataset-dir", str(built.dir.parent), "--out", str(tmp_path / "runs"), "--agent", FAKE]
+    argv += ["--profiles", "motley"]
     argv += ["--motley-url", motley.url, "--motley-seed-cmd", shlex.join(seed_cmd(seeds, "--hang-from", "2"))]
     env = {**os.environ, STATE_ENV: str(tmp_path / "state"), "PYTHONPATH": str(REPO)}
     proc = subprocess.Popen([sys.executable, "-m", "slayer_evals.cli", *argv], env=env, cwd=REPO)
@@ -340,7 +382,7 @@ def test_motley_metadata(tmp_path: Path, built: BuiltDataset, agent_state: Path,
     md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
     assert md.motley_url == motley.url
     assert md.motley_server_info == f"{SERVER_NAME} {SERVER_VERSION}"
-    warm_up = motley_user_id(run_dir, "warm-up")
+    warm_up = motley_user_id(run_dir, "warm-up:bench")
     assert seed_calls(tmp_path / "seeds")[0]["user_id"] == warm_up
     assert warm_up in motley.user_ids_by_method()["initialize"]
 
@@ -351,7 +393,7 @@ def test_warm_up_stderr_reaches_the_user(
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
     run_dir = run_benchmark(motley_config(tmp_path, built, td, motley), environ=ENV)
     err = capfd.readouterr().err
-    assert f"seed-stderr {motley_user_id(run_dir, 'warm-up')}" in err
+    assert f"seed-stderr {motley_user_id(run_dir, 'warm-up:bench')}" in err
     assert f"seed-stderr {motley_user_id(run_dir, trial_stem('a', 'motley', MODEL, 1))}" not in err
 
 
@@ -510,7 +552,7 @@ def test_cli_motley_without_a_seed_command(
 ):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api-test")
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
-    argv = ["run", "--api-key-auth", "--tasks-dir", str(td), "--dataset-dir", str(built.dir)]
+    argv = ["run", "--api-key-auth", "--tasks-dir", str(td), "--dataset-dir", str(built.dir.parent)]
     argv += ["--out", str(tmp_path / "runs"), "--agent", FAKE, "--profiles", "motley"]
     assert main(argv) == 2
     assert "--motley-seed-cmd" in capsys.readouterr().err

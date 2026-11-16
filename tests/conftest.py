@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 import slayer_evals.agents.claude as claude_module
@@ -12,6 +14,18 @@ def short_server_settle(request: pytest.FixtureRequest, monkeypatch: pytest.Monk
 
 
 @pytest.fixture(scope="session")
-def built(tmp_path_factory: pytest.TempPathFactory) -> BuiltDataset:
-    """The dataset and store template built once with the default seed."""
-    return build_dataset(tmp_path_factory.mktemp("built"), seed=DEFAULT_SEED)
+def build_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The build root shared by the session's datasets: `<root>/bench/` and `<root>/jaffle/`."""
+    return tmp_path_factory.mktemp("built")
+
+
+@pytest.fixture(scope="session")
+def built(build_root: Path) -> BuiltDataset:
+    """The bench dataset and store template built once with the default seed."""
+    return build_dataset(build_root / "bench", seed=DEFAULT_SEED)
+
+
+@pytest.fixture(scope="session")
+def built_jaffle(build_root: Path) -> BuiltDataset:
+    """The Jaffle dataset and store template built once with its default seed."""
+    return build_dataset(build_root / "jaffle", dataset="jaffle")

@@ -6,12 +6,16 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+import slayer_evals.cli as cli_module
+import slayer_evals.dataset.store as store_module
 from slayer_evals.cli import main
-from slayer_evals.core import Table, TrialResult
+from slayer_evals.core import DATASET_SPECS, Table, TrialResult
 from slayer_evals.dataset import DB_FILE, STORE_DIR, BuiltDataset
+from slayer_evals.runner import RunConfig
 from slayer_evals.tasks import write_snapshots
 from tests.fake_agents import STATE_ENV
 from tests.helpers import REPO, write_task
@@ -20,11 +24,19 @@ FAKE = "tests.fake_agents:ScriptedAgent"
 SLAYER_QUERY = {"query": {"source_model": "orders", "measures": [{"formula": "sum(amount)", "name": "v"}]}}
 
 
-def test_build(tmp_path: Path):
+def test_build(tmp_path: Path, built_jaffle: BuiltDataset, monkeypatch: pytest.MonkeyPatch):
+    def reuse_jaffle(path: Path, seed: int | None = None) -> Path:
+        shutil.copy2(built_jaffle.db_path, path)
+        return path
+
+    monkeypatch.setattr(store_module, "build_jaffle_database", reuse_jaffle)
     out = tmp_path / "data"
     assert main(["build", "--out", str(out)]) == 0
-    for name in (DB_FILE, STORE_DIR):
-        assert (out / name).exists()
+    assert sorted(p.name for p in out.iterdir()) == ["bench", "jaffle"]
+    for dataset in ("bench", "jaffle"):
+        assert (out / dataset / DATASET_SPECS[dataset].db_file).is_file()
+        assert (out / dataset / STORE_DIR).is_dir()
+    assert not (out / DB_FILE).exists()
 
 
 def _tasks(tmp_path: Path) -> Path:
@@ -46,12 +58,57 @@ def _tasks(tmp_path: Path) -> Path:
 
 def test_truth_write_then_check(tmp_path: Path, built: BuiltDataset):
     td = _tasks(tmp_path)
-    args = ["--tasks-dir", str(td), "--dataset-dir", str(built.dir)]
+    args = ["--tasks-dir", str(td), "--dataset-dir", str(built.dir.parent)]
     assert main(["truth", "--write", *args]) == 0
     assert (td / "truth" / "a.json").exists()
     assert main(["truth", *args]) == 0
     write_snapshots({"a": Table(columns=["v"], rows=[[8.0]])}, td / "truth")
     assert main(["truth", *args]) != 0
+
+
+def test_truth_write_keeps_every_datasets_snapshots(tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset):
+    td = _tasks(tmp_path)
+    (td / "jaffle").mkdir()
+    write_task(
+        td / "jaffle",
+        {
+            "id": "j-stores",
+            "dataset": "jaffle",
+            "prompt": "How many stores do we have?",
+            "truth_sql": "select count(*) as n from stores",
+            "slayer_query": {"query": {"source_model": "stores", "measures": [{"formula": "count(*)", "name": "n"}]}},
+            "compare": {"values": ["n"]},
+        },
+    )
+    (td / "truth").mkdir()
+    (td / "truth" / "gone.json").write_text('{"columns": [], "rows": []}')
+    args = ["--tasks-dir", str(td), "--dataset-dir", str(built.dir.parent)]
+    assert main(["truth", "--write", *args]) == 0
+    assert sorted(p.name for p in (td / "truth").glob("*.json")) == ["a.json", "j-stores.json"]
+    assert Table.model_validate_json((td / "truth" / "j-stores.json").read_text()).rows == [[6]]
+    assert main(["truth", *args]) == 0
+
+
+def test_run_suites_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    seen: list[RunConfig] = []
+
+    def fake_run(cfg: RunConfig, environ: Any = None) -> Path:
+        seen.append(cfg)
+        return tmp_path
+
+    monkeypatch.setattr(cli_module, "run_benchmark", fake_run)
+    assert main(["run", "--api-key-auth", "--suites", "jaffle,trap"]) == 0
+    assert main(["run", "--api-key-auth"]) == 0
+    assert [c.suites for c in seen] == [["jaffle", "trap"], []]
+
+
+def test_run_help_lists_the_suites(capsys: pytest.CaptureFixture[str]):
+    with pytest.raises(SystemExit):
+        main(["run", "--help"])
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "--suites" in help_text
+    for suite in ("capability", "combo", "trap", "jaffle"):
+        assert suite in help_text, suite
 
 
 def test_run_without_auth_mode(tmp_path: Path, built: BuiltDataset, capsys: pytest.CaptureFixture[str]):
@@ -62,7 +119,7 @@ def test_run_without_auth_mode(tmp_path: Path, built: BuiltDataset, capsys: pyte
             "--tasks-dir",
             str(td),
             "--dataset-dir",
-            str(built.dir),
+            str(built.dir.parent),
             "--out",
             str(tmp_path / "runs"),
             "--agent",
@@ -88,7 +145,7 @@ def test_run_missing_credential(
             "--tasks-dir",
             str(td),
             "--dataset-dir",
-            str(built.dir),
+            str(built.dir.parent),
             "--out",
             str(tmp_path / "runs"),
             "--agent",
@@ -140,7 +197,7 @@ def test_interrupted_run_keeps_results(tmp_path: Path, built: BuiltDataset):
             "--tasks-dir",
             str(d),
             "--dataset-dir",
-            str(built.dir),
+            str(built.dir.parent),
             "--out",
             str(out),
             "--agent",
@@ -176,7 +233,7 @@ def test_run_raw_sql_profile(tmp_path: Path, built: BuiltDataset, monkeypatch: p
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api-test")
     td = _tasks(tmp_path)
     out = tmp_path / "runs"
-    args = ["run", "--api-key-auth", "--tasks-dir", str(td), "--dataset-dir", str(built.dir), "--out", str(out)]
+    args = ["run", "--api-key-auth", "--tasks-dir", str(td), "--dataset-dir", str(built.dir.parent), "--out", str(out)]
     assert main([*args, "--agent", FAKE, "--profiles", "sql+python"]) == 0
     (results,) = out.glob("*/results.jsonl")
     assert [TrialResult.model_validate_json(x).profile for x in results.read_text().splitlines()] == ["sql+python"]
