@@ -23,7 +23,7 @@ from slayer.storage.yaml_storage import YAMLStorage
 
 import slayer_evals.dataset.store as store_module
 from slayer_evals.agents import slayer_server_env
-from slayer_evals.core import DATASET_SPECS, DATASETS
+from slayer_evals.core import DATASET_SPECS, DATASETS, Dataset
 from slayer_evals.dataset import (
     STORE_DIR,
     BuiltDataset,
@@ -467,6 +467,13 @@ def test_load_datasets_names_every_missing_one(tmp_path: Path):
         load_datasets(tmp_path, ["bench", "jaffle"])
     assert "bench" in str(exc.value)
     assert "jaffle" in str(exc.value)
+
+
+def test_load_datasets_accepts_a_one_shot_iterable(tmp_path: Path):
+    names: list[Dataset] = ["bench", "jaffle"]
+    once = iter(names)
+    with pytest.raises(ValueError, match="jaffle"):
+        load_datasets(tmp_path, once)
 
 
 def test_load_datasets_takes_only_what_it_needs(tmp_path: Path, built: BuiltDataset):

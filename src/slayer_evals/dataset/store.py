@@ -101,7 +101,12 @@ def build_datasets(
     root: Path, datasets: Iterable[Dataset] = DATASETS, seed: int | None = None
 ) -> dict[Dataset, BuiltDataset]:
     """Build each named dataset into `<root>/<dataset>/`."""
-    return {d: build_dataset(root / d, seed=seed, dataset=d) for d in DATASETS if d in set(datasets)}
+    return {d: build_dataset(root / d, seed=seed, dataset=d) for d in _in_order(datasets)}
+
+
+def _in_order(datasets: Iterable[Dataset]) -> list[Dataset]:
+    named = set(datasets)
+    return [d for d in DATASETS if d in named]
 
 
 def _built(out_dir: Path, dataset: Dataset) -> BuiltDataset:
@@ -122,8 +127,7 @@ def load_built(out_dir: Path, dataset: Dataset = "bench") -> BuiltDataset:
 
 def load_datasets(root: Path, datasets: Iterable[Dataset]) -> dict[Dataset, BuiltDataset]:
     """The named datasets of the build root `root`; fails naming every one that is missing or incomplete."""
-    wanted: list[Dataset] = [d for d in DATASETS if d in set(datasets)]
-    built: dict[Dataset, BuiltDataset] = {d: _built(root / d, d) for d in wanted}
+    built: dict[Dataset, BuiltDataset] = {d: _built(root / d, d) for d in _in_order(datasets)}
     missing = [d for d, b in built.items() if not _complete(b)]
     if missing:
         raise ValueError(

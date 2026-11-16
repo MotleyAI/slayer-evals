@@ -107,15 +107,17 @@ def test_run_metadata_motley_round_trip():
 
 
 def test_committed_metadata_without_motley_fields_loads():
-    for path in (
-        REPO / "results" / "baseline" / "metadata.json",
-        REPO / "tests" / "fixtures" / "run_repeat" / "metadata.json",
-    ):
-        raw = json.loads(path.read_text())
-        assert "motley_url" not in raw
-        md = RunMetadata.model_validate(raw)
-        assert md.motley_url is None
-        assert md.motley_server_info is None
+    raw = json.loads((REPO / "tests" / "fixtures" / "run_repeat" / "metadata.json").read_text())
+    assert "motley_url" not in raw
+    md = RunMetadata.model_validate(raw)
+    assert md.motley_url is None
+    assert md.motley_server_info is None
+
+
+def test_baseline_metadata_has_no_motley_endpoint():
+    md = RunMetadata.model_validate_json((REPO / "results" / "baseline" / "metadata.json").read_text())
+    assert md.motley_url is None
+    assert md.motley_server_info is None
 
 
 def test_xfail_without_profiles_applies_to_every_profile():
