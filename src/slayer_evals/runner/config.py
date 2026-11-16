@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from slayer_evals.agents import DEFAULT_AGENT
-from slayer_evals.core import DEFAULT_PROFILES, PROFILES, AuthMode, Profile, RunMode, SafeName, Task
+from slayer_evals.core import DEFAULT_PROFILES, PROFILES, AuthMode, Profile, RunMode, SafeName, Suite, Task
 
 DEFAULT_MODEL = "claude-opus-5-5"
 DEFAULT_MOTLEY_URL = "http://localhost:8000/api/v1/mcp/"
@@ -21,6 +21,7 @@ def default_slayer_command() -> list[str]:
 
 class RunConfig(BaseModel):
     tasks_dir: Path = Path("tasks")
+    # Build root holding `<dataset>/` subdirectories; None builds the needed datasets afresh.
     dataset_dir: Path | None = None
     out_dir: Path = Path("runs")
     agent: str = DEFAULT_AGENT
@@ -28,6 +29,7 @@ class RunConfig(BaseModel):
     env_file: Path | None = None
     task_ids: list[str] = Field(default_factory=list)
     rows: list[str] = Field(default_factory=list)
+    suites: list[Suite] = Field(default_factory=list)
     profiles: list[Profile] = Field(default_factory=lambda: list(DEFAULT_PROFILES))
     models: list[SafeName] = Field(default_factory=lambda: [DEFAULT_MODEL])
     n: int = Field(default=1, ge=1)
@@ -47,5 +49,9 @@ def select_tasks(tasks: list[Task], cfg: RunConfig) -> list[Task]:
     if unknown:
         raise ValueError(f"no tasks for selection: {', '.join(unknown)}")
     return [
-        t for t in tasks if (not cfg.task_ids or t.id in cfg.task_ids) and (not cfg.rows or set(t.rows) & set(cfg.rows))
+        t
+        for t in tasks
+        if (not cfg.task_ids or t.id in cfg.task_ids)
+        and (not cfg.rows or set(t.rows) & set(cfg.rows))
+        and (not cfg.suites or t.suite in cfg.suites)
     ]

@@ -7,7 +7,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from slayer_evals.dataset import DEFAULT_SEED, BuiltDataset, build_dataset, load_built
+from slayer_evals.core import DATASETS, Dataset, Table, Task
+from slayer_evals.dataset import BuiltDataset, build_datasets, load_datasets
 from slayer_evals.report import write_report
 from slayer_evals.runner import (
     DEFAULT_MODEL,
@@ -18,6 +19,7 @@ from slayer_evals.runner import (
     run_benchmark,
 )
 from slayer_evals.tasks import (
+    SUITE_DIRS,
     TRUTH_DIR,
     SnapshotDriftError,
     TaskFormatError,
@@ -43,14 +45,14 @@ def _parser() -> argparse.ArgumentParser:
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    b = sub.add_parser("build", help="build the database and the SLayer store template")
+    b = sub.add_parser("build", help="build each dataset's database and SLayer store template into <out>/<dataset>/")
     b.add_argument("--out", type=Path, default=Path("data"))
-    b.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    b.add_argument("--seed", type=int, help="seed for every dataset (default: each dataset's own)")
 
     t = sub.add_parser("truth", help="check (or --write) the committed truth snapshots and the task-set checks")
     t.add_argument("--write", action="store_true", help="regenerate the snapshots instead of checking them")
     t.add_argument("--tasks-dir", type=Path, default=Path("tasks"))
-    t.add_argument("--dataset-dir", type=Path, help="a built dataset (default: build a fresh one)")
+    t.add_argument("--dataset-dir", type=Path, help="a build root from `build` (default: build afresh)")
 
     r = sub.add_parser("run", help="run tasks against an agent and write a run directory")
     auth = r.add_mutually_exclusive_group()
@@ -58,11 +60,12 @@ def _parser() -> argparse.ArgumentParser:
     auth.add_argument("--api-key-auth", dest="auth_mode", action="store_const", const="api-key")
     r.add_argument("--env-file", type=Path, help="KEY=VALUE file with CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY")
     r.add_argument("--tasks-dir", type=Path, default=Path("tasks"))
-    r.add_argument("--dataset-dir", type=Path, help="a built dataset (default: build a fresh one)")
+    r.add_argument("--dataset-dir", type=Path, help="a build root from `build` (default: build afresh)")
     r.add_argument("--out", type=Path, default=Path("runs"))
     r.add_argument("--agent", default=RunConfig().agent, help="module:Class of the agent adapter")
     r.add_argument("--tasks", type=_csv, default=[], help="comma-separated task ids")
     r.add_argument("--rows", type=_csv, default=[], help="comma-separated rows, e.g. Q1,Q4: tasks covering any of them")
+    r.add_argument("--suites", type=_csv, default=[], help=f"comma-separated, from {', '.join(SUITE_DIRS)}")
     r.add_argument(
         "--profiles",
         type=_csv,
@@ -88,16 +91,19 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _dataset(stack: contextlib.ExitStack, dataset_dir: Path | None) -> BuiltDataset:
+def _datasets(stack: contextlib.ExitStack, dataset_dir: Path | None, tasks: list[Task]) -> dict[Dataset, BuiltDataset]:
+    needed: list[Dataset] = [d for d in DATASETS if any(t.dataset == d for t in tasks)]
     if dataset_dir is not None:
-        return load_built(dataset_dir)
-    return build_dataset(Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="slayer-evals-data-"))))
+        return load_datasets(dataset_dir, needed)
+    return build_datasets(Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="slayer-evals-data-"))), needed)
 
 
 def _truth(args: argparse.Namespace) -> int:
     tasks = load_tasks(args.tasks_dir)
+    truths: dict[str, Table] = {}
     with contextlib.ExitStack() as stack:
-        truths = compute_truths(tasks, _dataset(stack, args.dataset_dir).db_path)
+        for dataset, built in _datasets(stack, args.dataset_dir, tasks).items():
+            truths |= compute_truths([t for t in tasks if t.dataset == dataset], built.db_path)
     snapshot_dir = args.tasks_dir / TRUTH_DIR
     if args.write:
         write_snapshots(truths, snapshot_dir)
@@ -121,6 +127,7 @@ def _run(args: argparse.Namespace) -> int:
         env_file=args.env_file,
         task_ids=args.tasks,
         rows=args.rows,
+        suites=args.suites,
         profiles=args.profiles,
         models=args.models,
         n=args.trials,
@@ -141,8 +148,8 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         if args.command == "build":
-            built = build_dataset(args.out, seed=args.seed)
-            print(f"built {built.db_path} and {built.store_dir}")
+            for built in build_datasets(args.out, seed=args.seed).values():
+                print(f"built {built.db_path} and {built.store_dir}")
             return 0
         if args.command == "truth":
             return _truth(args)

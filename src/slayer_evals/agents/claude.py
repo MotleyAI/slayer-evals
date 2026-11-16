@@ -42,6 +42,7 @@ BASE_PROMPT = (
 JSON_RESULTS_SENTENCE = (
     'Request query results with format="json" so numbers are exact; the default markdown rounds some values.'
 )
+BUSINESS_RULES_HEADING = "\n\n# Business rules of the database\n\n"
 TELEMETRY_ENV = {
     "DISABLE_TELEMETRY": "1",
     "DISABLE_ERROR_REPORTING": "1",
@@ -82,9 +83,10 @@ class ServerCheckError(RuntimeError):
     pass
 
 
-def system_prompt(profile: Profile) -> str:
-    """Identical across profiles except for the JSON-results sentence of the SLayer and Motley profiles."""
-    return BASE_PROMPT if PROFILE_SPECS[profile].surface == "sql" else f"{BASE_PROMPT} {JSON_RESULTS_SENTENCE}"
+def system_prompt(profile: Profile, business_rules: str | None = None) -> str:
+    """Identical across profiles except for the SLayer and Motley JSON-results sentence and any business rules."""
+    prompt = BASE_PROMPT if PROFILE_SPECS[profile].surface == "sql" else f"{BASE_PROMPT} {JSON_RESULTS_SENTENCE}"
+    return prompt if business_rules is None else f"{prompt}{BUSINESS_RULES_HEADING}{business_rules}"
 
 
 def mcp_servers_of(profile: Profile) -> set[str]:
@@ -229,7 +231,7 @@ class ClaudeAgent:
             setting_sources=[],
             allowed_tools=[f"mcp__{n}" for n in names],
             mcp_servers={n: self._server(n, inp, collector) for n in names},
-            system_prompt=system_prompt(inp.profile),
+            system_prompt=system_prompt(inp.profile, inp.env.business_rules),
             model=self.model,
             max_turns=inp.env.max_turns,
             cwd=inp.env.trial_dir,

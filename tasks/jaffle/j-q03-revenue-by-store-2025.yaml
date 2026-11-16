@@ -1,0 +1,11 @@
+id: j-q03-revenue-by-store-2025
+dataset: jaffle
+prompt: >-
+  What was revenue by store in 2025? Answer with one row per store: the store name and its revenue in dollars.
+truth_sql: |
+  select s.name as store, sum(o.subtotal) / 100.0 as revenue
+  from orders o join stores s on s.id = o.store_id
+  where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by s.name
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["stores.name"], "measures": [{"formula": "net_sales", "name": "revenue"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}}
+compare: {keys: [store], values: [revenue]}

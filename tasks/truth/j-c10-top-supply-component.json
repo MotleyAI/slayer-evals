@@ -1,0 +1,12 @@
+{
+ "columns": [
+  "supply",
+  "total_cost"
+ ],
+ "rows": [
+  [
+   "coffee",
+   97151.08
+  ]
+ ]
+}

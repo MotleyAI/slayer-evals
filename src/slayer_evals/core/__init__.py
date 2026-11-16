@@ -1,5 +1,6 @@
 """Schemas shared by every node: tasks, tables, the agent seam, verdicts and results."""
 
+from slayer_evals.core.datasets import DATASET_SPECS, DATASETS, Dataset, DatasetSpec
 from slayer_evals.core.errors import error_kind
 from slayer_evals.core.profiles import DEFAULT_PROFILES, PROFILE_SPECS, PROFILES, Profile, ProfileSpec, Surface
 from slayer_evals.core.results import (
@@ -41,6 +42,8 @@ from slayer_evals.core.trace import (
 __all__ = [
     "ALL_ROWS",
     "COVERED_ROWS",
+    "DATASETS",
+    "DATASET_SPECS",
     "DEFAULT_PROFILES",
     "PITFALLS",
     "PROFILES",
@@ -51,6 +54,8 @@ __all__ = [
     "AuditEvent",
     "AuthMode",
     "Compare",
+    "Dataset",
+    "DatasetSpec",
     "EndReason",
     "Expectation",
     "ParsedResult",

@@ -521,8 +521,9 @@ def test_missing_datasets_reported(tmp_path: Path, built: BuiltDataset, env: Pat
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"), jaffle_doc("j-a", "ANSWER 7"))
     empty = tmp_path / "empty-build"
     empty.mkdir()
+    cfg = config(tmp_path, built, td, dataset_dir=empty)
     with pytest.raises(ValueError) as exc:
-        run_benchmark(config(tmp_path, built, td, dataset_dir=empty), environ=ENV)
+        run_benchmark(cfg, environ=ENV)
     assert "bench" in str(exc.value)
     assert "jaffle" in str(exc.value)
     assert recorded_runs(env) == []
@@ -530,8 +531,9 @@ def test_missing_datasets_reported(tmp_path: Path, built: BuiltDataset, env: Pat
 
 def test_flat_bench_build_is_not_a_build_root(tmp_path: Path, built: BuiltDataset, env: Path):
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"))
+    cfg = config(tmp_path, built, td, dataset_dir=built.dir)
     with pytest.raises(ValueError, match="bench"):
-        run_benchmark(config(tmp_path, built, td, dataset_dir=built.dir), environ=ENV)
+        run_benchmark(cfg, environ=ENV)
     assert recorded_runs(env) == []
 
 

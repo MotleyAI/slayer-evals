@@ -1,0 +1,32 @@
+{
+ "columns": [
+  "store",
+  "revenue"
+ ],
+ "rows": [
+  [
+   "Brooklyn",
+   1263176.0
+  ],
+  [
+   "Chicago",
+   1026147.0
+  ],
+  [
+   "Los Angeles",
+   37273.0
+  ],
+  [
+   "New Orleans",
+   250278.0
+  ],
+  [
+   "Philadelphia",
+   798085.0
+  ],
+  [
+   "San Francisco",
+   921757.0
+  ]
+ ]
+}

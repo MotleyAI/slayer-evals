@@ -1,0 +1,193 @@
+version: 12
+name: orders
+sql_table: orders
+source_kind: table
+query_variables: {}
+columns:
+- name: id
+  sql: id
+  type: TEXT
+  primary_key: true
+  unique: false
+  hidden: false
+- name: customer
+  sql: customer
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Customer who placed the order. Test description update
+  label: Customer ID
+  hidden: false
+- name: ordered_at
+  sql: ordered_at
+  type: TIMESTAMP
+  primary_key: false
+  unique: false
+  description: When the order was placed.
+  label: Order Date
+  hidden: false
+- name: store_id
+  sql: store_id
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Store where the order was placed.
+  label: Store
+  hidden: false
+- name: subtotal
+  sql: subtotal
+  type: INT
+  primary_key: false
+  unique: false
+  description: Pre-tax order amount, in cents.
+  label: Net Sales (cents)
+  hidden: false
+  format:
+    type: integer
+- name: tax_paid
+  sql: tax_paid
+  type: INT
+  primary_key: false
+  unique: false
+  description: Tax charged on the order, in cents.
+  label: Tax Paid (cents)
+  hidden: false
+  format:
+    type: integer
+- name: order_total
+  sql: order_total
+  type: INT
+  primary_key: false
+  unique: false
+  description: Final order amount incl. tax, in cents.
+  label: Order Total (cents)
+  hidden: false
+  format:
+    type: integer
+- name: order_weekday
+  sql: CAST(EXTRACT(ISODOW FROM ordered_at) AS INT)
+  type: INT
+  primary_key: false
+  unique: false
+  description: 'ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing
+    analysis.'
+  label: Order weekday
+  hidden: false
+  allowed_aggregations:
+  - count
+  - count_distinct
+  - min
+  - max
+- name: order_hour
+  sql: CAST(EXTRACT(HOUR FROM ordered_at) AS INT)
+  type: INT
+  primary_key: false
+  unique: false
+  description: Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for
+    peak-hour heatmaps.
+  label: Order hour
+  hidden: false
+  allowed_aggregations:
+  - count
+  - count_distinct
+  - min
+  - max
+measures:
+- formula: order_total:dollars
+  name: total_revenue
+  label: Total Revenue
+  description: Gross sales including tax, in dollars.
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+- formula: subtotal:dollars
+  name: net_sales
+  label: Net Sales (pre-tax)
+  description: Sales before tax, in dollars.
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+- formula: tax_paid:dollars
+  name: tax_collected
+  label: Tax Collected
+  description: Total tax collected, in dollars.
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+- formula: id:count
+  name: order_count
+  label: Orders
+  description: Number of orders.
+  meta:
+    format:
+      type: integer
+      symbol: null
+      precision: 0
+- formula: customer:count_distinct
+  name: unique_customers
+  label: Unique Customers
+  description: Distinct customers who ordered.
+  meta:
+    format:
+      type: integer
+      symbol: null
+      precision: 0
+- formula: order_total:sum / nullif(id:count, 0) / 100.0
+  name: avg_order_value
+  label: Average Order Value
+  description: Revenue per order, in dollars.
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+- formula: tax_paid:sum / nullif(subtotal:sum, 0)
+  name: effective_tax_rate
+  label: Effective Tax Rate
+  description: Tax collected as a share of net sales.
+  meta:
+    format:
+      type: percent
+      symbol: null
+      precision: 1
+- formula: order_total:weighted_avg / 100.0
+  name: sales_weighted_aov
+  label: Sales-Weighted Avg Order
+  description: Average order total weighted by subtotal (larger orders weigh more), in dollars.
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+aggregations:
+- name: dollars
+  formula: SUM({value}) / 100.0
+  params: []
+  description: Sum of an integer-cents column expressed in dollars.
+- name: weighted_avg
+  params:
+  - name: weight
+    sql: subtotal
+  description: Weighted average defaulting the weight to order subtotal.
+joins:
+- target_model: customers
+  join_pairs:
+  - - customer
+    - id
+  join_type: left
+  cardinality: many_to_one
+- target_model: stores
+  join_pairs:
+  - - store_id
+    - id
+  join_type: left
+  cardinality: many_to_one
+filters: []
+default_time_dimension: ordered_at
+hidden: false

@@ -1,0 +1,13 @@
+id: j-c10-top-supply-component
+dataset: jaffle
+prompt: >-
+  Which supply component (for example bread or a cup) cost us the most in total across everything sold in 2025, and
+  how much? Treat a component shared by several products as one component. Answer with one row: the component's name
+  and its total cost in dollars.
+truth_sql: |
+  select s.name as supply, sum(s.cost) / 100.0 as total_cost
+  from items i join orders o on o.id = i.order_id join supplies s on s.sku = i.sku
+  where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by 1 order by total_cost desc limit 1
+slayer_query: {"query": [{"name": "sold", "source_model": "items", "dimensions": ["sku"], "measures": [{"formula": "count(*)", "name": "units"}], "filters": ["orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"]}, {"source_model": {"source_name": "supplies", "joins": [{"target_model": "sold", "join_pairs": [["sku", "sku"]]}]}, "dimensions": ["name"], "measures": [{"formula": "sum(cost * sold.units) / 100.0", "name": "total_cost"}], "order": [{"column": "total_cost", "direction": "desc"}], "limit": 1}]}
+compare: {values: [supply, total_cost]}

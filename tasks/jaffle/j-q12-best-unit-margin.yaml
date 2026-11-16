@@ -1,0 +1,12 @@
+id: j-q12-best-unit-margin
+dataset: jaffle
+prompt: >-
+  Using supply costs, which product has the highest gross margin per unit sold? Answer with one row per product: the
+  product name, its gross margin per unit in dollars and that margin as a fraction of its price.
+truth_sql: |
+  with cogs as (select sku, sum(cost) as unit_cogs from supplies group by sku)
+  select p.name as product, (p.price - c.unit_cogs) / 100.0 as unit_margin,
+         (p.price - c.unit_cogs) * 1.0 / p.price as margin_pct
+  from products p join cogs c on c.sku = p.sku
+slayer_query: {"query": {"source_model": "supplies", "dimensions": ["products.name"], "measures": [{"formula": "(max(products.price) - sum(cost)) / 100.0", "name": "unit_margin"}, {"formula": "(max(products.price) - sum(cost)) * 1.0 / max(products.price)", "name": "margin_pct"}]}}
+compare: {keys: [product], values: [unit_margin, margin_pct]}

@@ -16,7 +16,7 @@ SDK](https://pypi.org/project/claude-agent-sdk/) agent, and any other agent can 
 
 ## What a trial is scored on
 
-Each task is a business question about one seeded demo database, worded so that a single SLayer query answers it,
+Each task is a business question about one of two seeded demo databases, answerable by a single SLayer query,
 with its truth computed by hand-written SQL. Every task also carries that reference SLayer query, and a test runs it
 to prove the task fair; every trap carries the naive SQL that falls into it, and the same test proves that SQL wrong.
 Every trial gets two verdicts:
@@ -35,7 +35,7 @@ columns by name first and by values second, so agents may name their columns fre
 
 ## Suites
 
-Tasks fall into three suites, by what they cover:
+Tasks fall into four suites. Three run on the benchmark's own database and follow from what they cover:
 
 * **capability** — one row of the feature matrix below each (`tasks/capability/`, 25 tasks).
 * **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 11 tasks).
@@ -61,6 +61,9 @@ Tasks fall into three suites, by what they cover:
 | `avg_of_avgs` | averages per-group averages instead of the rows | `t-overall-aov` |
 
 Prompts state what the answer should contain but never the pitfall's mechanism.
+
+The fourth suite, **jaffle**, runs on a second database (`tasks/jaffle/`, 24 tasks): see [Jaffle Shop
+sub-suite](#jaffle-shop-sub-suite).
 
 ## Covered rows
 
@@ -98,6 +101,37 @@ are deliberately left out: **Q19** (the agent and API surface — every task alr
 (nested source data — SLayer does not support it). Tasks marked `xfail` run but are reported separately until the
 linked issue is fixed: relative dates ("last three months") need SLayer's MCP server to pin "now".
 
+## Jaffle Shop sub-suite
+
+The `jaffle` suite holds the 24 business questions of Yann's nao-vs-Motley experiment (6 Nov 2026): twelve simple
+ones (`j-q01-stores` … `j-q12-best-unit-margin`) and twelve complex ones (`j-c01-peak-weekday-hour` …
+`j-c12-jaffle-beverage-attach`). Each prompt is the question verbatim, followed by one sentence fixing the answer's
+rows, columns and units; the truth is his reference SQL adapted to that shape, and every task has a proven single
+SLayer query like any other.
+
+They run on the Jaffle Shop database: jafgen's seven raw tables (`customers`, `stores`, `products`, `orders`,
+`items`, `supplies`, `tweets`) over four years, money in integer cents, built from a fixed seed so every build is
+identical, with dates shifted so the last order falls on 2026-10-29. It is not Yann's exact file, so its numbers
+differ from his. Its SLayer store holds the seven models and nine `jaffle-*` memories of `MotleyAI/my_model_repo`
+(commit `2221871`), with the datasource named `demo_database` as the memories expect.
+
+Several questions depend on a business rule — revenue is pre-tax, where the data ends, what a new customer is, what
+counts as same-store growth. The rules reach the profiles as in Yann's run:
+
+* **SLayer and Motley** — the rules are memories in the store; the agent sees one only if it finds it through
+  `search` (keyword search: trials have no embeddings index).
+* **`sql+python`** — a plain-SQL rendering of the same nine business rules is appended to the system prompt on
+  `jaffle` tasks (`src/slayer_evals/dataset/jaffle_rules.md`).
+
+The memories are kept as Yann ran them, stale figures included. Run the suite on its own with:
+
+```bash
+poetry run slayer-evals run --subscription-auth --env-file .env.agents --suites jaffle
+```
+
+The report adds a `jaffle` row to the headline table and a per-task Jaffle section; the row and pitfall tables
+count the other three suites only.
+
 ## Five-minute quickstart
 
 You need Python 3.12, [Poetry](https://python-poetry.org/) and a Claude subscription or API key.
@@ -125,10 +159,14 @@ Use `--api-key-auth` with an API key. The auth mode is never guessed from whiche
 The run writes `runs/<timestamp>/` with `report.md`, `results.jsonl`, `metadata.json`, one normalized trace per trial
 in `traces/` and the full session transcript (every message and tool call) in `transcripts/`.
 
-Useful flags: `--tasks q1-region-total,q4-running-total`, `--profiles slayer`, `--models claude-opus-5-5`,
+Useful flags: `--tasks q1-region-total,q4-running-total`, `--suites jaffle,trap`, `--profiles slayer`, `--models claude-opus-5-5`,
 `--trials 3` with `--mode repeat` (N trials each) or `--mode until-pass` (stop at the first pass),
 `--concurrency 3`, `--max-turns 60`, `--timeout 900`, and `--slayer-command "/path/to/your/slayer"` to test a local
 SLayer checkout.
+
+A run builds the datasets its tasks need (about a minute for the Jaffle Shop). To build them once and reuse them, run
+`poetry run slayer-evals build --out data`, which writes one directory per dataset, `data/bench/` and `data/jaffle/`
+(each a database file and a `store/`), and pass `--dataset-dir data` to `run` and `truth`.
 
 ## Profiles
 
@@ -149,7 +187,8 @@ Every session is hermetic: an empty Claude config directory, no built-in tools, 
 MCP servers, each connected (the trial aborts if any other server appears, or a declared one is missing or not
 connected). SLayer runs on its own copy of the database and store with an allow-listed environment. The system prompt
 is short and generic and identical across profiles, except that the SLayer and Motley profiles are asked to request
-`query` results as JSON; it never mentions SLayer or Motley features.
+`query` results as JSON, and that on `jaffle` tasks the `sql+python` system prompt ends with the business rules; it
+never mentions SLayer or Motley features.
 
 ## Motley profiles
 
@@ -166,15 +205,16 @@ poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset
 * `--motley-url` is the backend's MCP endpoint (default `http://localhost:8000/api/v1/mcp/`). Its host must match
   the backend's `public_base_url`, or the backend answers 421.
 * `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Before each Motley trial the runner
-  calls it with `--user-id <id> --store <the trial's store copy> --db <the dataset's bench.duckdb>`, so every trial
+  calls it with `--user-id <id> --store <the trial's store copy> --db <the build's database file of the task's
+  dataset>`, so every trial
   gets its own org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times out (600 s)
   ends that trial with `error`.
 * The backend must be a dev backend with identity headers allowed (`environment.type: dev`,
   `development.allow_identity_headers: true`). Storyline's `docs/eval_org_seed.md` describes the seed script and the
   backend configuration.
 
-At start the run seeds a warm-up org, which fills the embedding cache, and runs an MCP `initialize` as that user; the
-run stops if either fails. The report records the Motley URL and the server name and version `initialize` reports.
+At start the run seeds one warm-up org per dataset its Motley trials use, which fills the embedding cache, and runs an
+MCP `initialize` as a warm-up user; the run stops if any of these fails. The report records the Motley URL and the server name and version `initialize` reports.
 Two gaps on Motley's side show in its results: `q9-credit-by-status` is an expected failure in the Motley profiles
 until Motley's `query` returns result warnings, and Motley's `query` cannot yet run a saved query by name with
 `refine`, so saved-query tasks are answered with one inline query.
@@ -232,7 +272,8 @@ parses SLayer's `query` output and the `sql` tool's output for your trace.
 
 ## Adding a task
 
-A task is one YAML file under the folder of its suite (`tasks/capability/`, `tasks/combo/` or `tasks/traps/`):
+A task is one YAML file under the folder of its suite (`tasks/capability/`, `tasks/combo/`, `tasks/traps/` or
+`tasks/jaffle/`):
 
 ```yaml
 id: t-chasm
@@ -254,6 +295,7 @@ compare: {keys: [region], values: [ordered, returned]}
 ```
 
 `covers` lists the rows (Q1–Q25 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
+A Jaffle Shop task instead says `dataset: jaffle` and has no `covers`.
 `slayer_query` is the intended SLayer query, in the arguments of SLayer's MCP `query` tool; `naive_sql` (one statement
 or a list) is required on traps and forbidden elsewhere. `compare` sets the key and value columns, `tolerance`,
 `ordered`, `columns_exact` and `null_as_zero` (NULL equals 0 in value columns). `expect` turns the task into a refusal
@@ -266,8 +308,8 @@ regenerate and commit the truth snapshot:
 poetry run slayer-evals truth --write
 ```
 
-`poetry run slayer-evals build --out data` builds the database and store template on their own if you want to
-explore them.
+`poetry run slayer-evals build --out data` builds every dataset's database and store template into `data/bench/` and
+`data/jaffle/` if you want to explore them.
 
 ## Development
 

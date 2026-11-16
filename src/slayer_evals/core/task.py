@@ -4,6 +4,7 @@ from typing import Annotated, Any, Literal, get_args
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from slayer_evals.core.datasets import Dataset
 from slayer_evals.core.profiles import Profile
 
 ALL_ROWS = tuple(f"Q{i}" for i in range(1, 26))
@@ -28,7 +29,7 @@ Pitfall = Literal[
     "bucket_reaggregation",
 ]
 PITFALLS: tuple[str, ...] = get_args(Pitfall)
-Suite = Literal["capability", "combo", "trap"]
+Suite = Literal["capability", "combo", "trap", "jaffle"]
 STEM_SEP = "__"
 
 
@@ -93,7 +94,9 @@ class XFail(Strict):
 
 class Task(Strict):
     id: SafeName
-    covers: list[str] = Field(min_length=1)
+    dataset: Dataset = "bench"
+    # Required on a `bench` task, forbidden on a `jaffle` one.
+    covers: list[str] = Field(default_factory=list)
     prompt: str
     truth_sql: str
     # The intended single SLayer query, in the argument shape of the SLayer MCP `query` tool.
@@ -107,6 +110,8 @@ class Task(Strict):
     @field_validator("covers")
     @classmethod
     def _covers(cls, v: list[str]) -> list[str]:
+        if not v:
+            return v
         for c in v:
             if c in UNCOVERED_ROWS:
                 raise ValueError(f"row {c} is not covered by the benchmark")
@@ -118,6 +123,17 @@ class Task(Strict):
         if not any(c in COVERED_ROWS for c in v):
             raise ValueError("covers needs at least one row")
         return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def _covers_iff_bench(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            dataset = data.get("dataset", "bench")
+            if dataset == "bench" and not data.get("covers"):
+                raise ValueError("covers is required on a bench task")
+            if dataset == "jaffle" and "covers" in data:
+                raise ValueError("covers is forbidden on a jaffle task")
+        return data
 
     @model_validator(mode="after")
     def _naive_sql_iff_trap(self) -> "Task":
@@ -131,6 +147,8 @@ class Task(Strict):
 
     @property
     def suite(self) -> Suite:
+        if self.dataset == "jaffle":
+            return "jaffle"
         if any(c in PITFALLS for c in self.covers):
             return "trap"
         return "combo" if len(self.rows) >= 2 else "capability"

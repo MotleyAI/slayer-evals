@@ -1,0 +1,59 @@
+{
+ "columns": [
+  "product",
+  "unit_margin",
+  "margin_pct"
+ ],
+ "rows": [
+  [
+   "adele-ade",
+   3.37,
+   0.8425
+  ],
+  [
+   "chai and mighty",
+   3.25,
+   0.65
+  ],
+  [
+   "doctor stew",
+   8.49,
+   0.7718181818181818
+  ],
+  [
+   "flame impala",
+   10.57,
+   0.755
+  ],
+  [
+   "for richer or pourover ",
+   6.18,
+   0.8828571428571429
+  ],
+  [
+   "mel-bun",
+   9.61,
+   0.8008333333333333
+  ],
+  [
+   "nutellaphone who dis?",
+   9.79,
+   0.89
+  ],
+  [
+   "tangaroo",
+   5.18,
+   0.8633333333333333
+  ],
+  [
+   "the krautback",
+   8.34,
+   0.695
+  ],
+  [
+   "vanilla ice",
+   4.46,
+   0.7433333333333333
+  ]
+ ]
+}

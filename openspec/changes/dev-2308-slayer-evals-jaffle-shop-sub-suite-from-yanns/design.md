@@ -13,7 +13,7 @@ Constraints:
   single SLayer query (7); truth comes from the built database and the same seed yields the same tables (5).
 - Import law (`architecture/model.c4`): `tasks`, `agents`, `grading` and `report` import only `core`; `runner` and
   `cli` reach `dataset`. The dataset registry that `tasks` (proofs, truth) and `report` need therefore lives in
-  `core`. No new node or arrow.
+  `core`; `dataset` and `cli` read it too, so the model gains `dataset -> core` and `cli -> core`. No new node.
 - SLayer is pinned at git rev `1653a918` (reports 1.1.0). Its memory API takes either an entity list or a query,
   never both.
 

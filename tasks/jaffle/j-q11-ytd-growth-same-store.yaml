@@ -1,0 +1,24 @@
+id: j-q11-ytd-growth-same-store
+dataset: jaffle
+prompt: >-
+  How much did revenue grow this year to date versus the same period last year, and how much of that growth is
+  same-store? Answer with one row: last year's and this year's revenue in dollars, each up to the same day of the
+  year, the growth between them as a fraction, then those three figures again for the comparable stores only.
+truth_sql: |
+  with o as (select o.subtotal, o.ordered_at, s.opened_at from orders o join stores s on s.id = o.store_id),
+  p as (
+    select
+      sum(subtotal) filter (where ordered_at >= '2025-01-01' and ordered_at < '2025-10-30') / 100.0 as ytd_2025,
+      sum(subtotal) filter (where ordered_at >= '2026-01-01' and ordered_at < '2026-10-30') / 100.0 as ytd_2026,
+      sum(subtotal) filter (
+        where opened_at < '2025-01-01' and ordered_at >= '2025-01-01' and ordered_at < '2025-10-30'
+      ) / 100.0 as ss_2025,
+      sum(subtotal) filter (
+        where opened_at < '2025-01-01' and ordered_at >= '2026-01-01' and ordered_at < '2026-10-30'
+      ) / 100.0 as ss_2026
+    from o)
+  select ytd_2025, ytd_2026, ytd_2026 / ytd_2025 - 1 as headline_growth,
+         ss_2025, ss_2026, ss_2026 / ss_2025 - 1 as same_store_growth
+  from p
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "y25", "sql": "CASE WHEN ordered_at >= '2025-01-01' AND ordered_at < '2025-10-30' THEN subtotal END", "type": "number"}, {"name": "y26", "sql": "CASE WHEN ordered_at >= '2026-01-01' AND ordered_at < '2026-10-30' THEN subtotal END", "type": "number"}, {"name": "ss25", "sql": "CASE WHEN stores.opened_at < '2025-01-01' AND ordered_at >= '2025-01-01' AND ordered_at < '2025-10-30' THEN subtotal END", "type": "number"}, {"name": "ss26", "sql": "CASE WHEN stores.opened_at < '2025-01-01' AND ordered_at >= '2026-01-01' AND ordered_at < '2026-10-30' THEN subtotal END", "type": "number"}]}, "measures": [{"formula": "sum(y25) / 100.0", "name": "ytd_2025"}, {"formula": "sum(y26) / 100.0", "name": "ytd_2026"}, {"formula": "sum(y26) / sum(y25) - 1", "name": "headline_growth"}, {"formula": "sum(ss25) / 100.0", "name": "ss_2025"}, {"formula": "sum(ss26) / 100.0", "name": "ss_2026"}, {"formula": "sum(ss26) / sum(ss25) - 1", "name": "same_store_growth"}]}}
+compare: {values: [ytd_2025, ytd_2026, headline_growth, ss_2025, ss_2026, same_store_growth]}

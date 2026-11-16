@@ -1,0 +1,16 @@
+id: j-c02-order-value-bands
+dataset: jaffle
+prompt: >-
+  Bucket 2025 orders by pre-tax order value into under $5, $5 to $10, $10 to $20 and $20 or more. How many orders fall
+  in each band, and what share of 2025 sales does each band bring in? Answer with one row per band, labelled exactly
+  under $5, $5 to $10, $10 to $20 and $20 or more: the band, its number of orders, its sales in dollars and its share
+  of 2025 sales as a fraction.
+truth_sql: |
+  select case when subtotal < 500 then 'under $5' when subtotal < 1000 then '$5 to $10'
+              when subtotal < 2000 then '$10 to $20' else '$20 or more' end as band,
+         count(*) as orders, sum(subtotal) / 100.0 as net_sales,
+         sum(subtotal) * 1.0 / sum(sum(subtotal)) over () as share_of_sales
+  from orders o where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by 1
+slayer_query: {"query": {"source_model": {"source_name": "orders", "columns": [{"name": "band", "sql": "CASE WHEN subtotal < 500 THEN 'under $5' WHEN subtotal < 1000 THEN '$5 to $10' WHEN subtotal < 2000 THEN '$10 to $20' ELSE '$20 or more' END", "type": "string"}]}, "dimensions": ["band"], "measures": [{"formula": "count(*)", "name": "orders"}, {"formula": "net_sales", "name": "net_sales"}, {"formula": "sum(subtotal) / sum(subtotal, partition_by=[])", "name": "share_of_sales"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}}
+compare: {keys: [band], values: [orders, net_sales, share_of_sales]}
