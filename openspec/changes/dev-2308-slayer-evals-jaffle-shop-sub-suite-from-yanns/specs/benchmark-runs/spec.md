@@ -39,7 +39,7 @@ limit (default 3).
 - **THEN** each is seeded under its own user id, and their agents send different user ids
 
 ### Requirement: Motley under test
-A run that selects a Motley profile SHALL take the Motley MCP URL (default `http://localhost:8000/api/v1/mcp/`) and a
+A run that selects a Motley profile SHALL take the Motley MCP URL (default `http://localhost:8100/api/v1/mcp/`) and a
 seed command, and MUST refuse to start, naming the missing option, when no seed command is given. Before each Motley
 trial it SHALL run the seed command with `--user-id <id> --store <the trial's store copy> --db <the run's database
 file of the trial's dataset, as an absolute path>`, with the run's environment minus the Claude and Anthropic
