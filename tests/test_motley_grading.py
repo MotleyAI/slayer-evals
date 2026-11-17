@@ -74,16 +74,16 @@ def test_bare_error_class_in_motley(profile: Profile):
     assert v.single_query, v.single_query_reasons
 
 
-def test_motley_refusal_still_needs_the_error():
+def test_motley_refusal_without_the_error_passes():
     sub = submission_of(EMPTY, message="Month is already bucketed, so it cannot be bucketed again.")
     v = grade(error_task(), EMPTY, sub, trace_of(profile="motley"))
-    assert not v.correct
-    assert not v.single_query
+    assert v.correct, v.correct_reasons
+    assert v.single_query, v.single_query_reasons
 
 
 def test_labelled_error_text_is_not_the_expected_class():
     failed = error_call("query", {"query": PLAIN}, "Invalid arguments: TimeDimensionColumnError: month")
-    sub = submission_of(EMPTY, message="Month is already bucketed.")
+    sub = submission_of(Table(columns=["day", "rev"], rows=[["2025-01-01", 1.0]]), message="Month is already bucketed.")
     v = grade(error_task(), EMPTY, sub, trace_of(failed, profile="motley"))
     assert not v.correct
     assert not v.single_query
