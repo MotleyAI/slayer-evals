@@ -343,6 +343,27 @@ def test_missing_row_still_fails_with_extra_zero_rows():
     assert not match_tables(REGIONS, result, ZERO_OK).ok
 
 
+def test_extra_zero_row_with_a_numeric_key():
+    cmp = Compare(keys=["customer_id"], values=["orders"], extra_zero_rows=True)
+    truth = Table(columns=["customer_id", "orders"], rows=[[1, 3], [2, 5]])
+    m = match_tables(truth, res(["customer_id", "orders"], [[1, 3], [42, 0], [2, 5]]), cmp)
+    assert m.ok, m.reason
+
+
+def test_extra_zero_row_ignores_uncompared_columns():
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "region_id", "customers"], [["East", 1, 10], ["North", 2, 6], ["Arctic", 3, 0]])
+    m = match_tables(truth, result, ZERO_OK)
+    assert m.ok, m.reason
+
+
+@pytest.mark.parametrize("extra", [[], ["Arctic"]], ids=["empty", "short"])
+def test_malformed_extra_row_fails_without_crashing(extra: list):
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "customers"], [["East", 10], ["North", 6], extra])
+    assert not match_tables(truth, result, ZERO_OK).ok
+
+
 def test_ordered_match_ignores_the_extra_zero_row():
     cmp = Compare(keys=["region"], values=["customers"], ordered=True, extra_zero_rows=True)
     truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])

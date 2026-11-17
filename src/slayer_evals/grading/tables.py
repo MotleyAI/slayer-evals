@@ -190,14 +190,22 @@ def _mapping_text(columns: dict[str, str], by_value: list[str]) -> str:
     return "; matched by values: " + ", ".join(f"{n} → {columns[n]}" for n in by_value)
 
 
-def _zero_cells(row: list[Any]) -> bool:
-    return all(not isinstance(v, float) or v == 0.0 for v in map(normalize, row))
+def _is_zero(value: Any) -> bool:
+    v = normalize(value)
+    return v is None or (isinstance(v, float) and v == 0.0)
+
+
+def _could_be_zero_row(row: list[Any], width: int, compare: Compare) -> bool:
+    """Well-formed, with at least as many 0/NULL cells as there are value columns."""
+    return len(row) == width and sum(map(_is_zero, row)) >= len(compare.values)
 
 
 def _without_zero_rows(truth: Table, result: Table, compare: Compare) -> MatchResult | None:
-    """A match after dropping surplus all-zero result rows whose keys the truth lacks; None when there is none."""
+    """A match after dropping surplus result rows with all-zero values whose keys the truth lacks; None when there is
+    none."""
     surplus = len(result.rows) - len(truth.rows)
-    candidates = [i for i, row in enumerate(result.rows) if _zero_cells(row)]
+    width = len(result.columns)
+    candidates = [i for i, row in enumerate(result.rows) if _could_be_zero_row(row, width, compare)]
     strict = compare.model_copy(update={"extra_zero_rows": False})
     want_keys = {tuple(normalize(r[truth.columns.index(k)]) for k in compare.keys) for r in truth.rows}
     for drop in itertools.islice(itertools.combinations(candidates, surplus), MAX_ASSIGNMENTS):
@@ -210,7 +218,7 @@ def _without_zero_rows(truth: Table, result: Table, compare: Compare) -> MatchRe
         dropped = [result.rows[i] for i in drop]
         if any(tuple(normalize(r[i]) for i in idx) in want_keys for r in dropped):
             continue
-        if all(normalize(r[i]) in (None, 0.0) for r in dropped for i in values):
+        if all(_is_zero(r[i]) for r in dropped for i in values):
             return MatchResult(
                 ok=True, reason=f"{m.reason}; ignored {surplus} extra row(s) of zeros", columns=m.columns
             )
