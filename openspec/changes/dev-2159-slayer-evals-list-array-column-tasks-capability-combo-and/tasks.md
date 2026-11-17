@@ -88,17 +88,33 @@
   - the SLayer pin text, naming SLayer 1.7.0.
 
   Verify: by reading it; the counts match `load_tasks`.
-- [ ] 3.8 Run the full non-integration suite, ruff and basedpyright. Verify: all green.
+- [x] 3.8 Run the full non-integration suite, ruff and basedpyright. Verify: all green.
 
 ## 4. Baseline
 
 - [x] 4.1 Backfill `"slayer_version": "1.1.0"` into every existing line of `results/baseline/results.jsonl`. Verify:
   `slayer-evals report results/baseline` loads it.
-- [ ] 4.2 Run the 17 new tasks in all three profiles, Opus 5.5, `repeat` N = 1, on the new pin. This needs the user's
+- [x] 4.2 Run every task of every suite in all five profiles, Opus 5.5, `repeat` N = 1: the default profiles on
+  SLayer 1.8.5, the Motley profiles against a local Motley backend (the list tasks first). This supersedes running the
+  17 new tasks in three profiles. This needs the user's
   `.env.agents`; ask for the go-ahead before spending on agent runs. Merge their results lines and traces into
   `results/baseline/` and regenerate `report.md`. Verify:
   - the report regenerates byte-identically;
   - every committed task has a baseline trial in each profile;
   - the report lists both SLayer versions with their trial counts.
-- [ ] 4.3 Update the README baseline table and paragraph, naming both SLayer versions, and the failure breakdown in
+- [x] 4.3 Update the README baseline table and paragraph, naming both SLayer versions, and the failure breakdown in
   `docs/baseline-failures.md`. Verify: the numbers equal the regenerated report.
+
+## 5. Follow-ups from the baseline run
+
+- [x] 5.1 Pin `motley-slayer = "1.8.5"` and re-run the pin compatibility gate (1.2) on it.
+- [x] 5.2 Merge `origin/main` (Motley profiles, Jaffle suite); rebase the delta specs on main's requirement text.
+- [x] 5.3 `--motley-slayer-version`: required with a Motley profile; Motley trials record it.
+- [x] 5.4 `q27-tag-count-groups`: distinct-tag truth, two-stage reference, xfail DEV-2209 in the SLayer-backed profiles,
+  the repeated-tag sentence; `t-tagged-credit` reference with `contains_any`.
+- [x] 5.5 Task fixes: `t-without-vip` prompt, `q13-top-cities-count` truth, reference and prompt,
+  `q9-credit-by-status` phrases, `q3-avg-city-revenue` truth and reference; rerun each in the affected profiles.
+- [x] 5.6 Grading: refusals without the expected error; raw-SQL warning answers with rows; `extra_zero_rows` on the 11
+  every-region tasks.
+- [x] 5.7 Assemble the five-profile baseline, regenerate its report, and rewrite the README baseline section and
+  `docs/baseline-failures.md`.

@@ -18,10 +18,19 @@ also uncovered.
   4 traps.
 - Grading: a list cell compares as the set of its non-NULL elements (numbers within tolerance); JSON-list or
   comma-separated text matches a list truth column.
-- Results: every results line carries its SLayer version; the report lists the versions when a results file mixes
+- Grading: a task may set `extra_zero_rows`, so an extra all-zero row for an empty group (set on the 11
+  every-region count, sum and share tasks) is ignored; an error task's refusal also counts as an empty answer naming the
+  problem in every profile, and a warning task's answer in `sql+python` counts when its message names the problem,
+  rows or not.
+- Results: every results line carries the SLayer version that answered it; a Motley trial records the Motley backend's
+  SLayer version, given by the new `--motley-slayer-version`. The report lists the versions when a results file mixes
   them. **BREAKING** for results files written before this change: they lack `slayer_version` until backfilled.
-- `motley-slayer` pinned to the PyPI release 1.7.0 (replacing the git rev). The baseline gains the new tasks in all three
-  profiles, run on that pin; README and the baseline failure breakdown are updated.
+- Existing tasks fixed where the run showed a wrong truth or an ambiguous prompt: `q13-top-cities-count` (the two
+  Oslos are different cities), `q3-avg-city-revenue` (orders without a customer have no city), `q9-credit-by-status`
+  (two more accepted phrases) and the new `q27-tag-count-groups` (a tag listed twice is one tag) and `t-without-vip`.
+- `motley-slayer` pinned to the PyPI release 1.8.5 (replacing the git rev). The baseline is rerun: every task of every
+  suite in all five profiles, the SLayer and SQL profiles on that pin and the Motley profiles against a local Motley
+  backend; README and the baseline failure breakdown are rewritten.
 
 ## Capabilities
 
@@ -32,15 +41,19 @@ also uncovered.
 ### Modified Capabilities
 - `benchmark-dataset`: list columns and their edge cases; the probe freeze and layout cover the probe columns.
 - `benchmark-tasks`: covered rows Q1–Q27 with Q26 and Q27; new pitfall kinds; Q27 markers; list DSL in the deny-list.
-- `grading`: list-valued cells compare as sets of normalized elements.
-- `benchmark-runs`: each results line records the SLayer version.
-- `benchmark-report`: rows Q1–Q27; per-version trial counts; a baseline may combine runs.
+- `grading`: list-valued cells compare as sets of normalized elements; `extra_zero_rows`; refusals without the
+  expected error, and raw-SQL warning answers with rows.
+- `benchmark-runs`: each results line records the SLayer version that answered it; Motley runs take the backend's
+  SLayer version.
+- `benchmark-report`: rows Q1–Q27; per-version trial counts; the baseline covers all five profiles and may combine runs.
 
 ## Impact
 
 - Code: `src/slayer_evals/dataset/generator.py`, `dataset/models/customers.yaml` and `products.yaml`,
-  `core/task.py`, `core/results.py`, `tasks/suite.py`, `grading/tables.py`, `runner/run.py` and `report/render.py`.
-- Tasks: 17 new task files under `tasks/`, plus their truth snapshots.
+  `core/task.py`, `core/results.py`, `tasks/suite.py`, `grading/tables.py`, `grading/verdict.py`, `runner/run.py`,
+  `runner/config.py`, `cli.py` and `report/render.py`.
+- Tasks: 17 new task files under `tasks/`, plus their truth snapshots; the existing tasks above and the 11 tasks given
+  `extra_zero_rows`.
 - Tests: `test_dataset.py`, `test_core_schemas.py`, `test_task_format.py`, `test_task_suite.py`,
   `test_table_compare.py`, `test_runner.py`, `test_report.py` and fixtures (`probe_table_hashes.json` unchanged;
   `run_repeat/results.jsonl` backfilled).
