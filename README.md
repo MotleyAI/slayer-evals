@@ -23,7 +23,7 @@ Every trial gets two verdicts:
 
 | Verdict | True when |
 | --- | --- |
-| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning; an empty answer whose message names the problem also counts in `sql+python`, and, for an expected error, in every profile) |
+| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning; for an expected error, an empty answer whose message names the problem also counts, and in `sql+python`, for an expected warning, a message naming the problem counts whatever the answer) |
 | **single query** | the own result of one successful SLayer `query` call or one `sql` statement matches the truth — no combining queries, no post-processing |
 
 A trial passes when both hold. **Correct is the comparison across profiles**: one raw SQL statement can express

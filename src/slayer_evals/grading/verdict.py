@@ -49,9 +49,10 @@ def _failed(reason: str, flags: TraceFlags) -> Verdict:
 
 
 def _declined(expect: Expectation, submission: Submission, flags: TraceFlags) -> Verdict:
-    """An empty answer naming the problem: the refusal when the trace has no expected error or warning to show."""
+    """A message naming the problem (with an empty answer, for an expected error): the refusal when the trace has no
+    expected error or warning to show."""
     phrase = next((p for p in expect.message_any if p.lower() in submission.message.lower()), None)
-    ok = phrase is not None and not submission.rows
+    ok = phrase is not None and (expect.warning is not None or not submission.rows)
     reasons = [
         f"message mentions {phrase!r}" if phrase else f"message mentions none of {expect.message_any}",
         f"the answer has {len(submission.rows)} rows" if submission.rows else "the answer has no rows",
