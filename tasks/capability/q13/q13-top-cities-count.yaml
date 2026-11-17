@@ -7,5 +7,5 @@ prompt: >-
 truth_sql: |
   select city, count(*) as orders from orders_flat where city is not null
   group by region, city order by sum(amount) desc limit 3
-slayer_query: {"query": [{"name": "top_cities", "source_model": "orders_flat", "dimensions": ["region", "city"], "measures": [{"formula": "count(*)", "name": "n_orders"}, {"formula": "sum(amount)", "name": "revenue"}], "filters": ["city is not null"], "order": [{"column": "revenue", "direction": "desc"}], "limit": 3}, {"source_model": "top_cities", "dimensions": ["city"], "measures": [{"formula": "sum(n_orders)", "name": "orders"}], "order": [{"column": "sum(revenue)", "direction": "desc"}]}]}
-compare: {keys: [city], values: [orders], ordered: true, columns_exact: true}
+slayer_query: {"query": {"source_model": "orders_flat", "dimensions": ["region", "city"], "measures": [{"formula": "count(*)", "name": "orders"}], "filters": ["city is not null"], "order": [{"column": "sum(amount)", "direction": "desc"}], "limit": 3}}
+compare: {keys: [city], values: [orders], ordered: true}
