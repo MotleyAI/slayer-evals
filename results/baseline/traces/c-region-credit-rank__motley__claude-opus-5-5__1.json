@@ -1,0 +1,162 @@
+{
+ "profile": "motley",
+ "calls": [
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model"
+   },
+   "result_text": "# Datasource: `bench` — 13 model(s)\n- `campaign_members` (3 cols; joins: `campaigns`, `customers`)\n- `campaigns` (4 cols; joins: `campaign_members`)\n- `cities` (4 cols; joins: `customers`, `regions`)\n- `customers` (8 cols; joins: `campaign_members`, `cities`, `orders`, `regions`, `returns`, `tags`)\n- `events` (3 cols; joins: _(none)_)\n- `monthly_rev` (2 cols; joins: _(none)_)\n- `order_items` (5 cols; joins: `orders`, `products`)\n- `orders` (5 cols; joins: `customers`, `order_items`)\n- `orders_flat` (10 cols; joins: _(none)_)\n- `products` (5 cols; joins: `order_items`, `ratings`)\n- `regions` (2 cols; joins: `cities`, `customers`)\n- `returns` (4 cols; joins: `customers`)\n- `time_spine` (1 cols; joins: _(none)_)",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "customers"
+   },
+   "result_text": "# `customers`\nColumns: id, name, region_id, city, tier, credit, discount, tags\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: cities, regions",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "regions"
+   },
+   "result_text": "# `regions`\nColumns: id, name\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: _(none)_",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "customers",
+     "dimensions": [
+      "regions.name"
+     ],
+     "measures": [
+      {
+       "formula": "sum(orders.amount)",
+       "name": "revenue"
+      },
+      {
+       "formula": "rank(sum(orders.amount), direction='desc')",
+       "name": "rank"
+      },
+      {
+       "formula": "sum(credit)",
+       "name": "credit_total"
+      }
+     ]
+    },
+    "format": "json",
+    "show_sql": true
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"customers.revenue\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"revenue\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"customers.rank\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"rank\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"customers.credit_total\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"credit_total\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"customers.regions.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"name\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"customers.regions.name\": \"East\",\n      \"customers.revenue\": 68738.69999999997,\n      \"customers.rank\": 3,\n      \"customers.credit_total\": 24920.0\n    },\n    {\n      \"customers.regions.name\": \"North\",\n      \"customers.revenue\": 109334.75999999994,\n      \"customers.rank\": 1,\n      \"customers.credit_total\": 35740.0\n    },\n    {\n      \"customers.regions.name\": \"South\",\n      \"customers.revenue\": 104269.89999999994,\n      \"customers.rank\": 2,\n      \"customers.credit_total\": 32650.0\n    },\n    {\n      \"customers.regions.name\": \"West\",\n      \"customers.revenue\": 49151.790000000015,\n      \"customers.rank\": 4,\n      \"customers.credit_total\": 18020.0\n    },\n    {\n      \"customers.regions.name\": null,\n      \"customers.revenue\": 1193.3,\n      \"customers.rank\": 5,\n      \"customers.credit_total\": 500.0\n    }\n  ],\n  \"row_count\": 5,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e90f-d84d-7a80-abfb-a9eb99190936\",\n  \"sql\": \"WITH _base AS (\\n  SELECT\\n    regions.name AS \\\"customers.regions.name\\\",\\n    CAST(SUM(customers.credit) AS DOUBLE) AS \\\"customers.credit_total\\\"\\n  FROM customers AS customers\\n  LEFT JOIN regions AS regions\\n    ON customers.region_id = regions.id\\n  GROUP BY\\n    regions.name\\n), _cm_customers__orders__amount_sum AS (\\n  SELECT\\n    customers__regions.name AS \\\"orders.customers.regions.name\\\",\\n    CAST(SUM(orders.amount) AS DOUBLE) AS \\\"orders.amount_sum\\\"\\n  FROM orders AS orders\\n  LEFT JOIN customers AS customers\\n    ON orders.customer_id = customers.id\\n  LEFT JOIN regions AS customers__regions\\n    ON customers.region_id = customers__regions.id\\n  GROUP BY\\n    customers__regions.name\\n), base AS (\\n  SELECT\\n    _base.\\\"customers.regions.name\\\",\\n    _cm_customers__orders__amount_sum.\\\"orders.amount_sum\\\" AS \\\"customers.revenue\\\",\\n    _base.\\\"customers.credit_total\\\"\\n  FROM _base\\n  LEFT JOIN _cm_customers__orders__amount_sum\\n    ON _base.\\\"customers.regions.name\\\" IS NOT DISTINCT FROM _cm_customers__orders__amount_sum.\\\"orders.customers.regions.name\\\"\\n), step1 AS (\\n  SELECT\\n    \\\"customers.regions.name\\\",\\n    \\\"customers.credit_total\\\",\\n    \\\"customers.revenue\\\",\\n    CASE\\n      WHEN \\\"customers.revenue\\\" IS NULL\\n      THEN NULL\\n      ELSE RANK() OVER (\\n        PARTITION BY CASE WHEN \\\"customers.revenue\\\" IS NULL THEN 1 ELSE 0 END\\n        ORDER BY \\\"customers.revenue\\\" DESC\\n      )\\n    END AS \\\"customers.rank\\\"\\n  FROM base\\n)\\nSELECT\\n  \\\"customers.regions.name\\\",\\n  \\\"customers.revenue\\\",\\n  \\\"customers.rank\\\",\\n  \\\"customers.credit_total\\\"\\nFROM (\\n  SELECT\\n    \\\"customers.regions.name\\\",\\n    \\\"customers.credit_total\\\",\\n    \\\"customers.revenue\\\",\\n    \\\"customers.rank\\\"\\n  FROM step1\\n) AS _outer\\nORDER BY\\n  \\\"customers.regions.name\\\" ASC\\nLIMIT 101\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "customers.revenue",
+     "customers.rank",
+     "customers.credit_total",
+     "customers.regions.name"
+    ],
+    "rows": [
+     [
+      68738.69999999997,
+      3,
+      24920.0,
+      "East"
+     ],
+     [
+      109334.75999999994,
+      1,
+      35740.0,
+      "North"
+     ],
+     [
+      104269.89999999994,
+      2,
+      32650.0,
+      "South"
+     ],
+     [
+      49151.790000000015,
+      4,
+      18020.0,
+      "West"
+     ],
+     [
+      1193.3,
+      5,
+      500.0,
+      null
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "region",
+     "revenue",
+     "rank",
+     "credit_total"
+    ],
+    "rows": [
+     [
+      "North",
+      109334.75999999994,
+      1,
+      35740
+     ],
+     [
+      "South",
+      104269.89999999994,
+      2,
+      32650
+     ],
+     [
+      "East",
+      68738.69999999997,
+      3,
+      24920
+     ],
+     [
+      "West",
+      49151.790000000015,
+      4,
+      18020
+     ]
+    ],
+    "message": "Regions ranked by revenue (sum of order amounts). Credit total is the sum of credit limits for all customers in the region, including those with no orders. Orders whose customer has no known region are left out."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 6,
+  "output_tokens": 521,
+  "cache_read_tokens": 208842,
+  "cache_write_tokens": 1341,
+  "partial": false
+ },
+ "cost_usd": 0.0589174,
+ "duration_s": 12.126358320994768,
+ "turns": 7,
+ "end_reason": "submitted",
+ "error": null
+}

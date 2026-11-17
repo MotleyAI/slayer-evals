@@ -4,53 +4,53 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH c AS (SELECT o.store_id, o.customer, COUNT(*) n FROM orders o WHERE o.ordered_at >= '2025-01-01' AND o.ordered_at < '2026-01-01' GROUP BY 1,2)\nSELECT s.name, COUNT(*) customers, MEDIAN(n) med, (SELECT MAX(ordered_at) FROM orders) mx FROM c LEFT JOIN stores s ON c.store_id=s.id GROUP BY 1 ORDER BY 1"
+    "sql": "WITH c AS (SELECT o.store_id, o.customer, COUNT(*) n FROM orders o WHERE o.ordered_at >= '2025-01-01' AND o.ordered_at < '2026-01-01' GROUP BY 1,2)\nSELECT s.name, COUNT(*) customers, MEDIAN(n) med, quantile_disc(n,0.5) qd FROM c LEFT JOIN stores s ON c.store_id=s.id GROUP BY 1 ORDER BY 1"
    },
-   "result_text": "{\"columns\": [\"name\", \"customers\", \"med\", \"mx\"], \"rows\": [[\"Brooklyn\", 701, 167.0, \"2026-10-29T19:52:00\"], [\"Chicago\", 601, 157.0, \"2026-10-29T19:52:00\"], [\"Los Angeles\", 145, 24.0, \"2026-10-29T19:52:00\"], [\"New Orleans\", 343, 70.0, \"2026-10-29T19:52:00\"], [\"Philadelphia\", 450, 158.0, \"2026-10-29T19:52:00\"], [\"San Francisco\", 550, 146.0, \"2026-10-29T19:52:00\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"name\", \"customers\", \"med\", \"qd\"], \"rows\": [[\"Brooklyn\", 701, 167.0, 167], [\"Chicago\", 601, 157.0, 157], [\"Los Angeles\", 145, 24.0, 24], [\"New Orleans\", 343, 70.0, 70], [\"Philadelphia\", 450, 158.0, 158], [\"San Francisco\", 550, 146.0, 146]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
      "customers",
      "med",
-     "mx"
+     "qd"
     ],
     "rows": [
      [
       "Brooklyn",
       701,
       167.0,
-      "2026-10-29T19:52:00"
+      167
      ],
      [
       "Chicago",
       601,
       157.0,
-      "2026-10-29T19:52:00"
+      157
      ],
      [
       "Los Angeles",
       145,
       24.0,
-      "2026-10-29T19:52:00"
+      24
      ],
      [
       "New Orleans",
       343,
       70.0,
-      "2026-10-29T19:52:00"
+      70
      ],
      [
       "Philadelphia",
       450,
       158.0,
-      "2026-10-29T19:52:00"
+      158
      ],
      [
       "San Francisco",
       550,
       146.0,
-      "2026-10-29T19:52:00"
+      146
      ]
     ],
     "warnings": []
@@ -85,7 +85,7 @@
     "columns": [
      "store_name",
      "customers_2025",
-     "median_orders_per_customer_2025"
+     "median_orders_per_customer"
     ],
     "rows": [
      [
@@ -119,7 +119,7 @@
       146
      ]
     ],
-    "message": "Brooklyn had the highest median: 701 customers ordered there in 2025, with a median of 167 orders each. Philadelphia (158) and Chicago (157) came next, then San Francisco (146). New Orleans (70, opened April 2025) and Los Angeles (24, opened October 2025) are low because they were only open for part of the year. I counted orders per customer per store for orders placed in calendar year 2025. A customer who ordered at more than one store is counted at each of them. No 2025 orders were missing a customer or a store."
+    "message": "Based on 2025 orders (1 Jan to 31 Dec 2025). Each customer's orders were counted separately at each store they ordered from, so one customer can appear under more than one store. Brooklyn had the highest median at 167 orders per customer, across 701 customers. Los Angeles (median 24) and New Orleans (median 70) are low because they opened partway through 2025, in October and April. Their numbers cover only part of the year and aren't directly comparable to the other stores."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -129,13 +129,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 429,
+  "output_tokens": 425,
   "cache_read_tokens": 5830,
-  "cache_write_tokens": 813,
+  "cache_write_tokens": 733,
   "partial": false
  },
- "cost_usd": 0.013827,
- "duration_s": 9.250180769944564,
+ "cost_usd": 0.013347000000000001,
+ "duration_s": 9.189521185006015,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

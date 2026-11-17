@@ -4,9 +4,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select table_name, column_name, data_type from information_schema.columns order by table_name"
+    "sql": "select table_name, column_name, data_type from information_schema.columns order by table_name, ordinal_position"
    },
-   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"customers\", \"tags\", \"VARCHAR[]\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"products\", \"ratings\", \"INTEGER[]\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -72,7 +72,7 @@
      ],
      [
       "customers",
-      "region_id",
+      "id",
       "INTEGER"
      ],
      [
@@ -82,7 +82,7 @@
      ],
      [
       "customers",
-      "id",
+      "region_id",
       "INTEGER"
      ],
      [
@@ -104,6 +104,11 @@
       "customers",
       "discount",
       "DOUBLE"
+     ],
+     [
+      "customers",
+      "tags",
+      "VARCHAR[]"
      ],
      [
       "events",
@@ -122,17 +127,7 @@
      ],
      [
       "order_items",
-      "line_amount",
-      "DOUBLE"
-     ],
-     [
-      "order_items",
-      "quantity",
-      "INTEGER"
-     ],
-     [
-      "order_items",
-      "product_id",
+      "id",
       "INTEGER"
      ],
      [
@@ -142,22 +137,27 @@
      ],
      [
       "order_items",
-      "id",
+      "product_id",
       "INTEGER"
      ],
      [
+      "order_items",
+      "quantity",
+      "INTEGER"
+     ],
+     [
+      "order_items",
+      "line_amount",
+      "DOUBLE"
+     ],
+     [
       "orders",
-      "order_date",
-      "DATE"
+      "id",
+      "INTEGER"
      ],
      [
       "orders",
       "customer_id",
-      "INTEGER"
-     ],
-     [
-      "orders",
-      "id",
       "INTEGER"
      ],
      [
@@ -171,9 +171,39 @@
       "VARCHAR"
      ],
      [
+      "orders",
+      "order_date",
+      "DATE"
+     ],
+     [
+      "orders_flat",
+      "id",
+      "INTEGER"
+     ],
+     [
       "orders_flat",
       "customer_id",
       "INTEGER"
+     ],
+     [
+      "orders_flat",
+      "amount",
+      "DOUBLE"
+     ],
+     [
+      "orders_flat",
+      "status",
+      "VARCHAR"
+     ],
+     [
+      "orders_flat",
+      "order_date",
+      "DATE"
+     ],
+     [
+      "orders_flat",
+      "region",
+      "VARCHAR"
      ],
      [
       "orders_flat",
@@ -193,31 +223,6 @@
      [
       "orders_flat",
       "discount",
-      "DOUBLE"
-     ],
-     [
-      "orders_flat",
-      "status",
-      "VARCHAR"
-     ],
-     [
-      "orders_flat",
-      "id",
-      "INTEGER"
-     ],
-     [
-      "orders_flat",
-      "region",
-      "VARCHAR"
-     ],
-     [
-      "orders_flat",
-      "order_date",
-      "DATE"
-     ],
-     [
-      "orders_flat",
-      "amount",
       "DOUBLE"
      ],
      [
@@ -239,6 +244,11 @@
       "products",
       "list_price",
       "DOUBLE"
+     ],
+     [
+      "products",
+      "ratings",
+      "INTEGER[]"
      ],
      [
       "regions",
@@ -278,34 +288,35 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from customers), (select count(distinct id) from customers), (select list(distinct tier) from customers), (select list(distinct status) from orders), (select count(*) from orders where customer_id not in (select id from customers)), (select count(*) from orders where amount is null)"
+    "sql": "select c.tier, count(*) n, count(distinct c.id) nd, sum(o.rev) rev from customers c left join (select customer_id, sum(amount) rev from orders group by 1) o on o.customer_id=c.id group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"(SELECT count_star() FROM customers)\", \"(SELECT count(DISTINCT id) FROM customers)\", \"(SELECT list(DISTINCT tier) FROM customers)\", \"(SELECT list(DISTINCT status) FROM orders)\", \"(SELECT count_star() FROM orders WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))\", \"(SELECT count_star() FROM orders WHERE (amount IS NULL))\"], \"rows\": [[202, 202, [\"silver\", \"bronze\", \"gold\"], [\"ok\", \"bad\"], 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"tier\", \"n\", \"nd\", \"rev\"], \"rows\": [[\"bronze\", 100, 100, 163987.17999999993], [\"gold\", 43, 43, 71294.79], [\"silver\", 59, 59, 96891.01000000002]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "(SELECT count_star() FROM customers)",
-     "(SELECT count(DISTINCT id) FROM customers)",
-     "(SELECT list(DISTINCT tier) FROM customers)",
-     "(SELECT list(DISTINCT status) FROM orders)",
-     "(SELECT count_star() FROM orders WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))",
-     "(SELECT count_star() FROM orders WHERE (amount IS NULL))"
+     "tier",
+     "n",
+     "nd",
+     "rev"
     ],
     "rows": [
      [
-      202,
-      202,
-      [
-       "silver",
-       "bronze",
-       "gold"
-      ],
-      [
-       "ok",
-       "bad"
-      ],
-      0,
-      0
+      "bronze",
+      100,
+      100,
+      163987.17999999993
+     ],
+     [
+      "gold",
+      43,
+      43,
+      71294.79
+     ],
+     [
+      "silver",
+      59,
+      59,
+      96891.01000000002
      ]
     ],
     "warnings": []
@@ -315,39 +326,32 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select c.tier, count(distinct c.id) n, sum(o.amount) rev, count(o.id) orders, sum(case when o.status='bad' then o.amount end) bad_rev from customers c left join orders o on o.customer_id=c.id group by 1 order by 1"
+    "sql": "select status, count(*), sum(amount), count(*) filter (where amount is null), count(*) filter (where customer_id not in (select id from customers)) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"tier\", \"n\", \"rev\", \"orders\", \"bad_rev\"], \"rows\": [[\"bronze\", 100, 163987.1800000001, 2493, 19543.349999999995], [\"gold\", 43, 71294.78999999996, 1060, 7932.4599999999955], [\"silver\", 59, 96891.01000000007, 1457, 10505.09]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"sum(amount)\", \"count_star() FILTER (WHERE (amount IS NULL))\", \"count_star() FILTER (WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))\"], \"rows\": [[\"bad\", 606, 37980.90000000004, 0, 0], [\"ok\", 4410, 294707.5499999996, 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "tier",
-     "n",
-     "rev",
-     "orders",
-     "bad_rev"
+     "status",
+     "count_star()",
+     "sum(amount)",
+     "count_star() FILTER (WHERE (amount IS NULL))",
+     "count_star() FILTER (WHERE (NOT (customer_id = ANY(SELECT id FROM customers))))"
     ],
     "rows": [
      [
-      "bronze",
-      100,
-      163987.1800000001,
-      2493,
-      19543.349999999995
+      "bad",
+      606,
+      37980.90000000004,
+      0,
+      0
      ],
      [
-      "gold",
-      43,
-      71294.78999999996,
-      1060,
-      7932.4599999999955
-     ],
-     [
-      "silver",
-      59,
-      96891.01000000007,
-      1457,
-      10505.09
+      "ok",
+      4410,
+      294707.5499999996,
+      0,
+      0
      ]
     ],
     "warnings": []
@@ -366,20 +370,20 @@
      [
       "bronze",
       100,
-      163987.1800000001
+      163987.17999999993
      ],
      [
       "gold",
       43,
-      71294.78999999996
+      71294.79
      ],
      [
       "silver",
       59,
-      96891.01000000007
+      96891.01000000002
      ]
     ],
-    "message": "Customers left-joined to orders, so customers with no orders still count (they add 0 revenue). Revenue is the sum of all order amounts, including orders with status 'bad'. Without those, revenue is bronze 144443.83, gold 63362.33 and silver 86385.92. All 202 customers have a tier."
+    "message": "All 202 customers are counted, including those with no orders. Orders were totalled per customer before joining to customers, so customers with several orders are not double-counted. Revenue includes orders of every status, including 606 orders marked 'bad' worth 37,980.90 in total. No customer is missing a tier."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -388,14 +392,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 444,
-  "cache_read_tokens": 4590,
-  "cache_write_tokens": 1804,
+  "input_tokens": 4,
+  "output_tokens": 388,
+  "cache_read_tokens": 2238,
+  "cache_write_tokens": 1434,
   "partial": false
  },
- "cost_usd": 0.018842,
- "duration_s": 9.668268666020595,
+ "cost_usd": 0.0153936,
+ "duration_s": 9.825644847005606,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

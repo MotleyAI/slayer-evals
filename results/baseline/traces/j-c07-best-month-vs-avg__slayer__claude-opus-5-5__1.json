@@ -2,26 +2,11 @@
  "profile": "slayer",
  "calls": [
   {
-   "tool": "inspect",
+   "tool": "search",
    "args": {
-    "entity_type": "model"
+    "question": "store monthly pre-tax sales"
    },
-   "result_text": "# Datasource: `demo_database` — 8 model(s)\n- `customers` (2 cols; joins: `orders`, `tweets`)\n- `items` (4 cols; joins: `orders`, `products`)\n- `orders` (9 cols; joins: `customers`, `items`, `stores`)\n- `products` (5 cols; joins: `items`, `supplies`)\n- `stores` (4 cols; joins: `orders`)\n- `supplies` (5 cols; joins: `products`)\n- `time_spine` (1 cols; joins: _(none)_)\n- `tweets` (4 cols; joins: `customers`)",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect",
-   "args": {
-    "entity_type": "model",
-    "reference": [
-     "orders",
-     "stores"
-    ],
-    "compact": false
-   },
-   "result_text": "## demo_database.orders\n# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| customer | TEXT | — | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | params | description |\n| --- | --- | --- |\n| dollars | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | weight | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer = id | many_to_one |\n| stores | store_id = id | many_to_one |\n| items | id = order_id | one_to_many |\n\n## Data Profile\n\n| customer | store_id | _count | ordered_at_count_distinct | subtotal_avg | tax_paid_avg | order_total_avg | order_weekday_count | order_hour_count |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 4f5baf7e-c2f5-400b-bdbc-494e1a9ff902 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 508 | 508 | 2035.0393700787401 | 121.89763779527559 | 2156.9370078740158 | 508 | 508 |\n| 110b826a-c1f7-48ce-a178-ac6d57c81638 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 558 | 558 | 2058.064516129032 | 123.32795698924731 | 2181.3924731182797 | 558 | 558 |\n| 0d7a0a5a-fe48-4b67-984b-3a935d57f7f5 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 918 | 918 | 552.5054466230937 | 33.150326797385624 | 585.6557734204792 | 918 | 918 |\n\n## Learnings (3)\n\n- **Mjaffle-data-coverage** (`demo_database.orders.ordered_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\n- **Mjaffle-money-in-cents** (`demo_database.orders.order_total`, `demo_database.orders.subtotal`, `demo_database.orders.tax_paid`): Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\n- **Mjaffle-new-customers** (`demo_database.orders.customer`, `demo_database.orders.ordered_at`, `demo_database.orders.unique_customers`): A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.\n\n---\n\n## demo_database.stores\n# Model: `stores`\n\n- **data_source:** `demo_database`\n- **sql_table:** `stores`\n- **row_count:** 6\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| name | TEXT | — | all | Store | Store name. | Brooklyn, Chicago, Los Angeles, New Orleans, Philadelphia, San Francisco |\n| opened_at | TIMESTAMP | — | all | Opened | When the store opened. | 2022-10-31 00:00:00 .. 2025-11-11 00:00:00 |\n| tax_rate | DOUBLE | — | all | Tax Rate | Local sales-tax rate. | 0.04 .. 0.08 |\n\n## Measures (1)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| store_count | id:count_distinct | Stores | Number of stores. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n\n## Joins (1)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| orders | id = store_id | one_to_many |\n\n## Data Profile\n\n| name | _count | opened_at_count_distinct | tax_rate_avg |\n| --- | --- | --- | --- |\n| Brooklyn | 1 | 1 | 0.04 |\n| San Francisco | 1 | 1 | 0.075 |\n| New Orleans | 1 | 1 | 0.04 |\n\n## Learnings (1)\n\n- **Mjaffle-data-coverage** (`demo_database.stores.name`, `demo_database.stores.opened_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.",
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.net_sales\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Sales before tax, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.items.line_sales\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.subtotal\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Pre-tax order amount, in cents.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-data-coverage\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.orders\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.stores.tax_rate\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Local sales-tax rate.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -30,506 +15,55 @@
    "tool": "query",
    "args": {
     "query": {
-     "source_model": "orders",
+     "source_model": "stores",
      "dimensions": [
-      "stores.name"
-     ],
-     "time_dimensions": [
-      {
-       "dimension": "ordered_at",
-       "granularity": "month",
-       "date_range": [
-        "2025-01-01",
-        "2025-12-31"
-       ]
-      }
+      "name",
+      "opened_at"
      ],
      "measures": [
-      "net_sales",
-      "order_count"
-     ],
-     "order": [
-      {
-       "column": "stores.name"
-      },
-      {
-       "column": "ordered_at"
-      }
+      "count(*)"
      ]
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 115017.0, \"orders.order_count\": 11041}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 105156.0, \"orders.order_count\": 9875}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 117535.0, \"orders.order_count\": 10902}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 112440.0, \"orders.order_count\": 10447}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 114013.0, \"orders.order_count\": 11017}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 108260.0, \"orders.order_count\": 10107}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 110080.0, \"orders.order_count\": 10348}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 98302.0, \"orders.order_count\": 9662}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 83415.0, \"orders.order_count\": 7908}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 86425.0, \"orders.order_count\": 8840}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 97680.0, \"orders.order_count\": 9470}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 114853.0, \"orders.order_count\": 10629}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 80651.0, \"orders.order_count\": 7863}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 76432.0, \"orders.order_count\": 7263}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 86826.0, \"orders.order_count\": 8429}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 89770.0, \"orders.order_count\": 8416}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 94957.0, \"orders.order_count\": 9150}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 92638.0, \"orders.order_count\": 8727}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 93085.0, \"orders.order_count\": 8938}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 85405.0, \"orders.order_count\": 8411}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}], \"attributes\": {\"dimensions\": {\"orders.stores.name\": {\"label\": \"Store\", \"format\": null}, \"orders.ordered_at\": {\"label\": \"Order Date\", \"format\": null}}, \"measures\": {\"orders.net_sales\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"stores.name\": \"Brooklyn\", \"stores.opened_at\": \"2023-05-11 00:00:00\", \"stores._count\": 1}, {\"stores.name\": \"Chicago\", \"stores.opened_at\": \"2024-06-27 00:00:00\", \"stores._count\": 1}, {\"stores.name\": \"Los Angeles\", \"stores.opened_at\": \"2025-11-11 00:00:00\", \"stores._count\": 1}, {\"stores.name\": \"New Orleans\", \"stores.opened_at\": \"2025-05-08 00:00:00\", \"stores._count\": 1}, {\"stores.name\": \"Philadelphia\", \"stores.opened_at\": \"2022-10-31 00:00:00\", \"stores._count\": 1}, {\"stores.name\": \"San Francisco\", \"stores.opened_at\": \"2024-07-07 00:00:00\", \"stores._count\": 1}], \"attributes\": {\"dimensions\": {\"stores.name\": {\"label\": \"Store\", \"format\": null}, \"stores.opened_at\": {\"label\": \"Opened\", \"format\": null}}, \"measures\": {\"stores._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "orders.stores.name",
-     "orders.ordered_at",
-     "orders.net_sales",
-     "orders.order_count"
+     "stores.name",
+     "stores.opened_at",
+     "stores._count"
     ],
     "rows": [
      [
       "Brooklyn",
-      "2025-01-01 00:00:00",
-      115017.0,
-      11041
-     ],
-     [
-      "Brooklyn",
-      "2025-02-01 00:00:00",
-      105156.0,
-      9875
-     ],
-     [
-      "Brooklyn",
-      "2025-03-01 00:00:00",
-      117535.0,
-      10902
-     ],
-     [
-      "Brooklyn",
-      "2025-04-01 00:00:00",
-      112440.0,
-      10447
-     ],
-     [
-      "Brooklyn",
-      "2025-05-01 00:00:00",
-      114013.0,
-      11017
-     ],
-     [
-      "Brooklyn",
-      "2025-06-01 00:00:00",
-      108260.0,
-      10107
-     ],
-     [
-      "Brooklyn",
-      "2025-07-01 00:00:00",
-      110080.0,
-      10348
-     ],
-     [
-      "Brooklyn",
-      "2025-08-01 00:00:00",
-      98302.0,
-      9662
-     ],
-     [
-      "Brooklyn",
-      "2025-09-01 00:00:00",
-      83415.0,
-      7908
-     ],
-     [
-      "Brooklyn",
-      "2025-10-01 00:00:00",
-      86425.0,
-      8840
-     ],
-     [
-      "Brooklyn",
-      "2025-11-01 00:00:00",
-      97680.0,
-      9470
-     ],
-     [
-      "Brooklyn",
-      "2025-12-01 00:00:00",
-      114853.0,
-      10629
+      "2023-05-11 00:00:00",
+      1
      ],
      [
       "Chicago",
-      "2025-01-01 00:00:00",
-      80651.0,
-      7863
-     ],
-     [
-      "Chicago",
-      "2025-02-01 00:00:00",
-      76432.0,
-      7263
-     ],
-     [
-      "Chicago",
-      "2025-03-01 00:00:00",
-      86826.0,
-      8429
-     ],
-     [
-      "Chicago",
-      "2025-04-01 00:00:00",
-      89770.0,
-      8416
-     ],
-     [
-      "Chicago",
-      "2025-05-01 00:00:00",
-      94957.0,
-      9150
-     ],
-     [
-      "Chicago",
-      "2025-06-01 00:00:00",
-      92638.0,
-      8727
-     ],
-     [
-      "Chicago",
-      "2025-07-01 00:00:00",
-      93085.0,
-      8938
-     ],
-     [
-      "Chicago",
-      "2025-08-01 00:00:00",
-      85405.0,
-      8411
-     ]
-    ],
-    "warnings": [
-     {
-      "kind": "truncated",
-      "message": "pass a higher 'limit' to get more rows"
-     }
-    ]
-   },
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "orders",
-     "dimensions": [
-      "stores.name"
-     ],
-     "time_dimensions": [
-      {
-       "dimension": "ordered_at",
-       "granularity": "month"
-      }
-     ],
-     "filters": [
-      "ordered_at >= '2025-01-01'",
-      "ordered_at < '2026-01-01'"
-     ],
-     "measures": [
-      "net_sales"
-     ],
-     "order": [
-      {
-       "column": "stores.name"
-      },
-      {
-       "column": "ordered_at"
-      }
-     ],
-     "limit": 200
-    },
-    "format": "json"
-   },
-   "result_text": "{\"data\": [{\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 115017.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 105156.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 117535.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 112440.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 114013.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 108260.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 110080.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 98302.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 83415.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 86425.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 97680.0}, {\"orders.stores.name\": \"Brooklyn\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 114853.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 80651.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 76432.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 86826.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 89770.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 94957.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 92638.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 93085.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 85405.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 71736.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 74338.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 81428.0}, {\"orders.stores.name\": \"Chicago\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 98881.0}, {\"orders.stores.name\": \"Los Angeles\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 13689.0}, {\"orders.stores.name\": \"Los Angeles\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 23584.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 17215.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 20595.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 26109.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 29918.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 28455.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 33684.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 40777.0}, {\"orders.stores.name\": \"New Orleans\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 53525.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 73597.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 66761.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 71905.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 69885.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 73275.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 66778.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 68824.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 62157.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 53946.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 57363.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 60663.0}, {\"orders.stores.name\": \"Philadelphia\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 72931.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.net_sales\": 71027.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-02-01 00:00:00\", \"orders.net_sales\": 68503.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-03-01 00:00:00\", \"orders.net_sales\": 80845.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-04-01 00:00:00\", \"orders.net_sales\": 80251.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-05-01 00:00:00\", \"orders.net_sales\": 83609.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-06-01 00:00:00\", \"orders.net_sales\": 80186.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-07-01 00:00:00\", \"orders.net_sales\": 87681.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-08-01 00:00:00\", \"orders.net_sales\": 77082.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-09-01 00:00:00\", \"orders.net_sales\": 61581.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-10-01 00:00:00\", \"orders.net_sales\": 66054.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-11-01 00:00:00\", \"orders.net_sales\": 73364.0}, {\"orders.stores.name\": \"San Francisco\", \"orders.ordered_at\": \"2025-12-01 00:00:00\", \"orders.net_sales\": 91574.0}], \"attributes\": {\"dimensions\": {\"orders.stores.name\": {\"label\": \"Store\", \"format\": null}, \"orders.ordered_at\": {\"label\": \"Order Date\", \"format\": null}}, \"measures\": {\"orders.net_sales\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "orders.stores.name",
-     "orders.ordered_at",
-     "orders.net_sales"
-    ],
-    "rows": [
-     [
-      "Brooklyn",
-      "2025-01-01 00:00:00",
-      115017.0
-     ],
-     [
-      "Brooklyn",
-      "2025-02-01 00:00:00",
-      105156.0
-     ],
-     [
-      "Brooklyn",
-      "2025-03-01 00:00:00",
-      117535.0
-     ],
-     [
-      "Brooklyn",
-      "2025-04-01 00:00:00",
-      112440.0
-     ],
-     [
-      "Brooklyn",
-      "2025-05-01 00:00:00",
-      114013.0
-     ],
-     [
-      "Brooklyn",
-      "2025-06-01 00:00:00",
-      108260.0
-     ],
-     [
-      "Brooklyn",
-      "2025-07-01 00:00:00",
-      110080.0
-     ],
-     [
-      "Brooklyn",
-      "2025-08-01 00:00:00",
-      98302.0
-     ],
-     [
-      "Brooklyn",
-      "2025-09-01 00:00:00",
-      83415.0
-     ],
-     [
-      "Brooklyn",
-      "2025-10-01 00:00:00",
-      86425.0
-     ],
-     [
-      "Brooklyn",
-      "2025-11-01 00:00:00",
-      97680.0
-     ],
-     [
-      "Brooklyn",
-      "2025-12-01 00:00:00",
-      114853.0
-     ],
-     [
-      "Chicago",
-      "2025-01-01 00:00:00",
-      80651.0
-     ],
-     [
-      "Chicago",
-      "2025-02-01 00:00:00",
-      76432.0
-     ],
-     [
-      "Chicago",
-      "2025-03-01 00:00:00",
-      86826.0
-     ],
-     [
-      "Chicago",
-      "2025-04-01 00:00:00",
-      89770.0
-     ],
-     [
-      "Chicago",
-      "2025-05-01 00:00:00",
-      94957.0
-     ],
-     [
-      "Chicago",
-      "2025-06-01 00:00:00",
-      92638.0
-     ],
-     [
-      "Chicago",
-      "2025-07-01 00:00:00",
-      93085.0
-     ],
-     [
-      "Chicago",
-      "2025-08-01 00:00:00",
-      85405.0
-     ],
-     [
-      "Chicago",
-      "2025-09-01 00:00:00",
-      71736.0
-     ],
-     [
-      "Chicago",
-      "2025-10-01 00:00:00",
-      74338.0
-     ],
-     [
-      "Chicago",
-      "2025-11-01 00:00:00",
-      81428.0
-     ],
-     [
-      "Chicago",
-      "2025-12-01 00:00:00",
-      98881.0
+      "2024-06-27 00:00:00",
+      1
      ],
      [
       "Los Angeles",
-      "2025-11-01 00:00:00",
-      13689.0
-     ],
-     [
-      "Los Angeles",
-      "2025-12-01 00:00:00",
-      23584.0
+      "2025-11-11 00:00:00",
+      1
      ],
      [
       "New Orleans",
-      "2025-05-01 00:00:00",
-      17215.0
-     ],
-     [
-      "New Orleans",
-      "2025-06-01 00:00:00",
-      20595.0
-     ],
-     [
-      "New Orleans",
-      "2025-07-01 00:00:00",
-      26109.0
-     ],
-     [
-      "New Orleans",
-      "2025-08-01 00:00:00",
-      29918.0
-     ],
-     [
-      "New Orleans",
-      "2025-09-01 00:00:00",
-      28455.0
-     ],
-     [
-      "New Orleans",
-      "2025-10-01 00:00:00",
-      33684.0
-     ],
-     [
-      "New Orleans",
-      "2025-11-01 00:00:00",
-      40777.0
-     ],
-     [
-      "New Orleans",
-      "2025-12-01 00:00:00",
-      53525.0
+      "2025-05-08 00:00:00",
+      1
      ],
      [
       "Philadelphia",
-      "2025-01-01 00:00:00",
-      73597.0
-     ],
-     [
-      "Philadelphia",
-      "2025-02-01 00:00:00",
-      66761.0
-     ],
-     [
-      "Philadelphia",
-      "2025-03-01 00:00:00",
-      71905.0
-     ],
-     [
-      "Philadelphia",
-      "2025-04-01 00:00:00",
-      69885.0
-     ],
-     [
-      "Philadelphia",
-      "2025-05-01 00:00:00",
-      73275.0
-     ],
-     [
-      "Philadelphia",
-      "2025-06-01 00:00:00",
-      66778.0
-     ],
-     [
-      "Philadelphia",
-      "2025-07-01 00:00:00",
-      68824.0
-     ],
-     [
-      "Philadelphia",
-      "2025-08-01 00:00:00",
-      62157.0
-     ],
-     [
-      "Philadelphia",
-      "2025-09-01 00:00:00",
-      53946.0
-     ],
-     [
-      "Philadelphia",
-      "2025-10-01 00:00:00",
-      57363.0
-     ],
-     [
-      "Philadelphia",
-      "2025-11-01 00:00:00",
-      60663.0
-     ],
-     [
-      "Philadelphia",
-      "2025-12-01 00:00:00",
-      72931.0
+      "2022-10-31 00:00:00",
+      1
      ],
      [
       "San Francisco",
-      "2025-01-01 00:00:00",
-      71027.0
-     ],
-     [
-      "San Francisco",
-      "2025-02-01 00:00:00",
-      68503.0
-     ],
-     [
-      "San Francisco",
-      "2025-03-01 00:00:00",
-      80845.0
-     ],
-     [
-      "San Francisco",
-      "2025-04-01 00:00:00",
-      80251.0
-     ],
-     [
-      "San Francisco",
-      "2025-05-01 00:00:00",
-      83609.0
-     ],
-     [
-      "San Francisco",
-      "2025-06-01 00:00:00",
-      80186.0
-     ],
-     [
-      "San Francisco",
-      "2025-07-01 00:00:00",
-      87681.0
-     ],
-     [
-      "San Francisco",
-      "2025-08-01 00:00:00",
-      77082.0
-     ],
-     [
-      "San Francisco",
-      "2025-09-01 00:00:00",
-      61581.0
-     ],
-     [
-      "San Francisco",
-      "2025-10-01 00:00:00",
-      66054.0
-     ],
-     [
-      "San Francisco",
-      "2025-11-01 00:00:00",
-      73364.0
-     ],
-     [
-      "San Francisco",
-      "2025-12-01 00:00:00",
-      91574.0
+      "2024-07-07 00:00:00",
+      1
      ]
     ],
     "warnings": []
@@ -549,103 +83,189 @@
       "time_dimensions": [
        {
         "dimension": "ordered_at",
-        "granularity": "month"
+        "granularity": "month",
+        "date_range": "2025"
        }
-      ],
-      "filters": [
-       "ordered_at >= '2025-01-01'",
-       "ordered_at < '2026-01-01'"
       ],
       "measures": [
        {
-        "name": "sales",
-        "formula": "net_sales"
+        "formula": "net_sales",
+        "name": "sales"
        }
       ]
      },
      {
       "source_model": "m",
       "dimensions": [
-       "stores__name"
+       "stores__name",
+       "ordered_at_month"
       ],
       "measures": [
        {
-        "name": "best",
-        "formula": "sales:max"
+        "formula": "sum(sales)",
+        "name": "best_sales"
        },
        {
-        "name": "avg_m",
-        "formula": "sales:avg"
+        "formula": "avg(sales, partition_by=[stores__name])",
+        "name": "avg_monthly"
        },
        {
-        "name": "n",
-        "formula": "*:count"
-       },
+        "formula": "sum(sales) / avg(sales, partition_by=[stores__name]) - 1",
+        "name": "above_avg_frac"
+       }
+      ],
+      "filters": [
+       "rank(sum(sales), partition_by=stores__name, direction='desc') <= 1"
+      ],
+      "order": [
        {
-        "name": "lift",
-        "formula": "sales:max / sales:avg - 1"
+        "column": "stores__name"
        }
       ]
      }
     ],
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"m.stores__name\": \"New Orleans\", \"m.best\": 53525.0, \"m.avg_m\": 31284.75, \"m.n\": 8, \"m.lift\": 0.710897482000016}, {\"m.stores__name\": \"Philadelphia\", \"m.best\": 73597.0, \"m.avg_m\": 66507.08333333333, \"m.n\": 12, \"m.lift\": 0.10660393316501393}, {\"m.stores__name\": \"Chicago\", \"m.best\": 98881.0, \"m.avg_m\": 85512.25, \"m.n\": 12, \"m.lift\": 0.15633724992618014}, {\"m.stores__name\": \"Los Angeles\", \"m.best\": 23584.0, \"m.avg_m\": 18636.5, \"m.n\": 2, \"m.lift\": 0.2654736672658493}, {\"m.stores__name\": \"San Francisco\", \"m.best\": 91574.0, \"m.avg_m\": 76813.08333333333, \"m.n\": 12, \"m.lift\": 0.19216669903239159}, {\"m.stores__name\": \"Brooklyn\", \"m.best\": 117535.0, \"m.avg_m\": 105264.66666666667, \"m.n\": 12, \"m.lift\": 0.11656649588022572}], \"attributes\": {\"dimensions\": {\"m.stores__name\": {\"label\": \"Store\", \"format\": null}}, \"measures\": {\"m.best\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"m.avg_m\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"m.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"m.lift\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "Error executing tool query: UnknownReferenceError: Cannot resolve reference 'ordered_at_month'.\n  scope: StageSchema: stage 'm' columns: ['stores__name', 'ordered_at', 'sales']",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": [
+     {
+      "name": "m",
+      "source_model": "orders",
+      "dimensions": [
+       "stores.name"
+      ],
+      "time_dimensions": [
+       {
+        "dimension": "ordered_at",
+        "granularity": "month",
+        "date_range": "2025"
+       }
+      ],
+      "measures": [
+       {
+        "formula": "net_sales",
+        "name": "sales"
+       }
+      ]
+     },
+     {
+      "source_model": "m",
+      "dimensions": [
+       "stores__name",
+       "ordered_at"
+      ],
+      "measures": [
+       {
+        "formula": "sum(sales)",
+        "name": "best_sales"
+       },
+       {
+        "formula": "avg(sales, partition_by=[stores__name])",
+        "name": "avg_monthly"
+       },
+       {
+        "formula": "sum(sales) / avg(sales, partition_by=[stores__name]) - 1",
+        "name": "above_avg_frac"
+       },
+       {
+        "formula": "count(*, partition_by=[stores__name])",
+        "name": "n_months"
+       }
+      ],
+      "filters": [
+       "rank(sum(sales), partition_by=stores__name, direction='desc') <= 1"
+      ],
+      "order": [
+       {
+        "column": "stores__name"
+       }
+      ]
+     }
+    ],
+    "format": "json"
+   },
+   "result_text": "{\"data\": [{\"m.stores__name\": \"Brooklyn\", \"m.ordered_at\": \"2025-03-01 00:00:00\", \"m.best_sales\": 117535.0, \"m.avg_monthly\": 105264.66666666667, \"m.above_avg_frac\": 0.11656649588022572, \"m.n_months\": 12}, {\"m.stores__name\": \"Chicago\", \"m.ordered_at\": \"2025-12-01 00:00:00\", \"m.best_sales\": 98881.0, \"m.avg_monthly\": 85512.25, \"m.above_avg_frac\": 0.15633724992618014, \"m.n_months\": 12}, {\"m.stores__name\": \"Los Angeles\", \"m.ordered_at\": \"2025-12-01 00:00:00\", \"m.best_sales\": 23584.0, \"m.avg_monthly\": 18636.5, \"m.above_avg_frac\": 0.2654736672658493, \"m.n_months\": 2}, {\"m.stores__name\": \"New Orleans\", \"m.ordered_at\": \"2025-12-01 00:00:00\", \"m.best_sales\": 53525.0, \"m.avg_monthly\": 31284.75, \"m.above_avg_frac\": 0.710897482000016, \"m.n_months\": 8}, {\"m.stores__name\": \"Philadelphia\", \"m.ordered_at\": \"2025-01-01 00:00:00\", \"m.best_sales\": 73597.0, \"m.avg_monthly\": 66507.08333333333, \"m.above_avg_frac\": 0.10660393316501393, \"m.n_months\": 12}, {\"m.stores__name\": \"San Francisco\", \"m.ordered_at\": \"2025-12-01 00:00:00\", \"m.best_sales\": 91574.0, \"m.avg_monthly\": 76813.08333333333, \"m.above_avg_frac\": 0.19216669903239159, \"m.n_months\": 12}], \"attributes\": {\"dimensions\": {\"m.stores__name\": {\"label\": \"Store\", \"format\": null}, \"m.ordered_at\": {\"label\": \"Order Date\", \"format\": null}}, \"measures\": {\"m.best_sales\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"m.avg_monthly\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"m.above_avg_frac\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"m.n_months\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "m.stores__name",
-     "m.best",
-     "m.avg_m",
-     "m.n",
-     "m.lift"
+     "m.ordered_at",
+     "m.best_sales",
+     "m.avg_monthly",
+     "m.above_avg_frac",
+     "m.n_months"
     ],
     "rows": [
      [
-      "New Orleans",
-      53525.0,
-      31284.75,
-      8,
-      0.710897482000016
-     ],
-     [
-      "Philadelphia",
-      73597.0,
-      66507.08333333333,
-      12,
-      0.10660393316501393
+      "Brooklyn",
+      "2025-03-01 00:00:00",
+      117535.0,
+      105264.66666666667,
+      0.11656649588022572,
+      12
      ],
      [
       "Chicago",
+      "2025-12-01 00:00:00",
       98881.0,
       85512.25,
-      12,
-      0.15633724992618014
+      0.15633724992618014,
+      12
      ],
      [
       "Los Angeles",
+      "2025-12-01 00:00:00",
       23584.0,
       18636.5,
-      2,
-      0.2654736672658493
+      0.2654736672658493,
+      2
+     ],
+     [
+      "New Orleans",
+      "2025-12-01 00:00:00",
+      53525.0,
+      31284.75,
+      0.710897482000016,
+      8
+     ],
+     [
+      "Philadelphia",
+      "2025-01-01 00:00:00",
+      73597.0,
+      66507.08333333333,
+      0.10660393316501393,
+      12
      ],
      [
       "San Francisco",
+      "2025-12-01 00:00:00",
       91574.0,
       76813.08333333333,
-      12,
-      0.19216669903239159
-     ],
-     [
-      "Brooklyn",
-      117535.0,
-      105264.66666666667,
-      12,
-      0.11656649588022572
+      0.19216669903239159,
+      12
      ]
     ],
     "warnings": []
    },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": "[\"store_name\", \"best_month\", \"best_month_sales\", \"avg_monthly_sales\", \"above_avg_fraction\"]",
+    "rows": "[[\"Brooklyn\",\"2025-03-01\",117535.0,105264.66666666667,0.11656649588022572],[\"Chicago\",\"2025-12-01\",98881.0,85512.25,0.15633724992618014],[\"Los Angeles\",\"2025-12-01\",23584.0,18636.5,0.2654736672658493],[\"New Orleans\",\"2025-12-01\",53525.0,31284.75,0.710897482000016],[\"Philadelphia\",\"2025-01-01\",73597.0,66507.08333333333,0.10660393316501393],[\"San Francisco\",\"2025-12-01\",91574.0,76813.08333333333,0.19216669903239159]]",
+    "message": "I found each store's best 2025 month by pre-tax sales (net_sales) and compared it with that store's average month. The average counts only the months the store had sales. Los Angeles opened on 2025-11-11, so it has 2 months; New Orleans opened on 2025-05-08, so it has 8; every other store has 12. A store's opening month counts in full even if it opened partway through.\n\n- **Brooklyn:** best month March 2025 at $117,535, which is 11.7% above its $105,264.67 average.\n- **Chicago:** best month December 2025 at $98,881, which is 15.6% above its $85,512.25 average.\n- **Los Angeles:** best month December 2025 at $23,584, which is 26.5% above its $18,636.50 average.\n- **New Orleans:** best month December 2025 at $53,525, which is 71.1% above its $31,284.75 average.\n- **Philadelphia:** best month January 2025 at $73,597, which is 10.7% above its $66,507.08 average.\n- **San Francisco:** best month December 2025 at $91,574, which is 19.2% above its $76,813.08 average.\n\nThe table gives the exact unrounded values, with the gap above average as a fraction."
+   },
+   "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
+   "is_error": true,
+   "parsed": null,
    "audit": null
   },
   {
@@ -656,7 +276,7 @@
      "best_month",
      "best_month_sales",
      "avg_monthly_sales",
-     "lift_over_avg"
+     "above_avg_fraction"
     ],
     "rows": [
      [
@@ -702,7 +322,7 @@
       0.19216669903239159
      ]
     ],
-    "message": "I found each store's best 2025 month by pre-tax sales (subtotal, converted from cents to dollars). Each store's average only counts the months it had orders: 12 months for most stores, 8 for New Orleans (May–Dec) and 2 for Los Angeles (Nov–Dec). The last column shows how far the best month was above the average, as a fraction.\n\n- **Best months:** December was the best month for Chicago, Los Angeles, New Orleans and San Francisco. Brooklyn's best was March and Philadelphia's was January.\n- **New Orleans** has the biggest gap, about 71% above its average. Its sales climbed steadily all year after it opened, so its average is pulled down by the early, smaller months.\n- **Los Angeles** has only two months, and November was a partial month after it opened, so its figures are a very small sample."
+    "message": "Best 2025 month per store by pre-tax sales (net_sales), compared with that store's average month. The average counts only months with sales: Los Angeles has 2 (opened 2025-11-11), New Orleans has 8 (opened 2025-05-08), the rest have 12. A store's opening month counts in full even though it opened partway through. December was the best month for four stores. Brooklyn peaked in March and Philadelphia in January. New Orleans had the biggest gap: its best month was 71% above its average."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -712,13 +332,13 @@
  ],
  "usage": {
   "input_tokens": 10,
-  "output_tokens": 1184,
-  "cache_read_tokens": 130868,
-  "cache_write_tokens": 12183,
+  "output_tokens": 1972,
+  "cache_read_tokens": 133936,
+  "cache_write_tokens": 7059,
   "partial": false
  },
- "cost_usd": 0.11080860000000001,
- "duration_s": 22.935267162974924,
+ "cost_usd": 0.10156220000000002,
+ "duration_s": 25.279883032024372,
  "turns": 8,
  "end_reason": "submitted",
  "error": null

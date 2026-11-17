@@ -4,60 +4,46 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "SELECT s.name, SUM(o.subtotal)/100.0/COUNT(*) AS aov, COUNT(*) n, MIN(o.ordered_at), MAX(o.ordered_at) FROM orders o LEFT JOIN stores s ON o.store_id=s.id GROUP BY 1 ORDER BY 2 DESC"
+    "sql": "SELECT s.name, SUM(o.subtotal)/100.0/COUNT(*) AS aov, COUNT(*) n FROM orders o LEFT JOIN stores s ON o.store_id=s.id GROUP BY 1 ORDER BY 2 DESC"
    },
-   "result_text": "{\"columns\": [\"name\", \"aov\", \"n\", \"min(o.ordered_at)\", \"max(o.ordered_at)\"], \"rows\": [[\"San Francisco\", 10.858755985031294, 183583, \"2024-07-07T07:07:00\", \"2026-10-29T18:30:00\"], [\"Philadelphia\", 10.789049423950162, 266470, \"2022-10-31T09:52:00\", \"2026-10-29T19:35:00\"], [\"Brooklyn\", 10.451613245567255, 376911, \"2023-05-11T07:00:00\", \"2026-10-29T19:38:00\"], [\"Chicago\", 10.372528314581542, 214024, \"2024-06-27T07:00:00\", \"2026-10-29T19:52:00\"], [\"Los Angeles\", 10.234525714780052, 46238, \"2025-11-11T08:39:00\", \"2026-10-29T19:07:00\"], [\"New Orleans\", 9.666818436536845, 85656, \"2025-05-08T07:00:00\", \"2026-10-29T19:23:00\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"name\", \"aov\", \"n\"], \"rows\": [[\"San Francisco\", 10.858755985031294, 183583], [\"Philadelphia\", 10.789049423950162, 266470], [\"Brooklyn\", 10.451613245567255, 376911], [\"Chicago\", 10.372528314581542, 214024], [\"Los Angeles\", 10.234525714780052, 46238], [\"New Orleans\", 9.666818436536845, 85656]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
      "aov",
-     "n",
-     "min(o.ordered_at)",
-     "max(o.ordered_at)"
+     "n"
     ],
     "rows": [
      [
       "San Francisco",
       10.858755985031294,
-      183583,
-      "2024-07-07T07:07:00",
-      "2026-10-29T18:30:00"
+      183583
      ],
      [
       "Philadelphia",
       10.789049423950162,
-      266470,
-      "2022-10-31T09:52:00",
-      "2026-10-29T19:35:00"
+      266470
      ],
      [
       "Brooklyn",
       10.451613245567255,
-      376911,
-      "2023-05-11T07:00:00",
-      "2026-10-29T19:38:00"
+      376911
      ],
      [
       "Chicago",
       10.372528314581542,
-      214024,
-      "2024-06-27T07:00:00",
-      "2026-10-29T19:52:00"
+      214024
      ],
      [
       "Los Angeles",
       10.234525714780052,
-      46238,
-      "2025-11-11T08:39:00",
-      "2026-10-29T19:07:00"
+      46238
      ],
      [
       "New Orleans",
       9.666818436536845,
-      85656,
-      "2025-05-08T07:00:00",
-      "2026-10-29T19:23:00"
+      85656
      ]
     ],
     "warnings": []
@@ -69,7 +55,7 @@
    "args": {
     "columns": [
      "store_name",
-     "avg_order_value_usd"
+     "average_order_value_usd"
     ],
     "rows": [
      [
@@ -97,7 +83,7 @@
       9.666818436536845
      ]
     ],
-    "message": "San Francisco has the highest average order value at about $10.86, just ahead of Philadelphia at about $10.79. These figures are before tax: total subtotal ÷ number of orders, in dollars, for each store's whole order history (latest order 2026-10-29). Including tax would skew the comparison because tax rates differ by store. New Orleans is lowest at about $9.67. Los Angeles, the newest store, has a smaller sample of about 46k orders."
+    "message": "San Francisco has the highest average order value at about $10.86, with Philadelphia close behind at about $10.79. This is the pre-tax figure: total subtotal divided by number of orders, in dollars, using all order history. The others are Brooklyn ($10.45), Chicago ($10.37), Los Angeles ($10.23) and New Orleans ($9.67). Los Angeles only opened in October 2025, so its figure is based on a smaller number of orders."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -107,13 +93,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 579,
-  "cache_read_tokens": 5805,
-  "cache_write_tokens": 879,
+  "output_tokens": 516,
+  "cache_read_tokens": 5801,
+  "cache_write_tokens": 645,
   "partial": false
  },
- "cost_usd": 0.017152,
- "duration_s": 8.20860780600924,
+ "cost_usd": 0.0147212,
+ "duration_s": 6.728088707022835,
  "turns": 4,
  "end_reason": "submitted",
  "error": null

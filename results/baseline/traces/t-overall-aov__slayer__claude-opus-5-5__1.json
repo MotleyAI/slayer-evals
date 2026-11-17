@@ -2,38 +2,27 @@
  "profile": "slayer",
  "calls": [
   {
-   "tool": "inspect",
-   "args": {
-    "entity_type": "model"
-   },
-   "result_text": "# Datasource: `bench` — 13 model(s)\n- `campaign_members` (3 cols; joins: `campaigns`, `customers`)\n- `campaigns` (4 cols; joins: `campaign_members`)\n- `cities` (4 cols; joins: `customers`, `regions`)\n- `customers` (7 cols; joins: `campaign_members`, `cities`, `orders`, `regions`, `returns`)\n- `events` (3 cols; joins: _(none)_)\n- `monthly_rev` (2 cols; joins: _(none)_)\n- `order_items` (5 cols; joins: `orders`, `products`)\n- `orders` (5 cols; joins: `customers`, `order_items`)\n- `orders_flat` (10 cols; joins: _(none)_)\n- `products` (4 cols; joins: `order_items`)\n- `regions` (2 cols; joins: `cities`, `customers`)\n- `returns` (4 cols; joins: `customers`)\n- `time_spine` (1 cols; joins: _(none)_)",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect",
-   "args": {
-    "entity_type": "model",
-    "reference": [
-     "orders",
-     "customers",
-     "cities",
-     "regions"
-    ],
-    "compact": false
-   },
-   "result_text": "## bench.orders\n# Model: `orders`\n\n- **data_source:** `bench`\n- **sql_table:** `orders`\n- **row_count:** 5,016\n\n## Columns (5)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| customer_id | DOUBLE | — | all | 1 .. 9002 |\n| amount | DOUBLE | — | all | 6.54 .. 416.89 |\n| status | TEXT | — | all | ok, bad |\n| order_date | DATE | — | all | 2023-01-01 .. 2025-12-31 |\n\n## Measures (1)\n\n| name | formula |\n| --- | --- |\n| aov | sum(amount) / count(*) |\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer_id = id | many_to_one |\n| order_items | id = order_id | one_to_many |\n\n## Data Profile\n\n| status | _count | customer_id_avg | amount_avg | order_date_count_distinct |\n| --- | --- | --- | --- | --- |\n| ok | 4410 | 121.4325613079019 | 66.82710884353732 | 1044 |\n| bad | 606 | 105.15346534653466 | 62.67475247524759 | 460 |\n\n## Saved queries (1)\n\n- `monthly_rev`\n\n---\n\n## bench.customers\n# Model: `customers`\n\n- **data_source:** `bench`\n- **sql_table:** `customers`\n- **row_count:** 202\n\n## Columns (7)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| name | TEXT | — | all | Finn Ek, Ella Ito, Gia Greco, Gia Kovac, Ines Dahl, Milo Ek, Milo Jansen, Dan Berg, Dan Greco, Dan Moreau, Hugo Berg, Ines Greco, Ines Ito, Ines Moreau, Jon Lund, Kai Costa, Nora Berg, Ben Berg, Ben Ito, Ben Kovac ... (50+ distinct) |\n| region_id | DOUBLE | — | all | 1 .. 4 |\n| city | TEXT | — | all | Oslo, Rome, Bergen, Prague, Vienna, Lisbon, Naples, Porto, Trondheim, Paris |\n| tier | TEXT | — | all | bronze, silver, gold |\n| credit | DOUBLE | — | all | 100.0 .. 1000.0 |\n| discount | DOUBLE | — | all | 0.0 .. 10.0 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (5)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| regions | region_id = id | many_to_one |\n| cities | city = city; region_id = region_id | many_to_one |\n| campaign_members | id = customer_id | one_to_many |\n| orders | id = customer_id | one_to_many |\n| returns | id = customer_id | one_to_many |\n\n## Data Profile\n\n| name | city | _count | region_id_avg | tier_count_distinct | credit_avg | discount_avg |\n| --- | --- | --- | --- | --- | --- | --- |\n| Gia Kovac | Vienna | 2 | 3.0 | 2 | 680.0 | 1.0 |\n| Milo Lund | Oslo | 1 | 1.0 | 1 | 180.0 | 5.0 |\n| Ben Jansen | Lisbon | 1 | 4.0 | 1 | 970.0 | 2.0 |\n\n---\n\n## bench.cities\n# Model: `cities`\n\n- **data_source:** `bench`\n- **sql_table:** `cities`\n- **row_count:** 10\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| city | TEXT | yes | all | Oslo, Bergen, Lisbon, Naples, Porto, Prague, Rome, Trondheim, Vienna |\n| region_id | DOUBLE | yes | all | 1 .. 4 |\n| population | DOUBLE | — | all | 3000 .. 2800000 |\n| size_class | TEXT | — | all | large, medium, small |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| regions | region_id = id | many_to_one |\n| customers | city = city; region_id = region_id | one_to_many |\n\n## Data Profile\n\n| city | size_class | _count | region_id_avg | population_avg |\n| --- | --- | --- | --- | --- |\n| Naples | large | 1 | 2.0 | 900000.0 |\n| Trondheim | medium | 1 | 1.0 | 210000.0 |\n| Oslo | small | 1 | 2.0 | 3000.0 |\n\n---\n\n## bench.regions\n# Model: `regions`\n\n- **data_source:** `bench`\n- **sql_table:** `regions`\n- **row_count:** 5\n\n## Columns (2)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| name | TEXT | — | all | Arctic, East, North, South, West |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| cities | id = region_id | one_to_many |\n| customers | id = region_id | one_to_many |\n\n## Data Profile\n\n| name | _count |\n| --- | --- |\n| North | 1 |\n| Arctic | 1 |\n| South | 1 |",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
    "tool": "search",
    "args": {
-    "question": "grand total across all rows alongside grouped measure partition_by"
+    "question": "orders amount customer region"
    },
-   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.intro\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"What SLayer is, the judgment calls queries require, and the deep-dive topics.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"bench.orders.aov\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.workflow\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Tool-chaining for discovery, query building, and connecting databases, plus an error decoder.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.orders\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.models\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Authoring models: columns, saved measures, custom aggregations, joins, filters, query-backed models, result keys.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.time_spine\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Built-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='bench.time_spine', entity_type='model').\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.joins\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Read when a query uses another model's fields: dotted paths, choosing the root, joined aggregates, broadcast vs associate, anti-joins.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.orders_flat\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.aggregations\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Read when a measure needs an aggregation beyond sum/count, partition_by, a trailing window, nesting, or empty-input semantics.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.orders\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.models\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Read before creating or editing a model: columns, saved measures, custom aggregations, joins, filters, query-backed models, result keys.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"datasource\",\n      \"id\": \"bench\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.queries\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Read when one query object is not enough: query shapes, stages and their column names, raw rows, variables, debugging.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"bench.customers\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.transforms\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Read when a measure needs a running total, period-over-period change, time shift, lag/lead, ranking, or a streak.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"bench.customers.region_id\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "reference": [
+     "bench.orders",
+     "bench.customers",
+     "bench.orders_flat"
+    ],
+    "entity_type": "model",
+    "compact": false
+   },
+   "result_text": "## bench.orders\n# Model: `orders`\n\n- **data_source:** `bench`\n- **sql_table:** `orders`\n- **row_count:** 5,016\n\n## Columns (5)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| customer_id | DOUBLE | — | all | 1 .. 9002 |\n| amount | DOUBLE | — | all | 6.54 .. 416.89 |\n| status | TEXT | — | all | ok, bad |\n| order_date | DATE | — | all | 2023-01-01 .. 2025-12-31 |\n\n## Measures (1)\n\n| name | formula |\n| --- | --- |\n| aov | sum(amount) / count(*) |\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer_id = id | many_to_one |\n| order_items | id = order_id | one_to_many |\n\n## Data Profile\n\n| status | _count | customer_id_avg | amount_avg | order_date_count_distinct |\n| --- | --- | --- | --- | --- |\n| bad | 606 | 105.15346534653466 | 62.67475247524759 | 460 |\n| ok | 4410 | 121.4325613079019 | 66.82710884353732 | 1044 |\n\n## Saved queries (1)\n\n- `monthly_rev`\n\n---\n\n## bench.customers\n# Model: `customers`\n\n- **data_source:** `bench`\n- **sql_table:** `customers`\n- **row_count:** 202\n\n## Columns (8)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| name | TEXT | — | all | Finn Ek, Ella Ito, Gia Greco, Gia Kovac, Ines Dahl, Milo Ek, Milo Jansen, Dan Berg, Dan Greco, Dan Moreau, Hugo Berg, Ines Greco, Ines Ito, Ines Moreau, Jon Lund, Kai Costa, Nora Berg, Ben Berg, Ben Ito, Ben Kovac ... (50+ distinct) |\n| region_id | DOUBLE | — | all | 1 .. 4 |\n| city | TEXT | — | all | Oslo, Rome, Bergen, Prague, Vienna, Lisbon, Naples, Porto, Trondheim, Paris |\n| tier | TEXT | — | all | bronze, silver, gold |\n| credit | DOUBLE | — | all | 100.0 .. 1000.0 |\n| discount | DOUBLE | — | all | 0.0 .. 10.0 |\n| tags | ARRAY<TEXT> (list: contains(tags, x), contains_any / contains_all(tags, [...]), length(tags); its elements are tags.value) | — | all | vip, eu, newsletter, partner, trial, nordic, alpine, wholesale |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (6)\n\n| name | target_model | join_pairs | cardinality |\n| --- | --- | --- | --- |\n| tags | __slayer_list__9_customers__tags | — | one_to_many |\n| — | regions | region_id = id | many_to_one |\n| — | cities | city = city; region_id = region_id | many_to_one |\n| — | campaign_members | id = customer_id | one_to_many |\n| — | orders | id = customer_id | one_to_many |\n| — | returns | id = customer_id | one_to_many |\n\n## Data Profile\n\n| name | city | _count | region_id_avg | tier_count_distinct | credit_avg | discount_avg | tags_count |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| Ada Berg | Rome | 1 | 2.0 | 1 | 800.0 | 1.0 | 1 |\n| Ada Dahl | Lisbon | 1 | 4.0 | 1 | 390.0 | 0.0 | 1 |\n| Ada Ek | Bergen | 1 | 1.0 | 1 | 200.0 | 1.0 | 1 |\n\n---\n\n## bench.orders_flat\n# Model: `orders_flat`\n\n- **data_source:** `bench`\n- **sql_table:** `orders_flat`\n- **row_count:** 5,016\n\n## Columns (10)\n\n| name | type | primary_key | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- |\n| id | DOUBLE | yes | all | — |\n| customer_id | DOUBLE | — | all | 1 .. 9002 |\n| amount | DOUBLE | — | all | 6.54 .. 416.89 |\n| status | TEXT | — | all | ok, bad |\n| order_date | DATE | — | all | 2023-01-01 .. 2025-12-31 |\n| region | TEXT | — | all | North, South, East, West |\n| city | TEXT | — | all | Oslo, Bergen, Rome, Vienna, Prague, Lisbon, Naples, Trondheim, Porto, Paris |\n| tier | TEXT | — | all | bronze, silver, gold |\n| credit | DOUBLE | — | all | 100.0 .. 1000.0 |\n| discount | DOUBLE | — | all | 0.0 .. 10.0 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (0)\n\n_(none)_\n\n## Data Profile\n\n| status | region | _count | customer_id_avg | amount_avg | order_date_count_distinct | city_count_distinct | tier_count_distinct | credit_avg | discount_avg |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| bad | East | 142 | 106.78169014084507 | 64.82978873239439 | 132 | 2 | 3 | 555.0704225352113 | 3.9788732394366195 |\n| bad | North | 193 | 109.13471502590673 | 59.61932642487046 | 173 | 3 | 3 | 610.7253886010362 | 2.839378238341969 |\n| bad | South | 177 | 106.17514124293785 | 62.45745762711861 | 159 | 3 | 3 | 452.3728813559322 | 3.073446327683616 |",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -49,59 +38,49 @@
      "measures": [
       {
        "formula": "sum(amount)/count(*)",
-       "name": "region_aov"
+       "name": "aov"
       },
       {
        "formula": "sum(amount, partition_by=[])/count(*, partition_by=[])",
        "name": "company_aov"
-      },
-      {
-       "formula": "count(*)",
-       "name": "n"
       }
      ]
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.customers.regions.name\": \"North\", \"orders.region_aov\": 67.7834841909485, \"orders.company_aov\": 66.32544856459337, \"orders.n\": 1613}, {\"orders.customers.regions.name\": \"East\", \"orders.region_aov\": 65.27891737891734, \"orders.company_aov\": 66.32544856459337, \"orders.n\": 1053}, {\"orders.customers.regions.name\": \"West\", \"orders.region_aov\": 65.53572000000003, \"orders.company_aov\": 66.32544856459337, \"orders.n\": 750}, {\"orders.customers.regions.name\": \"South\", \"orders.region_aov\": 65.82695707070702, \"orders.company_aov\": 66.32544856459337, \"orders.n\": 1584}, {\"orders.customers.regions.name\": null, \"orders.region_aov\": 74.58125, \"orders.company_aov\": 66.32544856459337, \"orders.n\": 16}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.region_aov\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.company_aov\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.customers.regions.name\": \"East\", \"orders.aov\": 65.27891737891734, \"orders.company_aov\": 66.32544856459337}, {\"orders.customers.regions.name\": \"North\", \"orders.aov\": 67.7834841909485, \"orders.company_aov\": 66.32544856459337}, {\"orders.customers.regions.name\": \"South\", \"orders.aov\": 65.82695707070702, \"orders.company_aov\": 66.32544856459337}, {\"orders.customers.regions.name\": \"West\", \"orders.aov\": 65.53572000000003, \"orders.company_aov\": 66.32544856459337}, {\"orders.customers.regions.name\": null, \"orders.aov\": 74.58125, \"orders.company_aov\": 66.32544856459337}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.aov\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.company_aov\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.customers.regions.name",
-     "orders.region_aov",
-     "orders.company_aov",
-     "orders.n"
+     "orders.aov",
+     "orders.company_aov"
     ],
     "rows": [
      [
-      "North",
-      67.7834841909485,
-      66.32544856459337,
-      1613
-     ],
-     [
       "East",
       65.27891737891734,
-      66.32544856459337,
-      1053
+      66.32544856459337
      ],
      [
-      "West",
-      65.53572000000003,
-      66.32544856459337,
-      750
+      "North",
+      67.7834841909485,
+      66.32544856459337
      ],
      [
       "South",
       65.82695707070702,
-      66.32544856459337,
-      1584
+      66.32544856459337
+     ],
+     [
+      "West",
+      65.53572000000003,
+      66.32544856459337
      ],
      [
       null,
       74.58125,
-      66.32544856459337,
-      16
+      66.32544856459337
      ]
     ],
     "warnings": []
@@ -111,37 +90,20 @@
   {
    "tool": "submit_answer",
    "args": {
-    "columns": "[\"region\", \"region_aov\", \"company_aov\"]",
-    "rows": "[[\"North\", 67.7834841909485, 66.32544856459337], [\"East\", 65.27891737891734, 66.32544856459337], [\"West\", 65.53572000000003, 66.32544856459337], [\"South\", 65.82695707070702, 66.32544856459337], [null, 74.58125, 66.32544856459337]]",
-    "message": "Average order value by customer region, with the company-wide average (66.32544856459337) on every row. Both figures cover all 5,016 orders. That includes orders with status \"bad\", since the question didn't say to exclude them. The null row holds the 16 orders whose customer has no known region."
-   },
-   "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "submit_answer",
-   "args": {
     "columns": [
      "region",
-     "region_aov",
+     "aov",
      "company_aov"
     ],
     "rows": [
-     [
-      "North",
-      67.7834841909485,
-      66.32544856459337
-     ],
      [
       "East",
       65.27891737891734,
       66.32544856459337
      ],
      [
-      "West",
-      65.53572000000003,
+      "North",
+      67.7834841909485,
       66.32544856459337
      ],
      [
@@ -150,12 +112,17 @@
       66.32544856459337
      ],
      [
+      "West",
+      65.53572000000003,
+      66.32544856459337
+     ],
+     [
       null,
       74.58125,
       66.32544856459337
      ]
     ],
-    "message": "Average order value by customer region, with the company-wide average (66.32544856459337) on every row. Both figures cover all 5,016 orders. That includes orders with status \"bad\", since the question didn't say to exclude them. The null row holds the 16 orders whose customer has no known region."
+    "message": "Average order value by region is total order amount divided by number of orders. North is highest (67.78) and East is lowest (65.28). Orders whose customer has no known region are grouped as null; that group averages 74.58, above every named region. The company-wide average across all orders is 66.33 and appears on every row. All orders are counted, whatever their status (ok or bad)."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -164,15 +131,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 10,
-  "output_tokens": 983,
-  "cache_read_tokens": 125922,
-  "cache_write_tokens": 5490,
+  "input_tokens": 6,
+  "output_tokens": 372,
+  "cache_read_tokens": 73939,
+  "cache_write_tokens": 4681,
   "partial": false
  },
- "cost_usd": 0.0723344,
- "duration_s": 18.26234454801306,
- "turns": 8,
+ "cost_usd": 0.045656800000000004,
+ "duration_s": 11.210719453985803,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

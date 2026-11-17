@@ -4,46 +4,46 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "SELECT s.name, SUM(o.subtotal)/100.0 AS revenue, (SELECT MAX(ordered_at) FROM orders) mx FROM orders o LEFT JOIN stores s ON o.store_id=s.id WHERE o.ordered_at>='2025-01-01' AND o.ordered_at<'2026-01-01' GROUP BY 1 ORDER BY 2 DESC"
+    "sql": "select s.name, sum(o.subtotal)/100.0 as revenue, count(*) from orders o left join stores s on o.store_id=s.id where year(o.ordered_at)=2025 group by 1 order by 2 desc"
    },
-   "result_text": "{\"columns\": [\"name\", \"revenue\", \"mx\"], \"rows\": [[\"Brooklyn\", 1263176.0, \"2026-10-29T19:52:00\"], [\"Chicago\", 1026147.0, \"2026-10-29T19:52:00\"], [\"San Francisco\", 921757.0, \"2026-10-29T19:52:00\"], [\"Philadelphia\", 798085.0, \"2026-10-29T19:52:00\"], [\"New Orleans\", 250278.0, \"2026-10-29T19:52:00\"], [\"Los Angeles\", 37273.0, \"2026-10-29T19:52:00\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"name\", \"revenue\", \"count_star()\"], \"rows\": [[\"Brooklyn\", 1263176.0, 120246], [\"Chicago\", 1026147.0, 98923], [\"San Francisco\", 921757.0, 85496], [\"Philadelphia\", 798085.0, 73611], [\"New Orleans\", 250278.0, 26547], [\"Los Angeles\", 37273.0, 3483]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
      "revenue",
-     "mx"
+     "count_star()"
     ],
     "rows": [
      [
       "Brooklyn",
       1263176.0,
-      "2026-10-29T19:52:00"
+      120246
      ],
      [
       "Chicago",
       1026147.0,
-      "2026-10-29T19:52:00"
+      98923
      ],
      [
       "San Francisco",
       921757.0,
-      "2026-10-29T19:52:00"
+      85496
      ],
      [
       "Philadelphia",
       798085.0,
-      "2026-10-29T19:52:00"
+      73611
      ],
      [
       "New Orleans",
       250278.0,
-      "2026-10-29T19:52:00"
+      26547
      ],
      [
       "Los Angeles",
       37273.0,
-      "2026-10-29T19:52:00"
+      3483
      ]
     ],
     "warnings": []
@@ -55,7 +55,7 @@
    "args": {
     "columns": [
      "store_name",
-     "revenue_dollars"
+     "revenue"
     ],
     "rows": [
      [
@@ -83,7 +83,7 @@
       37273
      ]
     ],
-    "message": "2025 revenue by store, pre-tax (SUM(orders.subtotal)/100), calendar year 2025. New Orleans opened Apr 2025 and Los Angeles opened Oct 2025, so their totals cover only part of the year."
+    "message": "2025 revenue by store, before sales tax (SUM(orders.subtotal)/100). Brooklyn is highest at $1,263,176. New Orleans opened in April 2025 and Los Angeles in October 2025, so their totals cover only part of the year."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -92,14 +92,14 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 482,
-  "cache_read_tokens": 5799,
-  "cache_write_tokens": 748,
+  "input_tokens": 2,
+  "output_tokens": 128,
+  "cache_read_tokens": 2751,
+  "cache_write_tokens": 297,
   "partial": false
  },
- "cost_usd": 0.014555799999999999,
- "duration_s": 7.359977857035119,
+ "cost_usd": 0.0046032,
+ "duration_s": 5.054249592998531,
  "turns": 4,
  "end_reason": "submitted",
  "error": null

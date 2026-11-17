@@ -237,40 +237,48 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 
 ## Baseline
 
-`results/baseline/` holds a committed run of every task of every suite in all three profiles with Claude Opus 5.5 —
-its [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task
-ran once per profile, so individual rates are noisy; use `--trials` for stable numbers. The benchmark pins SLayer 1.8.5
-from PyPI; the baseline's earlier trials ran on commit `1653a91` of SLayer's main branch (reported as 1.1.0), and each
-results line records the version it ran on.
+`results/baseline/` holds a committed run of every task of every suite in all five profiles with Claude Opus 5.5,
+run on 17 Nov 2026: its [report](results/baseline/report.md), results and normalized traces. It is a **single-trial
+snapshot**: each task ran once per profile, so individual rates are noisy; use `--trials` for stable numbers. The SLayer
+and SQL profiles ran on SLayer 1.8.5, the version the benchmark pins; the Motley profiles ran against a local Motley
+backend (`motley 1.30.0`, from storyline's `main`) whose SLayer is 1.8.2. Each results line records the SLayer
+version that answered it.
 
 | Suite | Profile | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | 24 | 23 | 19 | 18 |
-| capability | `slayer+python` | 24 | 24 | 15 | 15 |
-| capability | `sql+python` | 24 (2 auto-failed) | 19 | 14 | 14 |
-| combo | `slayer` | 11 | 11 | 7 | 7 |
-| combo | `slayer+python` | 11 | 11 | 5 | 5 |
-| combo | `sql+python` | 11 (1 auto-failed) | 10 | 5 | 5 |
-| trap | `slayer` | 17 | 17 | 11 | 11 |
-| trap | `slayer+python` | 17 | 17 | 8 | 8 |
-| trap | `sql+python` | 17 | 16 | 15 | 14 |
-| jaffle | `slayer` | 24 | 22 | 10 | 10 |
-| jaffle | `slayer+python` | 24 | 21 | 9 | 9 |
-| jaffle | `sql+python` | 24 | 23 | 18 | 18 |
+| capability | `slayer` | 32 | 31 | 30 | 30 |
+| capability | `slayer+python` | 32 | 31 | 30 | 30 |
+| capability | `motley` | 31 | 30 | 27 | 27 |
+| capability | `motley+python` | 31 | 30 | 26 | 26 |
+| capability | `sql+python` | 33 (2 auto-failed) | 29 | 25 | 25 |
+| combo | `slayer` | 15 | 15 | 14 | 14 |
+| combo | `slayer+python` | 15 | 15 | 13 | 13 |
+| combo | `motley` | 15 | 15 | 12 | 12 |
+| combo | `motley+python` | 15 | 15 | 10 | 10 |
+| combo | `sql+python` | 15 (1 auto-failed) | 13 | 7 | 7 |
+| trap | `slayer` | 21 | 21 | 21 | 21 |
+| trap | `slayer+python` | 21 | 21 | 21 | 21 |
+| trap | `motley` | 21 | 21 | 19 | 19 |
+| trap | `motley+python` | 21 | 21 | 18 | 18 |
+| trap | `sql+python` | 21 | 21 | 20 | 20 |
+| jaffle | `slayer` | 24 | 23 | 19 | 18 |
+| jaffle | `slayer+python` | 24 | 22 | 17 | 16 |
+| jaffle | `motley` | 24 | 23 | 14 | 14 |
+| jaffle | `motley+python` | 24 | 23 | 12 | 12 |
+| jaffle | `sql+python` | 24 | 23 | 17 | 17 |
 
-(The relative-date task is xfail and not counted.) **Correct** is the comparison: both SLayer agents answered every
-trap correctly, and the raw-SQL agent missed one, by adding an empty row; Opus 5.5 avoids these pitfalls in SQL too.
-The SLayer agents' gap on the bench suites is single query: they often assembled the right answer from several queries
-instead of one, most persistently when ordering by an unshown measure (Q13), with transforms over a date range (Q4,
-Q7, Q11) and on combos.
+Expected failures are not counted: the relative-date task in every profile, `q9-credit-by-status` in the Motley
+profiles (their `query` drops result warnings) and `q27-tag-count-groups` in the four SLayer-backed profiles (SLayer's
+`length` counts repeated list elements). **Correct** is the comparison: the four semantic-layer profiles miss at most
+one task per bench suite, and every profile answered every trap correctly. The profiles separate on single query: of
+the bench tasks, `slayer` and `slayer+python` lack a single-query answer on 3 and 4, `motley` and `motley+python` on 9
+and 13, and `sql+python` on 17, 8 of them combos.
 
-On the **jaffle** suite the raw-SQL agent, with the business rules in its system prompt, was correct on 23 of 24
-questions; the SLayer agents, which have to find the rules with `search`, on 22 and 21. Their wrong answers are
-mostly a rule they never looked up: they called `search` on only 13 (`slayer`) and 7 (`slayer+python`) of the 24
-questions, and reported tax-inclusive revenue where the rule says pre-tax. Single query is where the Jaffle suite
-separates the profiles most: 10 and 9 passes for SLayer against 18 for SQL, on questions that need multi-stage queries
-or joins to a computed stage. [docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by
-profile and pitfall, and the Jaffle suite by business rule; the report lists each one with its SLayer and `sql` calls.
+On the **jaffle** suite every profile but `slayer+python` was correct on 23 of 24 questions. The SLayer and Motley
+agents now `search` the business-rule memories on nearly every question, so the pre-tax revenue rule is found and
+used. Single query separates the profiles: 18 and 16 passes for SLayer, 17 for SQL, 14 and 12 for Motley.
+[docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by profile and pitfall, and the
+Jaffle suite by business rule; the report lists each one with its SLayer, Motley and `sql` calls.
 
 ## Plugging in your own agent
 

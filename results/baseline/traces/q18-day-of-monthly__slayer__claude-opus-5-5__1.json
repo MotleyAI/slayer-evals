@@ -6,23 +6,10 @@
    "args": {
     "reference": "monthly_rev",
     "entity_type": "model",
+    "compact": false,
     "show_sql": true
    },
-   "result_text": "# `monthly_rev`\nColumns: order_date, rev\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: _(none)_",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect_model",
-   "args": {
-    "model_name": "monthly_rev",
-    "show_sql": true,
-    "sections": [
-     "columns"
-    ]
-   },
-   "result_text": "# Model: `monthly_rev`\n\n- **data_source:** `bench`\n- **row_count:** 35\n\n## Backing Query\n\n**1. final**\n- source_model: `orders`\n- time_dimensions: order_date\n- measures: rev\n\n## Backing Query SQL\n\n```sql\nSELECT\n  _stage_inner.\"orders.order_date\" AS \"order_date\",\n  _stage_inner.\"orders.rev\" AS \"rev\"\nFROM (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n) AS _stage_inner\n```\n\n## Columns (2)\n\n| name | type | unique | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| order_date | TIMESTAMP | yes | order_date | all | 2023-01-01 00:00:00 .. 2025-12-01 00:00:00 |\n| rev | DOUBLE | — | rev | all | 7270.0 .. 11804.920000000002 |\n\n> Sections shown: columns.\n> Names-only: measures, aggregations, joins.\n> Omitted: samples, learnings, saved_queries.\n> Re-call inspect_model with `sections=[...]` to fetch.",
+   "result_text": "# Model: `monthly_rev`\n\n- **data_source:** `bench`\n- **row_count:** 35\n\n## Backing Query\n\n**1. final**\n- source_model: `orders`\n- time_dimensions: order_date\n- measures: rev\n\n## Columns (2)\n\n| name | type | unique | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| order_date | TIMESTAMP | yes | order_date | all | 2023-01-01 00:00:00 .. 2025-12-01 00:00:00 |\n| rev | DOUBLE | — | rev | all | 7270.0 .. 11804.920000000002 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (0)\n\n_(none)_\n\n## Data Profile SQL\n\n```sql\nWITH monthly_rev AS (\n  SELECT\n    _stage_inner.\"orders.order_date\" AS \"order_date\",\n    _stage_inner.\"orders.rev\" AS \"rev\"\n  FROM (\n    SELECT\n      DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n    FROM orders AS orders\n    GROUP BY\n      DATE_TRUNC('MONTH', orders.order_date)\n  ) AS _stage_inner\n)\nSELECT\n  COUNT(*) AS \"monthly_rev._count\",\n  COUNT(DISTINCT monthly_rev.order_date) AS \"monthly_rev.order_date_count_distinct\",\n  CAST(AVG(monthly_rev.rev) AS DOUBLE) AS \"monthly_rev.rev_avg\"\nFROM monthly_rev AS monthly_rev\nLIMIT 3\n```\n\n## Data Profile\n\n| _count | order_date_count_distinct | rev_avg |\n| --- | --- | --- |\n| 35 | 35 | 9505.384285714286 |",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -34,12 +21,11 @@
      "source_model": "monthly_rev",
      "time_dimensions": [
       {
-       "dimension": "order_date",
+       "dimension": {
+        "name": "order_date"
+       },
        "granularity": "day",
-       "date_range": [
-        "2025-01-01",
-        "2025-01-31"
-       ]
+       "date_range": "2025-01"
       }
      ],
      "measures": [
@@ -61,7 +47,7 @@
      "rev"
     ],
     "rows": [],
-    "message": "This can't be answered from monthly_rev. That summary adds up order amounts for each whole month, so it has one row per month (January 2025 is a single value) and no daily detail. When I asked it for a daily breakdown, the query failed because a monthly figure can't be split into days. Daily revenue for January 2025 would have to come from the underlying orders data (sum of amount by day of order_date), not from this summary."
+    "message": "I can't break monthly_rev down by day. The summary only has one row per month: its order_date is already cut to the start of each month and rev is the month's total. There's no daily detail left in it, and SLayer rejects a daily breakdown of this column for that reason. To get January 2025 revenue by day, the totals would have to come from the underlying orders data (sum of amount by order_date per day) instead of the monthly summary."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -70,15 +56,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 464,
-  "cache_read_tokens": 71047,
-  "cache_write_tokens": 1584,
+  "input_tokens": 4,
+  "output_tokens": 368,
+  "cache_read_tokens": 48059,
+  "cache_write_tokens": 1709,
   "partial": false
  },
- "cost_usd": 0.0314334,
- "duration_s": 10.748192984960042,
- "turns": 6,
+ "cost_usd": 0.0255328,
+ "duration_s": 9.952175708021969,
+ "turns": 5,
  "end_reason": "submitted",
  "error": null
 }

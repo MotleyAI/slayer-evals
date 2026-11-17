@@ -136,7 +136,7 @@ def test_refusal_not_mentioned():
 
 def test_wrong_error_kind():
     other = "Error executing tool query: UnknownReferenceError: Cannot resolve reference 'day'."
-    sub = submission_of(EMPTY, message="Already bucketed monthly.")
+    sub = submission_of(Table(columns=["day", "rev"], rows=[["2025-01-01", 1.0]]), message="Already bucketed monthly.")
     v = grade(refusal(), EMPTY, sub, trace_of(error_call("query", Q18_ARGS, other)))
     assert not v.correct
     assert not v.single_query
@@ -193,12 +193,12 @@ def test_raw_sql_refusal_without_any_call():
     assert v.single_query
 
 
-def test_raw_sql_refusal_with_rows_fails():
+def test_raw_sql_warning_answer_with_rows_naming_the_problem_passes():
     task = make_task(**WARN_TASK)
     answered = Table(columns=["status", "credit"], rows=[["ok", 1.0]])
     v = grade(task, EMPTY, submission_of(answered, message="These overlap."), trace_of(profile="sql+python"))
-    assert not v.correct
-    assert not v.single_query
+    assert v.correct
+    assert v.single_query
 
 
 def test_raw_sql_refusal_without_phrase_fails():

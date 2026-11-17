@@ -4,7 +4,7 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select p.type, sum(p.price)/100.0 as sales, sum(p.price)*1.0/sum(sum(p.price)) over () as share from items i join orders o on i.order_id=o.id join products p on i.sku=p.sku where year(o.ordered_at)=2025 group by 1 order by 1"
+    "sql": "select p.type, sum(p.price)/100.0 as sales, sum(p.price)/sum(sum(p.price)) over () as share from items i join products p on i.sku=p.sku join orders o on i.order_id=o.id where year(o.ordered_at)=2025 group by 1"
    },
    "result_text": "{\"columns\": [\"type\", \"sales\", \"share\"], \"rows\": [[\"beverage\", 2612975.0, 0.6081330485887362], [\"jaffle\", 1683741.0, 0.3918669514112639]], \"truncated\": false}",
    "is_error": false,
@@ -36,7 +36,7 @@
     "columns": [
      "product_type",
      "sales_dollars",
-     "share_of_total"
+     "share"
     ],
     "rows": [
      [
@@ -50,7 +50,7 @@
       0.3918669514112639
      ]
     ],
-    "message": "In 2025, beverages made up about 60.8% of product sales ($2,612,975) and jaffles about 39.2% ($1,683,741). Sales are pre-tax: each item sold is counted at its product's price, and orders are assigned to 2025 by order date."
+    "message": "In 2025, beverages brought in $2,612,975.00 of product sales (60.8% of the total) and jaffles brought in $1,683,741.00 (39.2%). These are pre-tax figures: I added up the price of every item sold in orders placed in 2025, by product type. There are no other product types, so the two shares make up the whole total."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -60,13 +60,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 449,
-  "cache_read_tokens": 5820,
-  "cache_write_tokens": 578,
+  "output_tokens": 438,
+  "cache_read_tokens": 5819,
+  "cache_write_tokens": 568,
   "partial": false
  },
- "cost_usd": 0.013049999999999999,
- "duration_s": 8.731995828042272,
+ "cost_usd": 0.012779800000000001,
+ "duration_s": 6.548491223016754,
  "turns": 4,
  "end_reason": "submitted",
  "error": null

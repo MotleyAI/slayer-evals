@@ -4,9 +4,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH f AS (SELECT customer, MIN(ordered_at) fo FROM orders GROUP BY customer),\nfs AS (SELECT o.customer, MIN(o.store_id) sid, COUNT(DISTINCT o.store_id) n FROM orders o JOIN f ON o.customer=f.customer AND o.ordered_at=f.fo GROUP BY o.customer),\nsp AS (SELECT customer, SUM(subtotal) s FROM orders GROUP BY customer)\nSELECT st.name, COUNT(*) customers, AVG(sp.s)/100.0 avg_spend, SUM(CASE WHEN n>1 THEN 1 ELSE 0 END) ties\nFROM fs JOIN sp USING(customer) LEFT JOIN stores st ON st.id=fs.sid GROUP BY st.name ORDER BY customers DESC"
+    "sql": "with f as (select customer, store_id, ordered_at, row_number() over (partition by customer order by ordered_at, id) rn, count(*) over (partition by customer, ordered_at) ties from orders),\nfirst as (select customer, store_id, ties from f where rn=1),\nspend as (select customer, sum(subtotal) s from orders group by customer)\nselect st.name, count(*) n, sum(s)/100.0/count(*) avg_spend, sum(case when ties>1 then 1 else 0 end) tied, (select count(*) from orders where customer is null) nullcust\nfrom first join spend using(customer) left join stores st on st.id=first.store_id group by st.name order by n desc"
    },
-   "result_text": "Parser Error: syntax error at or near \"ties\"\n\nLINE 4: ...(sp.s)/100.0 avg_spend, SUM(CASE WHEN n>1 THEN 1 ELSE 0 END) ties\n                                                                        ^",
+   "result_text": "Parser Error: syntax error at or near \"ties\"\n\nLINE 1: ..., id) rn, count(*) over (partition by customer, ordered_at) ties from orders),\n                                                                       ^",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -14,16 +14,16 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH f AS (SELECT customer, MIN(ordered_at) fo FROM orders GROUP BY customer),\nfs AS (SELECT o.customer, MIN(o.store_id) sid, COUNT(DISTINCT o.store_id) n FROM orders o JOIN f ON o.customer=f.customer AND o.ordered_at=f.fo GROUP BY o.customer),\nsp AS (SELECT customer, SUM(subtotal) s FROM orders GROUP BY customer)\nSELECT st.name, COUNT(*) customers, AVG(sp.s)/100.0 avg_spend, SUM(CASE WHEN n>1 THEN 1 ELSE 0 END) n_ties, (SELECT COUNT(*) FROM orders WHERE customer IS NULL) nullcust\nFROM fs JOIN sp USING(customer) LEFT JOIN stores st ON st.id=fs.sid GROUP BY st.name ORDER BY customers DESC"
+    "sql": "with f as (select customer, store_id, ordered_at, row_number() over (partition by customer order by ordered_at, id) rn, count(*) over (partition by customer, ordered_at) nt from orders),\nfo as (select customer, store_id, nt from f where rn=1),\nspend as (select customer, sum(subtotal) s from orders group by customer)\nselect st.name, count(*) n, sum(s)/100.0/count(*) avg_spend, sum(case when nt>1 then 1 else 0 end) tied, (select count(*) from orders where customer is null) nullcust\nfrom fo join spend using(customer) left join stores st on st.id=fo.store_id group by st.name order by n desc"
    },
-   "result_text": "{\"columns\": [\"name\", \"customers\", \"avg_spend\", \"n_ties\", \"nullcust\"], \"rows\": [[\"Brooklyn\", 701, 5619.583452211127, 0, 0], [\"Chicago\", 601, 3693.7936772046587, 0, 0], [\"San Francisco\", 550, 3624.5145454545454, 0, 0], [\"Philadelphia\", 450, 6388.795555555555, 0, 0], [\"New Orleans\", 400, 2070.0525, 0, 0], [\"Los Angeles\", 388, 1219.6494845360824, 0, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"name\", \"n\", \"avg_spend\", \"tied\", \"nullcust\"], \"rows\": [[\"Brooklyn\", 701, 5619.583452211127, 0, 0], [\"Chicago\", 601, 3693.7936772046587, 0, 0], [\"San Francisco\", 550, 3624.5145454545454, 0, 0], [\"Philadelphia\", 450, 6388.795555555555, 0, 0], [\"New Orleans\", 400, 2070.0525, 0, 0], [\"Los Angeles\", 388, 1219.6494845360826, 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
-     "customers",
+     "n",
      "avg_spend",
-     "n_ties",
+     "tied",
      "nullcust"
     ],
     "rows": [
@@ -65,7 +65,7 @@
      [
       "Los Angeles",
       388,
-      1219.6494845360824,
+      1219.6494845360826,
       0,
       0
      ]
@@ -80,7 +80,7 @@
     "columns": [
      "store_name",
      "customers",
-     "avg_lifetime_spend_dollars"
+     "avg_lifetime_spend_usd"
     ],
     "rows": [
      [
@@ -111,10 +111,10 @@
      [
       "Los Angeles",
       388,
-      1219.6494845360824
+      1219.6494845360826
      ]
     ],
-    "message": "Each customer is assigned to the store of their first order. Lifetime spend is the pre-tax total (SUM(subtotal)/100) of all their orders at every store. No customer had a tie for first order. Averages mostly track store age: New Orleans (opened Apr 2025) and Los Angeles (opened Oct 2025) have short customer histories."
+    "message": "Each customer is assigned to the store where they placed their first order. No customer had two orders tied for the earliest time. Lifetime spend is pre-tax (orders.subtotal in cents, divided by 100) and covers all of the customer's orders at any store, all dates included. Philadelphia has the highest average ($6,389) and Los Angeles the lowest ($1,220). Stores that opened later have had less time to build up lifetime spend: New Orleans opened Apr 2025 and Los Angeles Oct 2025, so their averages aren't directly comparable to the older stores."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -124,13 +124,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 782,
+  "output_tokens": 610,
   "cache_read_tokens": 5839,
-  "cache_write_tokens": 847,
+  "cache_write_tokens": 766,
   "partial": false
  },
- "cost_usd": 0.021058800000000003,
- "duration_s": 15.04753498599166,
+ "cost_usd": 0.0172138,
+ "duration_s": 11.6835709020379,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

@@ -88,15 +88,15 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with t as (select distinct user_id from tweets where year(tweeted_at)=2025),\no as (select * from orders where year(ordered_at)=2025)\nselect case when t.user_id is not null then 'tweeted' else 'did not tweet' end seg,\ncount(distinct o.customer), count(*), sum(subtotal)/100.0/count(*) aov\nfrom o left join t on o.customer=t.user_id group by 1"
+    "sql": "with t as (select distinct user_id from tweets where year(tweeted_at)=2025),\no as (select * from orders where year(ordered_at)=2025)\nselect case when t.user_id is not null then 'tweeted' else 'did not tweet' end seg,\ncount(distinct o.customer) customers, count(*) orders, sum(subtotal)/100.0/count(*) aov\nfrom o left join t on o.customer=t.user_id group by 1"
    },
-   "result_text": "{\"columns\": [\"seg\", \"count(DISTINCT o.customer)\", \"count_star()\", \"aov\"], \"rows\": [[\"tweeted\", 2561, 389562, 10.503126588322269], [\"did not tweet\", 229, 18744, 10.94200810926163]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"seg\", \"customers\", \"orders\", \"aov\"], \"rows\": [[\"tweeted\", 2561, 389562, 10.503126588322269], [\"did not tweet\", 229, 18744, 10.94200810926163]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "seg",
-     "count(DISTINCT o.customer)",
-     "count_star()",
+     "customers",
+     "orders",
      "aov"
     ],
     "rows": [
@@ -124,7 +124,7 @@
      "segment",
      "customers",
      "orders",
-     "avg_order_value_dollars"
+     "avg_order_value_usd"
     ],
     "rows": [
      [
@@ -140,7 +140,7 @@
       10.94200810926163
      ]
     ],
-    "message": "No. In 2025, customers who tweeted had a lower pre-tax average order value than customers who didn't: $10.50 against $10.94.\n\n- **Tweeted:** 2,561 customers placed 389,562 orders.\n- **Did not tweet:** 229 customers placed 18,744 orders.\n\nHow this was calculated:\n- **Average order value:** total pre-tax sales (`subtotal`, converted from cents to dollars) divided by the number of orders.\n- **Tweeted:** a customer who ordered in 2025 and posted at least one tweet in 2025.\n- **Did not tweet:** a customer who ordered in 2025 and posted no tweets that year.\n\nMost 2025 customers fall in the tweeted group, so the did-not-tweet group is fairly small (229 customers)."
+    "message": "No. In 2025, customers who tweeted had a lower pre-tax average order value than customers who didn't: $10.50 against $10.94. The 2,561 customers who tweeted at least once in 2025 placed 389,562 orders. The 229 who didn't tweet placed 18,744. Average order value here is total pre-tax sales (subtotal, divided by 100 to get dollars) divided by the number of orders. A customer counts as having tweeted if they posted at least one tweet dated in 2025. The non-tweeting group is small, so the gap rests on far fewer customers."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -150,13 +150,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 286,
+  "output_tokens": 292,
   "cache_read_tokens": 5869,
   "cache_write_tokens": 773,
   "partial": false
  },
- "cost_usd": 0.0107748,
- "duration_s": 9.513118728995323,
+ "cost_usd": 0.0108948,
+ "duration_s": 9.10121299198363,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

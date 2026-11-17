@@ -6,7 +6,7 @@
    "args": {
     "sql": "select table_name, column_name, data_type from information_schema.columns order by table_name"
    },
-   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"customers\", \"tags\", \"VARCHAR[]\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"products\", \"ratings\", \"INTEGER[]\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -104,6 +104,11 @@
       "customers",
       "discount",
       "DOUBLE"
+     ],
+     [
+      "customers",
+      "tags",
+      "VARCHAR[]"
      ],
      [
       "events",
@@ -241,6 +246,11 @@
       "DOUBLE"
      ],
      [
+      "products",
+      "ratings",
+      "INTEGER[]"
+     ],
+     [
       "regions",
       "id",
       "INTEGER"
@@ -278,9 +288,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), count(customer_id), min(order_date), max(order_date), count(order_date) from orders group by 1"
+    "sql": "select status, count(*), count(customer_id), min(order_date), max(order_date) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(customer_id)\", \"min(order_date)\", \"max(order_date)\", \"count(order_date)\"], \"rows\": [[\"ok\", 4410, 4404, \"2023-01-01\", \"2025-12-31\", 4410], [\"bad\", 606, 606, \"2023-01-01\", \"2025-12-31\", 606]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(customer_id)\", \"min(order_date)\", \"max(order_date)\"], \"rows\": [[\"ok\", 4410, 4404, \"2023-01-01\", \"2025-12-31\"], [\"bad\", 606, 606, \"2023-01-01\", \"2025-12-31\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -288,8 +298,7 @@
      "count_star()",
      "count(customer_id)",
      "min(order_date)",
-     "max(order_date)",
-     "count(order_date)"
+     "max(order_date)"
     ],
     "rows": [
      [
@@ -297,16 +306,14 @@
       4410,
       4404,
       "2023-01-01",
-      "2025-12-31",
-      4410
+      "2025-12-31"
      ],
      [
       "bad",
       606,
       606,
       "2023-01-01",
-      "2025-12-31",
-      606
+      "2025-12-31"
      ]
     ],
     "warnings": []
@@ -316,62 +323,88 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select last_day(make_date(2025, g, 1)) as me from range(1,13) t(g))\nselect strftime(me,'%Y-%m') as month, (select count(distinct customer_id) from orders o where o.order_date between m.me - interval 89 day and m.me) as customers from m order by 1"
+    "sql": "with m as (select last_day(make_date(2025, i, 1)) as me from range(1,13) t(i))\nselect strftime(me,'%Y-%m') as month, me as window_end, me - 89 as window_start, count(distinct o.customer_id) as customers\nfrom m left join orders o on o.order_date between me - 89 and me\ngroup by me order by me"
    },
-   "result_text": "{\"columns\": [\"month\", \"customers\"], \"rows\": [[\"2025-01\", 159], [\"2025-02\", 162], [\"2025-03\", 160], [\"2025-04\", 160], [\"2025-05\", 154], [\"2025-06\", 154], [\"2025-07\", 155], [\"2025-08\", 158], [\"2025-09\", 158], [\"2025-10\", 162], [\"2025-11\", 161], [\"2025-12\", 159]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"month\", \"window_end\", \"window_start\", \"customers\"], \"rows\": [[\"2025-01\", \"2025-01-31\", \"2024-11-03\", 159], [\"2025-02\", \"2025-02-28\", \"2024-12-01\", 162], [\"2025-03\", \"2025-03-31\", \"2025-01-01\", 160], [\"2025-04\", \"2025-04-30\", \"2025-01-31\", 160], [\"2025-05\", \"2025-05-31\", \"2025-03-03\", 154], [\"2025-06\", \"2025-06-30\", \"2025-04-02\", 154], [\"2025-07\", \"2025-07-31\", \"2025-05-03\", 155], [\"2025-08\", \"2025-08-31\", \"2025-06-03\", 158], [\"2025-09\", \"2025-09-30\", \"2025-07-03\", 158], [\"2025-10\", \"2025-10-31\", \"2025-08-03\", 162], [\"2025-11\", \"2025-11-30\", \"2025-09-02\", 161], [\"2025-12\", \"2025-12-31\", \"2025-10-03\", 159]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "month",
+     "window_end",
+     "window_start",
      "customers"
     ],
     "rows": [
      [
       "2025-01",
+      "2025-01-31",
+      "2024-11-03",
       159
      ],
      [
       "2025-02",
+      "2025-02-28",
+      "2024-12-01",
       162
      ],
      [
       "2025-03",
+      "2025-03-31",
+      "2025-01-01",
       160
      ],
      [
       "2025-04",
+      "2025-04-30",
+      "2025-01-31",
       160
      ],
      [
       "2025-05",
+      "2025-05-31",
+      "2025-03-03",
       154
      ],
      [
       "2025-06",
+      "2025-06-30",
+      "2025-04-02",
       154
      ],
      [
       "2025-07",
+      "2025-07-31",
+      "2025-05-03",
       155
      ],
      [
       "2025-08",
+      "2025-08-31",
+      "2025-06-03",
       158
      ],
      [
       "2025-09",
+      "2025-09-30",
+      "2025-07-03",
       158
      ],
      [
       "2025-10",
+      "2025-10-31",
+      "2025-08-03",
       162
      ],
      [
       "2025-11",
+      "2025-11-30",
+      "2025-09-02",
       161
      ],
      [
       "2025-12",
+      "2025-12-31",
+      "2025-10-03",
       159
      ]
     ],
@@ -384,59 +417,85 @@
    "args": {
     "columns": [
      "month",
-     "distinct_customers_90d"
+     "window_start",
+     "window_end",
+     "distinct_customers"
     ],
     "rows": [
      [
       "2025-01",
+      "2024-11-03",
+      "2025-01-31",
       159
      ],
      [
       "2025-02",
+      "2024-12-01",
+      "2025-02-28",
       162
      ],
      [
       "2025-03",
+      "2025-01-01",
+      "2025-03-31",
       160
      ],
      [
       "2025-04",
+      "2025-01-31",
+      "2025-04-30",
       160
      ],
      [
       "2025-05",
+      "2025-03-03",
+      "2025-05-31",
       154
      ],
      [
       "2025-06",
+      "2025-04-02",
+      "2025-06-30",
       154
      ],
      [
       "2025-07",
+      "2025-05-03",
+      "2025-07-31",
       155
      ],
      [
       "2025-08",
+      "2025-06-03",
+      "2025-08-31",
       158
      ],
      [
       "2025-09",
+      "2025-07-03",
+      "2025-09-30",
       158
      ],
      [
       "2025-10",
+      "2025-08-03",
+      "2025-10-31",
       162
      ],
      [
       "2025-11",
+      "2025-09-02",
+      "2025-11-30",
       161
      ],
      [
       "2025-12",
+      "2025-10-03",
+      "2025-12-31",
       159
      ]
     ],
-    "message": "Distinct customers with at least one order in the 90 days ending on each month's last day (the last day plus the 89 days before it). Orders of every status, including 'bad', are counted. The 6 orders with no customer ID are left out."
+    "message": "For each month of 2025, I counted the distinct customers who placed at least one order in the 90 days ending on that month's last day. Each window includes both its start and end dates. The monthly count stays between 154 and 162. Orders of every status are counted, including the 606 marked \"bad\". Six orders have no customer ID, so they are left out of the counts."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -446,13 +505,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 416,
-  "cache_read_tokens": 4570,
-  "cache_write_tokens": 1663,
+  "output_tokens": 431,
+  "cache_read_tokens": 4605,
+  "cache_write_tokens": 1683,
   "partial": false
  },
- "cost_usd": 0.017573,
- "duration_s": 10.106740045011975,
+ "cost_usd": 0.01798,
+ "duration_s": 11.368920442007948,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

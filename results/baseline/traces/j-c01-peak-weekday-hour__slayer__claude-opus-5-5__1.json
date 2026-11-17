@@ -6,46 +6,8 @@
    "args": {
     "question": "pre-tax sales orders weekday hour"
    },
-   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.order_hour\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.net_sales\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Sales before tax, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.order_weekday\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.subtotal\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Pre-tax order amount, in cents.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.orders\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.order_hour\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.net_sales\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Sales before tax, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.order_weekday\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.orders\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.subtotal\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Pre-tax order amount, in cents.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
    "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "orders",
-     "measures": [
-      {
-       "formula": "net_sales",
-       "name": "sales"
-      },
-      {
-       "formula": "net_sales / net_sales(partition_by=[])",
-       "name": "share"
-      }
-     ],
-     "dimensions": [
-      "order_weekday",
-      "order_hour"
-     ],
-     "filters": [
-      "ordered_at >= '2025-01-01'",
-      "ordered_at < '2026-01-01'"
-     ],
-     "order": [
-      {
-       "column": "sales",
-       "direction": "desc"
-      }
-     ],
-     "limit": 3
-    },
-    "format": "json"
-   },
-   "result_text": "Error executing tool query: UnknownFunctionError: Function 'net_sales' is not allowed in Mode B.\n  at net_sales / net_sales(partition_by=[])\n  suggestion: Mode-B accepts the closed scalar allowlist (['abs', 'ceil', 'ceiling', 'coalesce', 'concat', 'current_date', 'date_add', 'date_diff', 'date_part', 'exp', 'floor', 'greatest', 'ifnull', 'iif', 'instr', 'interval', 'least', 'length', 'like', 'ln', 'log', 'log10', 'log2', 'lower', 'ltrim', 'mod', 'now', 'nullif', 'pow', 'power', 'replace', 'round', 'rtrim', 'sign', 'sqrt', 'substr', 'substring', 'trim', 'trunc', 'upper']), transforms (['change', 'change_pct', 'consecutive_periods', 'cumsum', 'dense_rank', 'first', 'lag', 'last', 'lead', 'ntile', 'percent_rank', 'rank', 'time_shift']), and aggregations (`sum(revenue)`); custom aggregation names must be defined on the model.",
-   "is_error": true,
    "parsed": null,
    "audit": null
   },
@@ -54,26 +16,14 @@
    "args": {
     "reference": "demo_database.orders",
     "entity_type": "model",
-    "show_sql": true,
+    "compact": false,
     "sections": [
+     "columns",
      "measures",
-     "aggregations",
-     "columns"
+     "aggregations"
     ]
    },
-   "result_text": "# `orders`\nColumns: id, customer, ordered_at, store_id, subtotal, tax_paid, order_total, order_weekday, order_hour\nMeasures: total_revenue, net_sales, tax_collected, order_count, unique_customers, avg_order_value, effective_tax_rate, sales_weighted_aov\nAggregations: dollars, weighted_avg\nJoins to: customers, stores",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect",
-   "args": {
-    "reference": "demo_database.orders.net_sales",
-    "entity_type": "measure",
-    "show_sql": true
-   },
-   "result_text": "Measure: demo_database.orders.net_sales\nFormula: subtotal:dollars\nDescription: Sales before tax, in dollars.\nLabel: Net Sales (pre-tax)",
+   "result_text": "# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| customer | TEXT | — | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | params | description |\n| --- | --- | --- |\n| dollars | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | weight | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3 — names only)\n\n`customers`, `stores`, `items`\n\n> Sections shown: columns, measures, aggregations.\n> Names-only: joins.\n> Omitted: samples, learnings, saved_queries.\n> Re-call inspect with `sections=[...]` to fetch.",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -83,27 +33,22 @@
    "args": {
     "query": {
      "source_model": "orders",
+     "dimensions": [
+      "order_weekday",
+      "order_hour"
+     ],
      "measures": [
       {
        "formula": "net_sales",
        "name": "sales"
       },
       {
-       "formula": "subtotal:sum / subtotal:sum(partition_by=[])",
+       "formula": "subtotal:dollars / subtotal:dollars(partition_by=[])",
        "name": "share"
-      },
-      {
-       "formula": "subtotal:sum",
-       "name": "cents"
       }
      ],
-     "dimensions": [
-      "order_weekday",
-      "order_hour"
-     ],
      "filters": [
-      "ordered_at >= '2025-01-01'",
-      "ordered_at < '2026-01-01'"
+      "ordered_at in '2025'"
      ],
      "order": [
       {
@@ -115,37 +60,100 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.order_weekday\": 1, \"orders.order_hour\": 13, \"orders.sales\": 125011.0, \"orders.share\": 0.02909454569489815, \"orders.cents\": 12501100}, {\"orders.order_weekday\": 2, \"orders.order_hour\": 13, \"orders.sales\": 122009.0, \"orders.share\": 0.02839587256872458, \"orders.cents\": 12200900}, {\"orders.order_weekday\": 2, \"orders.order_hour\": 14, \"orders.sales\": 115240.0, \"orders.share\": 0.026820483364504426, \"orders.cents\": 11524000}], \"attributes\": {\"dimensions\": {\"orders.order_weekday\": {\"label\": \"Order weekday\", \"format\": null}, \"orders.order_hour\": {\"label\": \"Order hour\", \"format\": null}}, \"measures\": {\"orders.sales\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.cents\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.order_weekday\": 1, \"orders.order_hour\": 13, \"orders.sales\": 125011.0, \"orders.share\": 0.02909454569489815}, {\"orders.order_weekday\": 2, \"orders.order_hour\": 13, \"orders.sales\": 122009.0, \"orders.share\": 0.02839587256872458}, {\"orders.order_weekday\": 2, \"orders.order_hour\": 14, \"orders.sales\": 115240.0, \"orders.share\": 0.026820483364504426}], \"attributes\": {\"dimensions\": {\"orders.order_weekday\": {\"label\": \"Order weekday\", \"format\": null}, \"orders.order_hour\": {\"label\": \"Order hour\", \"format\": null}}, \"measures\": {\"orders.sales\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.order_weekday",
      "orders.order_hour",
      "orders.sales",
-     "orders.share",
-     "orders.cents"
+     "orders.share"
     ],
     "rows": [
      [
       1,
       13,
       125011.0,
-      0.02909454569489815,
-      12501100
+      0.02909454569489815
      ],
      [
       2,
       13,
       122009.0,
-      0.02839587256872458,
-      12200900
+      0.02839587256872458
      ],
      [
       2,
       14,
       115240.0,
-      0.026820483364504426,
-      11524000
+      0.026820483364504426
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "dimensions": [
+      "order_weekday",
+      "order_hour"
+     ],
+     "measures": [
+      {
+       "formula": "subtotal:sum",
+       "name": "cents"
+      },
+      {
+       "formula": "net_sales",
+       "name": "sales"
+      },
+      {
+       "formula": "subtotal:sum(partition_by=[])",
+       "name": "tot"
+      }
+     ],
+     "filters": [
+      "ordered_at in '2025'"
+     ],
+     "order": [
+      {
+       "column": "cents",
+       "direction": "desc"
+      }
+     ],
+     "limit": 2
+    },
+    "format": "json",
+    "show_sql": true
+   },
+   "result_text": "SQL:\nWITH _base AS (\n  SELECT\n    CAST(CAST(EXTRACT(ISODOW FROM orders.ordered_at) AS INT) AS BIGINT) AS \"orders.order_weekday\",\n    CAST(CAST(EXTRACT(HOUR FROM orders.ordered_at) AS INT) AS BIGINT) AS \"orders.order_hour\",\n    SUM(orders.subtotal) AS \"orders.cents\",\n    SUM(orders.subtotal) / 100.0 AS \"orders.sales\"\n  FROM orders AS orders\n  WHERE\n    (\n      orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n      AND orders.ordered_at < CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n    )\n  GROUP BY\n    CAST(CAST(EXTRACT(ISODOW FROM orders.ordered_at) AS INT) AS BIGINT),\n    CAST(CAST(EXTRACT(HOUR FROM orders.ordered_at) AS INT) AS BIGINT)\n), _cm_orders__subtotal_sum_partition_by AS (\n  SELECT\n    SUM(orders.subtotal) AS \"orders.tot\"\n  FROM orders AS orders\n  WHERE\n    (\n      orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n      AND orders.ordered_at < CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n    )\n)\nSELECT\n  _base.\"orders.order_weekday\",\n  _base.\"orders.order_hour\",\n  _base.\"orders.cents\",\n  _base.\"orders.sales\",\n  _cm_orders__subtotal_sum_partition_by.\"orders.tot\"\nFROM _base\nCROSS JOIN _cm_orders__subtotal_sum_partition_by\nORDER BY\n  _base.\"orders.cents\" DESC\nLIMIT 2\n\n{\"data\": [{\"orders.order_weekday\": 1, \"orders.order_hour\": 13, \"orders.cents\": 12501100, \"orders.sales\": 125011.0, \"orders.tot\": 429671600}, {\"orders.order_weekday\": 2, \"orders.order_hour\": 13, \"orders.cents\": 12200900, \"orders.sales\": 122009.0, \"orders.tot\": 429671600}], \"attributes\": {\"dimensions\": {\"orders.order_weekday\": {\"label\": \"Order weekday\", \"format\": null}, \"orders.order_hour\": {\"label\": \"Order hour\", \"format\": null}}, \"measures\": {\"orders.cents\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.sales\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.tot\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.order_weekday",
+     "orders.order_hour",
+     "orders.cents",
+     "orders.sales",
+     "orders.tot"
+    ],
+    "rows": [
+     [
+      1,
+      13,
+      12501100,
+      125011.0,
+      429671600
+     ],
+     [
+      2,
+      13,
+      12200900,
+      122009.0,
+      429671600
      ]
     ],
     "warnings": []
@@ -169,7 +177,7 @@
       0.02909454569489815
      ]
     ],
-    "message": "In 2025, Monday at 13:00 (1pm) had the highest pre-tax sales: $125,011, which was about 2.91% of the year's pre-tax sales (0.02909454569489815). Next was Tuesday at 13:00 with $122,009. Sales are pre-tax net sales (the order subtotal, converted from cents to dollars) for orders placed between 2025-01-01 and 2025-12-31, grouped by weekday and hour."
+    "message": "In 2025, Monday at 13:00 (1–2pm) had the highest pre-tax sales: $125,011.00. That is about 2.91% of the year's $4,296,716.00 in pre-tax sales. The runner-up was Tuesday at 13:00 with $122,009.00. Hours are in store local time, as recorded in the order timestamps."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -178,15 +186,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 10,
-  "output_tokens": 817,
-  "cache_read_tokens": 130615,
-  "cache_write_tokens": 5354,
+  "input_tokens": 8,
+  "output_tokens": 820,
+  "cache_read_tokens": 106348,
+  "cache_write_tokens": 7467,
   "partial": false
  },
- "cost_usd": 0.069273,
- "duration_s": 15.312181384011637,
- "turns": 8,
+ "cost_usd": 0.07503660000000001,
+ "duration_s": 15.164134301012382,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

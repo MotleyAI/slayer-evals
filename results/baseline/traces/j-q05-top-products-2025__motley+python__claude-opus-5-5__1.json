@@ -1,0 +1,171 @@
+{
+ "profile": "motley+python",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "units sold by product in 2025, product type"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"learning\": \"For sales by product, SKU or product type (product mix, category share), query the items model with the line_sales measure (dollars, pre-tax). It reconciles exactly to orders.net_sales for every year. Do NOT write products.price:sum from items: SLayer aggregates a joined one-side column at its own grain, so it sums each distinct product's price once (e.g. $28 for all beverages in 2025) instead of once per item sold. Share of total: line_sales / unit_price:sum(partition_by=[]).\",\n      \"linked_entities\": [\n        \"items\",\n        \"products.type\",\n        \"items.line_sales\",\n        \"items.unit_price\",\n        \"orders.ordered_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"Unit COGS and gross margin per product come from supplies (bill of materials per sku)\",\n      \"id\": \"jaffle-product-margin\",\n      \"learning\": \"supplies is the bill of materials: each row is one component consumed per unit of the product (sku). Unit COGS = sum of supplies.cost per sku (cents; total_supply_cost gives dollars). Gross margin per unit = products.price - unit COGS. For total COGS in a period, multiply each product's items.units_sold by its unit COGS. Current unit margins range from 89% (nutellaphone who dis?, $11.00 price, $1.21 COGS) to 65% (chai and mighty, $5.00 price, $1.75 COGS). chai and mighty is the #1 product by units in 2025 and the lowest-margin item on the menu.\",\n      \"linked_entities\": [\n        \"supplies\",\n        \"supplies.sku\",\n        \"products.name\",\n        \"products.price\",\n        \"supplies.total_supply_cost\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"supplies\",\n        \"measures\": [\n          {\n            \"formula\": \"total_supply_cost\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"sku\",\n            \"model\": null,\n            \"label\": null\n          },\n          {\n            \"name\": \"name\",\n            \"model\": \"products\",\n            \"label\": null\n          },\n          {\n            \"name\": \"price\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.031754032258064516,\n      \"description\": \"Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\",\n      \"id\": \"items\",\n      \"source_id\": \"01a1e917-ca6d-71d2-b097-0adcc1141f95\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031746031746031744,\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"learning\": \"For any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\",\n        \"stores.opened_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.031544957774465976,\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"id\": \"items.line_sales\",\n      \"source_id\": \"01a1e917-ca6d-71d2-b097-0adcc1141f95\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03149801587301587,\n      \"description\": \"Number of item units sold.\",\n      \"id\": \"items.units_sold\",\n      \"source_id\": \"01a1e917-ca6d-71d2-b097-0adcc1141f95\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030090497737556562,\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"id\": \"jaffle-data-coverage\",\n      \"learning\": \"Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \\\"this month / this year / YTD\\\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\",\n      \"linked_entities\": [\n        \"orders.ordered_at\",\n        \"stores.opened_at\",\n        \"stores.name\"\n      ]\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.030090497737556562,\n      \"description\": null,\n      \"id\": \"supplies\",\n      \"source_id\": \"01a1e917-ca6d-71d2-b097-0adcc1141f95\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.029957522915269395,\n      \"description\": \"Price of the product on this line, in dollars (products.price is stored in cents). Row-level, so summing it gives sales per item sold.\",\n      \"id\": \"items.unit_price\",\n      \"source_id\": \"01a1e917-ca6d-71d2-b097-0adcc1141f95\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.029857397504456328,\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"learning\": \"Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\",\n      \"linked_entities\": [\n        \"orders.order_total\",\n        \"orders.subtotal\",\n        \"orders.tax_paid\",\n        \"products.price\",\n        \"supplies.cost\"\n      ]\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "items",
+     "measures": [
+      "units_sold"
+     ],
+     "dimensions": [
+      "products.name",
+      "products.type"
+     ],
+     "filters": [
+      "orders.ordered_at >= '2025-01-01'",
+      "orders.ordered_at < '2026-01-01'"
+     ],
+     "order": [
+      {
+       "column": "units_sold",
+       "direction": "desc"
+      }
+     ],
+     "limit": 8
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"items.units_sold\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"Units Sold\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"items.products.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Product\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"items.products.type\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Category\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"items.products.name\": \"tangaroo\",\n      \"items.products.type\": \"beverage\",\n      \"items.units_sold\": 93483\n    },\n    {\n      \"items.products.name\": \"vanilla ice\",\n      \"items.products.type\": \"beverage\",\n      \"items.units_sold\": 93458\n    },\n    {\n      \"items.products.name\": \"for richer or pourover \",\n      \"items.products.type\": \"beverage\",\n      \"items.units_sold\": 93371\n    },\n    {\n      \"items.products.name\": \"adele-ade\",\n      \"items.products.type\": \"beverage\",\n      \"items.units_sold\": 93243\n    },\n    {\n      \"items.products.name\": \"chai and mighty\",\n      \"items.products.type\": \"beverage\",\n      \"items.units_sold\": 92952\n    },\n    {\n      \"items.products.name\": \"nutellaphone who dis?\",\n      \"items.products.type\": \"jaffle\",\n      \"items.units_sold\": 28396\n    },\n    {\n      \"items.products.name\": \"doctor stew\",\n      \"items.products.type\": \"jaffle\",\n      \"items.units_sold\": 28141\n    },\n    {\n      \"items.products.name\": \"mel-bun\",\n      \"items.products.type\": \"jaffle\",\n      \"items.units_sold\": 27963\n    }\n  ],\n  \"row_count\": 8,\n  \"truncated\": true,\n  \"hint\": \"truncated to 8 rows \\u2014 more rows exist; pass a higher 'limit' tool argument (up to 10000) to get them. MCP clients often truncate or spill responses beyond ~1,000 rows, so prefer aggregating server-side.\",\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e917-f08f-7db3-99a1-1a2a5df67a44\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "items.units_sold",
+     "items.products.name",
+     "items.products.type"
+    ],
+    "rows": [
+     [
+      93483,
+      "tangaroo",
+      "beverage"
+     ],
+     [
+      93458,
+      "vanilla ice",
+      "beverage"
+     ],
+     [
+      93371,
+      "for richer or pourover ",
+      "beverage"
+     ],
+     [
+      93243,
+      "adele-ade",
+      "beverage"
+     ],
+     [
+      92952,
+      "chai and mighty",
+      "beverage"
+     ],
+     [
+      28396,
+      "nutellaphone who dis?",
+      "jaffle"
+     ],
+     [
+      28141,
+      "doctor stew",
+      "jaffle"
+     ],
+     [
+      27963,
+      "mel-bun",
+      "jaffle"
+     ]
+    ],
+    "warnings": [
+     {
+      "kind": "truncated",
+      "message": ""
+     }
+    ]
+   },
+   "audit": null
+  },
+  {
+   "tool": "report_feedback",
+   "args": {
+    "user_question": "Top 5 products by units sold in 2025 with type",
+    "category": "unclear_docs",
+    "body": "Memory jaffle-product-margin claims 'chai and mighty is the #1 product by units in 2025', but items.units_sold by products.name for 2025 shows tangaroo 93483 first; chai and mighty is 5th with 92952.",
+    "related_entities": [
+     "memory:jaffle-product-margin",
+     "items.units_sold",
+     "products.name"
+    ]
+   },
+   "result_text": "{\n  \"recorded\": true,\n  \"feedback_id\": \"01a1e917-ff50-7230-9b86-1595d5acad84\",\n  \"feedback\": {\n    \"id\": \"01a1e917-ff50-7230-9b86-1595d5acad84\",\n    \"created_at\": \"2026-11-17T10:40:26.447892Z\",\n    \"category\": \"unclear_docs\",\n    \"status\": \"open\",\n    \"user_question\": \"Top 5 products by units sold in 2025 with type\",\n    \"body\": \"Memory jaffle-product-margin claims 'chai and mighty is the #1 product by units in 2025', but items.units_sold by products.name for 2025 shows tangaroo 93483 first; chai and mighty is 5th with 92952.\",\n    \"related_entities\": [\n      \"memory:jaffle-product-margin\",\n      \"items.units_sold\",\n      \"products.name\"\n    ],\n    \"session_id\": \"01a1e917-e74f-7a91-982c-79651db72c44\",\n    \"tool_call_id\": \"01a1e917-ff2f-79a1-a94a-29c769bd2f60\",\n    \"mcp_session_id\": \"0800d9c8ec874c4da8749e3dadddb15e\",\n    \"reported_by\": null,\n    \"resolved_by\": null,\n    \"resolved_at\": null,\n    \"resolution_note\": null,\n    \"session_url\": \"http://localhost:8100/usage/sessions/01a1e917-e74f-7a91-982c-79651db72c44\",\n    \"call_url\": \"http://localhost:8100/usage/calls/01a1e917-ff2f-79a1-a94a-29c769bd2f60\"\n  },\n  \"message\": \"Reported to the admins of this semantic layer. If the data cannot answer the question reliably, tell the user so rather than guessing. inspect(reference='memory:help.intro', entity_type='memory') lists the help topics, and search(question='...') finds models and saved learnings.\"\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "product_name",
+     "type",
+     "units_sold"
+    ],
+    "rows": [
+     [
+      "tangaroo",
+      "beverage",
+      93483
+     ],
+     [
+      "vanilla ice",
+      "beverage",
+      93458
+     ],
+     [
+      "for richer or pourover ",
+      "beverage",
+      93371
+     ],
+     [
+      "adele-ade",
+      "beverage",
+      93243
+     ],
+     [
+      "chai and mighty",
+      "beverage",
+      92952
+     ]
+    ],
+    "message": "All five of the top-selling products in 2025 are beverages, and they are very close: tangaroo sold 93,483 units, vanilla ice 93,458, for richer or pourover 93,371, adele-ade 93,243 and chai and mighty 92,952. The next product, nutellaphone who dis? (a jaffle), sold far fewer at 28,396. Units are counted as item lines on orders placed in 2025. A saved note says chai and mighty was #1 in 2025, but the data puts it 5th; I've reported this to the admins."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 6,
+  "output_tokens": 560,
+  "cache_read_tokens": 212255,
+  "cache_write_tokens": 5070,
+  "partial": false
+ },
+ "cost_usd": 0.079025,
+ "duration_s": 13.580622041015886,
+ "turns": 6,
+ "end_reason": "submitted",
+ "error": null
+}

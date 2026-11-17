@@ -1,0 +1,219 @@
+{
+ "profile": "motley+python",
+ "calls": [
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model"
+   },
+   "result_text": "# Datasource: `demo_database` — 8 model(s)\n- `customers` (2 cols; joins: `orders`, `tweets`)\n- `items` (4 cols; joins: `orders`, `products`)\n- `orders` (9 cols; joins: `customers`, `items`, `stores`)\n- `products` (5 cols; joins: `items`, `supplies`)\n- `stores` (4 cols; joins: `orders`)\n- `supplies` (5 cols; joins: `products`)\n- `time_spine` (1 cols; joins: _(none)_)\n- `tweets` (4 cols; joins: `customers`)",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "orders",
+    "num_rows": 3
+   },
+   "result_text": "# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| customer | TEXT | — | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | params | description |\n| --- | --- | --- |\n| dollars | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | weight | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer = id | many_to_one |\n| stores | store_id = id | many_to_one |\n| items | id = order_id | one_to_many |\n\n## Data Profile\n\n| customer | store_id | _count | ordered_at_count_distinct | subtotal_avg | tax_paid_avg | order_total_avg | order_weekday_count | order_hour_count |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 000cd71e-8069-42e1-8e64-c3054f97ea85 | 3a7988ca-388b-4279-a803-1d5ccdc486e3 | 534 | 534 | 557.6779026217229 | 34.46067415730337 | 592.1385767790263 | 534 | 534 |\n| 002088f0-ebb8-48d5-90c4-e4757a7e3f67 | f17aa111-2c09-45f2-8b11-6651c243c077 | 514 | 514 | 562.4513618677042 | 41.59143968871595 | 604.0428015564203 | 514 | 514 |\n| 002a1ec7-c4cf-409b-a375-a377da7d33e3 | 3a7988ca-388b-4279-a803-1d5ccdc486e3 | 301 | 301 | 1083.0564784053156 | 67.30564784053156 | 1150.362126245847 | 301 | 301 |\n\n## Learnings (3)\n\n- **Mjaffle-data-coverage** (`demo_database.orders.ordered_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\n- **Mjaffle-money-in-cents** (`demo_database.orders.order_total`, `demo_database.orders.subtotal`, `demo_database.orders.tax_paid`): Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\n- **Mjaffle-new-customers** (`demo_database.orders.customer`, `demo_database.orders.ordered_at`, `demo_database.orders.unique_customers`): A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "tweets",
+    "num_rows": 3
+   },
+   "result_text": "# Model: `tweets`\n\n- **data_source:** `demo_database`\n- **sql_table:** `tweets`\n- **row_count:** 375,465\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| user_id | TEXT | — | all | Customer ID | Customer who tweeted. | 4a40b56e-873b-4e5e-bb64-22e861c666f6, d1ee224b-af6f-4e81-be9e-93a1498d8ce3, f15f081b-ec76-44d6-9381-5e7fd14c1f46, c6f17e99-7b94-458e-962b-adcf762106d1, fb30f1a0-412c-4970-856d-afe63647df2a, cbac92ed-eb7b-4a3a-b464-32f8a2f31da9, 716a80fe-914d-4a76-892b-d4510add4b89, d82db2d7-79cd-4c50-89db-141e0bd658c6, cd9c5dc1-e9da-4fe2-aa31-3eadd3b469ed, 342ce070-c955-4f17-9c07-100fd4aa5d25, 82a4bde6-aa79-4836-a951-ab749c44aa27, a16e7986-d8d0-4ef9-a095-c6369e99fb52, 380307d7-9061-49f4-bdde-bb9bd4ef99a2, c4be937e-2973-4060-b3cd-41a8b80fa866, e3ac7788-314b-44e7-9ed7-9fc056cd52fc, 2da6f957-0d04-48cd-89e2-844c0742fbd2, 0dc565c7-95d6-42e4-9a3a-4543cc8ed3c7, a70015d5-cd16-470d-92f5-3e73bdf4b3d4, 9ff3c721-5f8d-4c76-9315-066c48c81db4, c73ca202-33ae-4205-8eee-cce3094bf170 ... (50+ distinct) |\n| tweeted_at | TIMESTAMP | — | all | Tweet Date | When the tweet was posted. | 2022-10-31 10:13:01.786205 .. 2026-10-29 18:49:13.159423 |\n| content | TEXT | — | all | Tweet | Tweet text. | Jaffles from the Jaffle Shop are amazing! Ordered a for richer or pourover ., Jaffles from the Jaffle Shop are the best! Ordered a for richer or pourover ., Jaffles from the Jaffle Shop are awesome! Ordered a for richer or pourover ., Jaffles from the Jaffle Shop are amazing! Ordered a adele-ade., Jaffles from the Jaffle Shop are awesome! Ordered a vanilla ice., Jaffles from the Jaffle Shop are amazing! Ordered a tangaroo., Jaffles from the Jaffle Shop are sooo gooood! Ordered a chai and mighty., Jaffles from the Jaffle Shop are delicious! Ordered a for richer or pourover ., Jaffles from the Jaffle Shop are delicious! Ordered a adele-ade., Jaffles from the Jaffle Shop are amazing! Ordered a vanilla ice., Jaffles from the Jaffle Shop are the best! Ordered a tangaroo., Jaffles from the Jaffle Shop are awesome! Ordered a tangaroo., Jaffles from the Jaffle Shop are awesome! Ordered a adele-ade., Jaffles from the Jaffle Shop are fantastic! Ordered a tangaroo., Jaffle Shop again. Ordered a tangaroo. This place is terrible., Jaffles from the Jaffle Shop are my favorite! Ordered a adele-ade., Jaffles from the Jaffle Shop are sooo gooood! Ordered a adele-ade., Jaffles from the Jaffle Shop are the best! Ordered a chai and mighty., Jaffles from the Jaffle Shop are sooo gooood! Ordered a vanilla ice., Jaffles from the Jaffle Shop are delicious! Ordered a vanilla ice. ... (50+ distinct) |\n\n## Measures (1)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| tweet_count | id:count | Tweets | Number of tweets. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n\n## Joins (1)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | user_id = id | many_to_one |\n\n## Data Profile\n\n| user_id | content | _count | tweeted_at_count_distinct |\n| --- | --- | --- | --- |\n| 000cd71e-8069-42e1-8e64-c3054f97ea85 | Jaffle shop is alright. Ordered a adele-ade. | 5 | 5 |\n| 000cd71e-8069-42e1-8e64-c3054f97ea85 | Jaffle shop is alright. Ordered a chai and mighty. | 5 | 5 |\n| 000cd71e-8069-42e1-8e64-c3054f97ea85 | Jaffle shop is alright. Ordered a for richer or pourover . | 3 | 3 |\n\n## Learnings (1)\n\n- **Mjaffle-tweets-limits** (`demo_database.tweets`, `demo_database.tweets.content`, `demo_database.tweets.tweet_count`): tweets.content is templated and uniformly positive (\"Jaffles from the Jaffle Shop are {amazing|awesome|...}! Ordered a {product}.\"). It cannot support sentiment, complaint or satisfaction analysis: if asked, say the data cannot answer that rather than reporting 100% positive sentiment. It is valid for mention volume over time, the share of customers who post, and which products are named in posts.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": [
+     {
+      "name": "tw",
+      "source_model": "tweets",
+      "dimensions": [
+       "user_id"
+      ],
+      "measures": [
+       "count(*)"
+      ],
+      "filters": [
+       "tweeted_at in '2025'"
+      ]
+     },
+     {
+      "name": "oc",
+      "source_model": "orders",
+      "dimensions": [
+       "customer"
+      ],
+      "measures": [
+       {
+        "formula": "count(*)",
+        "name": "n"
+       },
+       {
+        "formula": "sum(subtotal)",
+        "name": "st"
+       }
+      ],
+      "filters": [
+       "ordered_at in '2025'"
+      ]
+     },
+     {
+      "source_model": {
+       "source_name": "oc",
+       "joins": [
+        {
+         "target_model": "tw",
+         "join_pairs": [
+          [
+           "customer",
+           "user_id"
+          ]
+         ]
+        }
+       ]
+      },
+      "dimensions": [
+       {
+        "expression": "iif(tw.user_id is null, 'did not tweet', 'tweeted')",
+        "name": "segment"
+       }
+      ],
+      "measures": [
+       {
+        "formula": "count(*)",
+        "name": "customers"
+       },
+       {
+        "formula": "sum(n)",
+        "name": "orders"
+       },
+       {
+        "formula": "sum(st)/sum(n)/100.0",
+        "name": "aov"
+       }
+      ]
+     }
+    ],
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"oc.customers\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"customers\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"oc.orders\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"orders\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"oc.aov\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"aov\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"oc.segment\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"segment\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"oc.segment\": \"did not tweet\",\n      \"oc.customers\": 229,\n      \"oc.orders\": 18744,\n      \"oc.aov\": 10.94200810926163\n    },\n    {\n      \"oc.segment\": \"tweeted\",\n      \"oc.customers\": 2561,\n      \"oc.orders\": 389562,\n      \"oc.aov\": 10.50312658832227\n    }\n  ],\n  \"row_count\": 2,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e915-b6d6-76b3-a6bf-6cfbbb5f49b7\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "oc.customers",
+     "oc.orders",
+     "oc.aov",
+     "oc.segment"
+    ],
+    "rows": [
+     [
+      229,
+      18744,
+      10.94200810926163,
+      "did not tweet"
+     ],
+     [
+      2561,
+      389562,
+      10.50312658832227,
+      "tweeted"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "measures": [
+      "count(*)",
+      "unique_customers",
+      "sum(subtotal)"
+     ],
+     "filters": [
+      "ordered_at in '2025'"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.count(*)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"count(*)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.unique_customers\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"Unique Customers\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.sum(subtotal)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"sum(subtotal)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.count(*)\": 408306,\n      \"orders.unique_customers\": 2790,\n      \"orders.sum(subtotal)\": 429671600\n    }\n  ],\n  \"row_count\": 1,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e915-c17a-73a3-8e70-3c331f9559f8\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.count(*)",
+     "orders.unique_customers",
+     "orders.sum(subtotal)"
+    ],
+    "rows": [
+     [
+      408306,
+      2790,
+      429671600
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "segment",
+     "customers",
+     "orders",
+     "avg_order_value_usd"
+    ],
+    "rows": [
+     [
+      "tweeted",
+      2561,
+      389562,
+      10.50312658832227
+     ],
+     [
+      "did not tweet",
+      229,
+      18744,
+      10.94200810926163
+     ]
+    ],
+    "message": "No. In 2025, customers who tweeted at least once that year had a lower pre-tax average order value than customers who didn't: $10.50 for the 2,561 tweeters (389,562 orders) versus $10.94 for the 229 non-tweeters (18,744 orders). Average order value here is the pre-tax subtotal divided by the number of orders, converted from cents to dollars. \"Tweeted\" means the customer posted at least one tweet in 2025. Together the two segments cover all 2,790 customers and 408,306 orders in 2025."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 8,
+  "output_tokens": 1082,
+  "cache_read_tokens": 284803,
+  "cache_write_tokens": 7676,
+  "partial": false
+ },
+ "cost_usd": 0.1170126,
+ "duration_s": 20.384482303983532,
+ "turns": 8,
+ "end_reason": "submitted",
+ "error": null
+}

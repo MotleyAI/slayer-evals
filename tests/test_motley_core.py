@@ -114,10 +114,10 @@ def test_committed_metadata_without_motley_fields_loads():
     assert md.motley_server_info is None
 
 
-def test_baseline_metadata_has_no_motley_endpoint():
+def test_baseline_metadata_records_the_motley_endpoint():
     md = RunMetadata.model_validate_json((REPO / "results" / "baseline" / "metadata.json").read_text())
-    assert md.motley_url is None
-    assert md.motley_server_info is None
+    assert md.motley_url is not None
+    assert md.motley_server_info is not None
 
 
 def test_xfail_without_profiles_applies_to_every_profile():

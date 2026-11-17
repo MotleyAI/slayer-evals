@@ -4,9 +4,9 @@
   {
    "tool": "search",
    "args": {
-    "question": "revenue year to date same-store comparable stores"
+    "question": "same-store revenue comparable stores year to date"
    },
-   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-data-coverage\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.orders\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.items\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.total_revenue\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Gross sales including tax, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.time_spine\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Built-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='demo_database.time_spine', entity_type='model').\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.models\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Authoring models: columns, saved measures, custom aggregations, joins, filters, query-backed models, result keys.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.orders.ordered_at\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"When the order was placed.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-data-coverage\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.orders\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": null,\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.items\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.time\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Read when a query filters or buckets by time: time-point forms, date_range and look-back, running totals from the start.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.total_revenue\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Gross sales including tax, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.time_spine\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Built-in virtual model (not stored; every datasource has one): every instant. Group by time_spine.timestamp at a granularity to get every bucket in range, empty ones included. For the models wired to it and its rules: inspect(reference='demo_database.time_spine', entity_type='model').\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"help.transforms\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Read when a measure needs a running total, period-over-period change, time shift, lag/lead, ranking, or a streak.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.avg_order_value\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Revenue per order, in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -14,39 +14,14 @@
   {
    "tool": "inspect",
    "args": {
-    "entity_type": "model"
-   },
-   "result_text": "# Datasource: `demo_database` — 8 model(s)\n- `customers` (2 cols; joins: `orders`, `tweets`)\n- `items` (4 cols; joins: `orders`, `products`)\n- `orders` (9 cols; joins: `customers`, `items`, `stores`)\n- `products` (5 cols; joins: `items`, `supplies`)\n- `stores` (4 cols; joins: `orders`)\n- `supplies` (5 cols; joins: `products`)\n- `time_spine` (1 cols; joins: _(none)_)\n- `tweets` (4 cols; joins: `customers`)",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect",
-   "args": {
-    "entity_type": "memory",
     "reference": [
-     "jaffle-data-coverage",
-     "jaffle-same-store-growth",
-     "jaffle-revenue-definition"
-    ]
-   },
-   "result_text": "## jaffle-data-coverage\nentity_type='memory' requires a 'memory:<id>' reference; got 'jaffle-data-coverage'. Memory references must start with 'memory:'.\n\n---\n\n## jaffle-same-store-growth\nentity_type='memory' requires a 'memory:<id>' reference; got 'jaffle-same-store-growth'. Memory references must start with 'memory:'.\n\n---\n\n## jaffle-revenue-definition\nentity_type='memory' requires a 'memory:<id>' reference; got 'jaffle-revenue-definition'. Memory references must start with 'memory:'.",
-   "is_error": false,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "inspect",
-   "args": {
-    "entity_type": "model",
-    "reference": [
-     "demo_database.orders",
-     "demo_database.stores"
+     "memory:jaffle-data-coverage",
+     "memory:jaffle-same-store-growth"
     ],
+    "entity_type": "memory",
     "compact": false
    },
-   "result_text": "## demo_database.orders\n# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| customer | TEXT | — | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | params | description |\n| --- | --- | --- |\n| dollars | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | weight | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer = id | many_to_one |\n| stores | store_id = id | many_to_one |\n| items | id = order_id | one_to_many |\n\n## Data Profile\n\n| customer | store_id | _count | ordered_at_count_distinct | subtotal_avg | tax_paid_avg | order_total_avg | order_weekday_count | order_hour_count |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 4f5baf7e-c2f5-400b-bdbc-494e1a9ff902 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 508 | 508 | 2035.0393700787401 | 121.89763779527559 | 2156.9370078740158 | 508 | 508 |\n| 110b826a-c1f7-48ce-a178-ac6d57c81638 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 558 | 558 | 2058.064516129032 | 123.32795698924731 | 2181.3924731182797 | 558 | 558 |\n| 0d7a0a5a-fe48-4b67-984b-3a935d57f7f5 | eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe | 918 | 918 | 552.5054466230937 | 33.150326797385624 | 585.6557734204792 | 918 | 918 |\n\n## Learnings (3)\n\n- **Mjaffle-data-coverage** (`demo_database.orders.ordered_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\n- **Mjaffle-money-in-cents** (`demo_database.orders.order_total`, `demo_database.orders.subtotal`, `demo_database.orders.tax_paid`): Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\n- **Mjaffle-new-customers** (`demo_database.orders.customer`, `demo_database.orders.ordered_at`, `demo_database.orders.unique_customers`): A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.\n\n---\n\n## demo_database.stores\n# Model: `stores`\n\n- **data_source:** `demo_database`\n- **sql_table:** `stores`\n- **row_count:** 6\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| name | TEXT | — | all | Store | Store name. | Brooklyn, Chicago, Los Angeles, New Orleans, Philadelphia, San Francisco |\n| opened_at | TIMESTAMP | — | all | Opened | When the store opened. | 2022-10-31 00:00:00 .. 2025-11-11 00:00:00 |\n| tax_rate | DOUBLE | — | all | Tax Rate | Local sales-tax rate. | 0.04 .. 0.08 |\n\n## Measures (1)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| store_count | id:count_distinct | Stores | Number of stores. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n\n## Joins (1)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| orders | id = store_id | one_to_many |\n\n## Data Profile\n\n| name | _count | opened_at_count_distinct | tax_rate_avg |\n| --- | --- | --- | --- |\n| Chicago | 1 | 1 | 0.0625 |\n| Philadelphia | 1 | 1 | 0.06 |\n| San Francisco | 1 | 1 | 0.075 |\n\n## Learnings (1)\n\n- **Mjaffle-data-coverage** (`demo_database.stores.name`, `demo_database.stores.opened_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.",
+   "result_text": "## memory:jaffle-data-coverage\nOrder data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\nPartial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\nTagged entities: demo_database.orders.ordered_at, demo_database.stores.opened_at, demo_database.stores.name\n\n---\n\n## memory:jaffle-same-store-growth\nFor any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\nGrowth / YoY: always report headline AND same-store growth (stores open for both full periods)\nTagged entities: demo_database.orders, demo_database.orders.ordered_at, demo_database.orders.net_sales, demo_database.stores.opened_at",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -54,13 +29,11 @@
   {
    "tool": "inspect",
    "args": {
-    "entity_type": "memory",
-    "reference": [
-     "memory:jaffle-same-store-growth",
-     "memory:jaffle-data-coverage"
-    ]
+    "reference": "demo_database.orders",
+    "entity_type": "model",
+    "compact": false
    },
-   "result_text": "## memory:jaffle-same-store-growth\nGrowth / YoY: always report headline AND same-store growth (stores open for both full periods)\n\n---\n\n## memory:jaffle-data-coverage\nPartial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like",
+   "result_text": "# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| customer | TEXT | — | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | params | description |\n| --- | --- | --- |\n| dollars | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | weight | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer = id | many_to_one |\n| stores | store_id = id | many_to_one |\n| items | id = order_id | one_to_many |\n\n## Data Profile\n\n| customer | store_id | _count | ordered_at_count_distinct | subtotal_avg | tax_paid_avg | order_total_avg | order_weekday_count | order_hour_count |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 000cd71e-8069-42e1-8e64-c3054f97ea85 | 3a7988ca-388b-4279-a803-1d5ccdc486e3 | 534 | 534 | 557.6779026217229 | 34.46067415730337 | 592.1385767790263 | 534 | 534 |\n| 002088f0-ebb8-48d5-90c4-e4757a7e3f67 | f17aa111-2c09-45f2-8b11-6651c243c077 | 514 | 514 | 562.4513618677042 | 41.59143968871595 | 604.0428015564203 | 514 | 514 |\n| 002a1ec7-c4cf-409b-a375-a377da7d33e3 | 3a7988ca-388b-4279-a803-1d5ccdc486e3 | 301 | 301 | 1083.0564784053156 | 67.30564784053156 | 1150.362126245847 | 301 | 301 |\n\n## Learnings (3)\n\n- **Mjaffle-data-coverage** (`demo_database.orders.ordered_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\n- **Mjaffle-money-in-cents** (`demo_database.orders.order_total`, `demo_database.orders.subtotal`, `demo_database.orders.tax_paid`): Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\n- **Mjaffle-new-customers** (`demo_database.orders.customer`, `demo_database.orders.ordered_at`, `demo_database.orders.unique_customers`): A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -71,56 +44,72 @@
     "query": {
      "source_model": "orders",
      "measures": [
-      {
-       "formula": "ordered_at:max",
-       "name": "mx"
-      }
-     ],
-     "dimensions": [
-      "stores.name",
-      "stores.opened_at"
+      "ordered_at:max",
+      "ordered_at:min"
      ]
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.stores.name\": \"Brooklyn\", \"orders.stores.opened_at\": \"2023-05-11 00:00:00\", \"orders.mx\": \"2026-10-29 19:38:00\"}, {\"orders.stores.name\": \"San Francisco\", \"orders.stores.opened_at\": \"2024-07-07 00:00:00\", \"orders.mx\": \"2026-10-29 18:30:00\"}, {\"orders.stores.name\": \"Los Angeles\", \"orders.stores.opened_at\": \"2025-11-11 00:00:00\", \"orders.mx\": \"2026-10-29 19:07:00\"}, {\"orders.stores.name\": \"Philadelphia\", \"orders.stores.opened_at\": \"2022-10-31 00:00:00\", \"orders.mx\": \"2026-10-29 19:35:00\"}, {\"orders.stores.name\": \"New Orleans\", \"orders.stores.opened_at\": \"2025-05-08 00:00:00\", \"orders.mx\": \"2026-10-29 19:23:00\"}, {\"orders.stores.name\": \"Chicago\", \"orders.stores.opened_at\": \"2024-06-27 00:00:00\", \"orders.mx\": \"2026-10-29 19:52:00\"}], \"attributes\": {\"dimensions\": {\"orders.stores.name\": {\"label\": \"Store\", \"format\": null}, \"orders.stores.opened_at\": {\"label\": \"Opened\", \"format\": null}}, \"measures\": {\"orders.mx\": {\"label\": \"Order Date\", \"format\": null}}}}",
+   "result_text": "{\"data\": [{\"orders.ordered_at_max\": \"2026-10-29 19:52:00\", \"orders.ordered_at_min\": \"2022-10-31 09:52:00\"}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.ordered_at_max\": {\"label\": \"Order Date\", \"format\": null}, \"orders.ordered_at_min\": {\"label\": \"Order Date\", \"format\": null}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "orders.stores.name",
-     "orders.stores.opened_at",
-     "orders.mx"
+     "orders.ordered_at_max",
+     "orders.ordered_at_min"
+    ],
+    "rows": [
+     [
+      "2026-10-29 19:52:00",
+      "2022-10-31 09:52:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "stores",
+     "dimensions": [
+      "name",
+      "opened_at"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\"data\": [{\"stores.name\": \"Brooklyn\", \"stores.opened_at\": \"2023-05-11 00:00:00\"}, {\"stores.name\": \"Chicago\", \"stores.opened_at\": \"2024-06-27 00:00:00\"}, {\"stores.name\": \"Los Angeles\", \"stores.opened_at\": \"2025-11-11 00:00:00\"}, {\"stores.name\": \"New Orleans\", \"stores.opened_at\": \"2025-05-08 00:00:00\"}, {\"stores.name\": \"Philadelphia\", \"stores.opened_at\": \"2022-10-31 00:00:00\"}, {\"stores.name\": \"San Francisco\", \"stores.opened_at\": \"2024-07-07 00:00:00\"}], \"attributes\": {\"dimensions\": {\"stores.name\": {\"label\": \"Store\", \"format\": null}, \"stores.opened_at\": {\"label\": \"Opened\", \"format\": null}}, \"measures\": {}}}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "stores.name",
+     "stores.opened_at"
     ],
     "rows": [
      [
       "Brooklyn",
-      "2023-05-11 00:00:00",
-      "2026-10-29 19:38:00"
-     ],
-     [
-      "San Francisco",
-      "2024-07-07 00:00:00",
-      "2026-10-29 18:30:00"
-     ],
-     [
-      "Los Angeles",
-      "2025-11-11 00:00:00",
-      "2026-10-29 19:07:00"
-     ],
-     [
-      "Philadelphia",
-      "2022-10-31 00:00:00",
-      "2026-10-29 19:35:00"
-     ],
-     [
-      "New Orleans",
-      "2025-05-08 00:00:00",
-      "2026-10-29 19:23:00"
+      "2023-05-11 00:00:00"
      ],
      [
       "Chicago",
-      "2024-06-27 00:00:00",
-      "2026-10-29 19:52:00"
+      "2024-06-27 00:00:00"
+     ],
+     [
+      "Los Angeles",
+      "2025-11-11 00:00:00"
+     ],
+     [
+      "New Orleans",
+      "2025-05-08 00:00:00"
+     ],
+     [
+      "Philadelphia",
+      "2022-10-31 00:00:00"
+     ],
+     [
+      "San Francisco",
+      "2024-07-07 00:00:00"
      ]
     ],
     "warnings": []
@@ -132,108 +121,58 @@
    "args": {
     "query": {
      "source_model": "orders",
-     "measures": [
-      {
-       "formula": "net_sales",
-       "name": "rev"
-      }
-     ],
-     "dimensions": [
-      {
-       "expression": "stores.opened_at < '2025-01-01'",
-       "name": "comp"
-      }
-     ],
-     "time_dimensions": [
-      {
-       "dimension": "ordered_at",
-       "granularity": "year"
-      }
-     ],
      "filters": [
-      "(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30') or (ordered_at >= '2026-01-01' and ordered_at < '2026-10-30')"
-     ]
-    },
-    "format": "json"
-   },
-   "result_text": "{\"data\": [{\"orders.comp\": true, \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.rev\": 3299245.0}, {\"orders.comp\": false, \"orders.ordered_at\": \"2026-01-01 00:00:00\", \"orders.rev\": 1013694.0}, {\"orders.comp\": false, \"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.rev\": 153593.0}, {\"orders.comp\": true, \"orders.ordered_at\": \"2026-01-01 00:00:00\", \"orders.rev\": 3543155.0}], \"attributes\": {\"dimensions\": {\"orders.ordered_at\": {\"label\": \"Order Date\", \"format\": null}}, \"measures\": {\"orders.rev\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "orders.comp",
-     "orders.ordered_at",
-     "orders.rev"
-    ],
-    "rows": [
-     [
-      true,
-      "2025-01-01 00:00:00",
-      3299245.0
+      "ordered_at >= '2025-01-01'"
      ],
-     [
-      false,
-      "2026-01-01 00:00:00",
-      1013694.0
-     ],
-     [
-      false,
-      "2025-01-01 00:00:00",
-      153593.0
-     ],
-     [
-      true,
-      "2026-01-01 00:00:00",
-      3543155.0
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "orders",
      "measures": [
       {
-       "formula": "subtotal:sum",
-       "name": "c"
+       "formula": "sum(iif(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30', subtotal, 0)) / 100.0",
+       "name": "ly"
       },
       {
-       "formula": "order_count"
-      }
-     ],
-     "time_dimensions": [
+       "formula": "sum(iif(ordered_at >= '2026-01-01' and ordered_at < '2026-10-30', subtotal, 0)) / 100.0",
+       "name": "ty"
+      },
       {
-       "dimension": "ordered_at",
-       "granularity": "year"
+       "formula": "sum(iif(ordered_at >= '2026-01-01' and ordered_at < '2026-10-30', subtotal, 0)) / sum(iif(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30', subtotal, 0)) - 1",
+       "name": "growth"
+      },
+      {
+       "formula": "sum(iif(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30' and stores.opened_at < '2025-01-01', subtotal, 0)) / 100.0",
+       "name": "ss_ly"
+      },
+      {
+       "formula": "sum(iif(ordered_at >= '2026-01-01' and ordered_at < '2026-10-30' and stores.opened_at < '2025-01-01', subtotal, 0)) / 100.0",
+       "name": "ss_ty"
+      },
+      {
+       "formula": "sum(iif(ordered_at >= '2026-01-01' and ordered_at < '2026-10-30' and stores.opened_at < '2025-01-01', subtotal, 0)) / sum(iif(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30' and stores.opened_at < '2025-01-01', subtotal, 0)) - 1",
+       "name": "ss_growth"
       }
-     ],
-     "filters": [
-      "(ordered_at >= '2025-01-01' and ordered_at < '2025-10-30') or (ordered_at >= '2026-01-01' and ordered_at < '2026-10-30')"
      ]
     },
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"orders.ordered_at\": \"2026-01-01 00:00:00\", \"orders.c\": 455684900, \"orders.order_count\": 434675}, {\"orders.ordered_at\": \"2025-01-01 00:00:00\", \"orders.c\": 345283800, \"orders.order_count\": 327863}], \"attributes\": {\"dimensions\": {\"orders.ordered_at\": {\"label\": \"Order Date\", \"format\": null}}, \"measures\": {\"orders.c\": {\"label\": \"Net Sales (cents)\", \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}, \"orders.order_count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH _base AS (\n  SELECT\n    SUM(\n      CASE\n        WHEN orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n        AND orders.ordered_at < CAST('2025-10-30 00:00:00' AS TIMESTAMP)\n        THEN orders.subtotal\n        ELSE 0\n      END\n    ) / 100.0 AS \"orders.ly\",\n    SUM(\n      CASE\n        WHEN orders.ordered_at >= CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n        AND orders.ordered_at < CAST('2026-10-30 00:00:00' AS TIMESTAMP)\n        THEN orders.subtotal\n        ELSE 0\n      END\n    ) / 100.0 AS \"orders.ty\",\n    SUM(\n      CASE\n        WHEN orders.ordered_at >= CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n        AND orders.ordered_at < CAST('2026-10-30 00:00:00' AS TIMESTAMP)\n        THEN orders.subtotal\n        ELSE 0\n      END\n    ) / NULLIF(\n      SUM(\n        CASE\n          WHEN orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n          AND orders.ordered_at < CAST('2025-10-30 00:00:00' AS TIMESTAMP)\n          THEN orders.subtotal\n          ELSE 0\n        END\n      ),\n      0\n    ) - 1 AS \"orders.growth\"\n  FROM orders AS orders\n  WHERE\n    orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n), _cm_orders__iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum AS (\n  SELECT\n    SUM(\n      CASE\n        WHEN orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n        AND orders.ordered_at < CAST('2025-10-30 00:00:00' AS TIMESTAMP)\n        AND stores.opened_at < CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n        THEN orders.subtotal\n        ELSE 0\n      END\n    ) AS \"orders.iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum\"\n  FROM orders AS orders\n  LEFT JOIN stores AS stores\n    ON orders.store_id = stores.id\n  WHERE\n    orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n), _cm_orders__iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum AS (\n  SELECT\n    SUM(\n      CASE\n        WHEN orders.ordered_at >= CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n        AND orders.ordered_at < CAST('2026-10-30 00:00:00' AS TIMESTAMP)\n        AND stores.opened_at < CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n        THEN orders.subtotal\n        ELSE 0\n      END\n    ) AS \"orders.iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum\"\n  FROM orders AS orders\n  LEFT JOIN stores AS stores\n    ON orders.store_id = stores.id\n  WHERE\n    orders.ordered_at >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n)\nSELECT\n  _base.\"orders.ly\",\n  _base.\"orders.ty\",\n  _base.\"orders.growth\",\n  _cm_orders__iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum.\"orders.iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum\" / 100.0 AS \"orders.ss_ly\",\n  _cm_orders__iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum.\"orders.iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum\" / 100.0 AS \"orders.ss_ty\",\n  _cm_orders__iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum.\"orders.iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum\" / NULLIF(\n    _cm_orders__iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum.\"orders.iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum\",\n    0\n  ) - 1 AS \"orders.ss_growth\"\nFROM _base\nCROSS JOIN _cm_orders__iif_ordered_at_2025_01_01_00_6195222a_btotal_0_sum\nCROSS JOIN _cm_orders__iif_ordered_at_2026_01_01_00_24a87f15_btotal_0_sum\nLIMIT 21\n\n{\"data\": [{\"orders.ly\": 3452838.0, \"orders.ty\": 4556849.0, \"orders.growth\": 0.3197401673637743, \"orders.ss_ly\": 3299245.0, \"orders.ss_ty\": 3543155.0, \"orders.ss_growth\": 0.07392903527928363}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.ly\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.ty\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.growth\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.ss_ly\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.ss_ty\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}, \"orders.ss_growth\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "orders.ordered_at",
-     "orders.c",
-     "orders.order_count"
+     "orders.ly",
+     "orders.ty",
+     "orders.growth",
+     "orders.ss_ly",
+     "orders.ss_ty",
+     "orders.ss_growth"
     ],
     "rows": [
      [
-      "2026-01-01 00:00:00",
-      455684900,
-      434675
-     ],
-     [
-      "2025-01-01 00:00:00",
-      345283800,
-      327863
+      3452838.0,
+      4556849.0,
+      0.3197401673637743,
+      3299245.0,
+      3543155.0,
+      0.07392903527928363
      ]
     ],
     "warnings": []
@@ -243,37 +182,25 @@
   {
    "tool": "submit_answer",
    "args": {
-    "columns": "[\"ly_ytd_revenue\", \"ty_ytd_revenue\", \"ytd_growth\", \"comp_ly_ytd_revenue\", \"comp_ty_ytd_revenue\", \"comp_ytd_growth\"]",
-    "rows": "[[3452838.0, 4556849.0, 0.3197401674, 3299245.0, 3543155.0, 0.073929035]]",
-    "message": "Revenue (pre-tax net sales) grew about 32.0% year to date: from $3,452,838 last year to $4,556,849 this year. Only about 7.4% of that is same-store growth: comparable stores went from $3,299,245 to $3,543,155.\n\nHow I set this up:\n- **Period:** The latest order is from 29 Oct 2026, so both years run from 1 January to 29 October.\n- **Comparable stores:** Stores open before 1 Jan 2025, so they were open for all of both periods: Philadelphia, Brooklyn, Chicago and San Francisco.\n- **Excluded from same-store:** New Orleans (opened May 2025) and Los Angeles (opened Nov 2025).\n\nMost of the headline growth comes from the two new stores. Their sales went from $153,593 to $1,013,694."
-   },
-   "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "submit_answer",
-   "args": {
     "columns": [
-     "ly_ytd_revenue",
-     "ty_ytd_revenue",
-     "ytd_growth",
-     "comp_ly_ytd_revenue",
-     "comp_ty_ytd_revenue",
-     "comp_ytd_growth"
+     "revenue_ly_ytd",
+     "revenue_ty_ytd",
+     "growth",
+     "same_store_revenue_ly_ytd",
+     "same_store_revenue_ty_ytd",
+     "same_store_growth"
     ],
     "rows": [
      [
       3452838,
       4556849,
-      0.3197401674,
+      0.3197401673637743,
       3299245,
       3543155,
-      0.073929035
+      0.07392903527928363
      ]
     ],
-    "message": "Revenue (pre-tax net sales) grew about 32.0% year to date: from $3,452,838 last year to $4,556,849 this year. Only about 7.4% of that is same-store growth: comparable stores went from $3,299,245 to $3,543,155.\n\nHow I set this up:\n- **Period:** The latest order is from 29 Oct 2026, so both years run from 1 January to 29 October.\n- **Comparable stores:** Stores open before 1 Jan 2025, so they were open for all of both periods: Philadelphia, Brooklyn, Chicago and San Francisco.\n- **Excluded from same-store:** New Orleans (opened May 2025) and Los Angeles (opened Nov 2025).\n\nMost of the headline growth comes from the two new stores. Their sales went from $153,593 to $1,013,694."
+    "message": "Year to date, revenue grew about 32.0% ($3,452,838 → $4,556,849). For the comparable stores alone it grew only about 7.4% ($3,299,245 → $3,543,155). So most of the headline growth comes from New Orleans, which opened in May 2025, and Los Angeles, which opened in November 2025.\n\nHow these were calculated:\n- Revenue means pre-tax net sales, which is how the existing store-revenue examples define it.\n- The last order in the data is on 2026-10-29, so both periods run from Jan 1 to Oct 29 inclusive, in 2026 and in 2025.\n- Comparable stores are those that opened before 2025-01-01: Philadelphia, Brooklyn, Chicago and San Francisco."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -282,15 +209,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 12,
-  "output_tokens": 2251,
-  "cache_read_tokens": 173627,
-  "cache_write_tokens": 11649,
+  "input_tokens": 10,
+  "output_tokens": 1663,
+  "cache_read_tokens": 138474,
+  "cache_write_tokens": 8973,
   "partial": false
  },
- "cost_usd": 0.1380384,
- "duration_s": 30.608160705014598,
- "turns": 12,
+ "cost_usd": 0.1058598,
+ "duration_s": 23.45668200799264,
+ "turns": 9,
  "end_reason": "submitted",
  "error": null
 }

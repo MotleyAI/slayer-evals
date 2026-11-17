@@ -1,0 +1,146 @@
+{
+ "profile": "motley+python",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "order pre-tax order value subtotal 2025 sales"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"learning\": \"When a user says \\\"revenue\\\", \\\"sales\\\" or \\\"AOV\\\" without qualification, use pre-tax figures: orders.net_sales, and net AOV = net_sales / order_count. total_revenue and the saved avg_order_value include sales tax, which is collected for the state, not earned. Store tax rates run from 4% (Brooklyn, New Orleans) to 8% (Los Angeles), so tax-inclusive figures distort store comparisons (e.g. in 2025 Brooklyn ranks 5th of 6 on tax-inclusive AOV but 2nd on pre-tax AOV). Use total_revenue / avg_order_value only when asked for gross or tax-inclusive numbers, and always state which basis you used.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.net_sales\",\n        \"orders.order_count\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Sales before tax, in dollars.\",\n      \"id\": \"orders.net_sales\",\n      \"source_id\": \"01a1e912-727c-7af2-b782-95ca7d90097e\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"Pre-tax order amount, in cents.\",\n      \"id\": \"orders.subtotal\",\n      \"source_id\": \"01a1e912-727c-7af2-b782-95ca7d90097e\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03200204813108039,\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"learning\": \"Monthly sales by store: net_sales (pre-tax, dollars) by stores.name over month(ordered_at). Use net_sales rather than total_revenue so stores with different tax rates compare fairly (see jaffle-revenue-definition). Drop the current incomplete month (see jaffle-data-coverage).\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03200204813108039,\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"learning\": \"For sales by product, SKU or product type (product mix, category share), query the items model with the line_sales measure (dollars, pre-tax). It reconciles exactly to orders.net_sales for every year. Do NOT write products.price:sum from items: SLayer aggregates a joined one-side column at its own grain, so it sums each distinct product's price once (e.g. $28 for all beverages in 2025) instead of once per item sold. Share of total: line_sales / unit_price:sum(partition_by=[]).\",\n      \"linked_entities\": [\n        \"items\",\n        \"products.type\",\n        \"items.line_sales\",\n        \"items.unit_price\",\n        \"orders.ordered_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03125763125763126,\n      \"description\": \"Average order total weighted by subtotal (larger orders weigh more), in dollars.\",\n      \"id\": \"orders.sales_weighted_aov\",\n      \"source_id\": \"01a1e912-727c-7af2-b782-95ca7d90097e\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03125,\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"learning\": \"Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\",\n      \"linked_entities\": [\n        \"orders.order_total\",\n        \"orders.subtotal\",\n        \"orders.tax_paid\",\n        \"products.price\",\n        \"supplies.cost\"\n      ]\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.030798389007344232,\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"id\": \"items.line_sales\",\n      \"source_id\": \"01a1e912-727c-7af2-b782-95ca7d90097e\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"aggregation\",\n      \"score\": 0.030309988518943745,\n      \"description\": \"Weighted average defaulting the weight to order subtotal.\",\n      \"id\": \"orders.weighted_avg\",\n      \"source_id\": \"01a1e912-727c-7af2-b782-95ca7d90097e\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030090497737556562,\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"learning\": \"For any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\",\n        \"stores.opened_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "orders",
+    "show_sql": true
+   },
+   "result_text": "# Model: `orders`\n\n- **data_source:** `demo_database`\n- **sql_table:** `orders`\n- **default_time_dimension:** `ordered_at`\n- **row_count:** 1,172,882\n\n## Columns (9)\n\n| name | type | primary_key | sql | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | id | all | — | — | — |\n| customer | TEXT | — | customer | all | Customer ID | Customer who placed the order. Test description update | 0f78c62a-8885-465c-a163-53a277a2dc6c, 2e82c1e7-e46a-4c76-98ae-773e9224a74a, 5c11bee0-a15f-4cc8-a0f9-01901ee03b22, 4b6e29da-b667-4d51-9f4c-92ab3cfda29e, c14bbc63-666f-4d61-99c0-995620be844b, be1be68f-0655-442d-9ad0-b94009a5d576, 1628433d-7775-4d12-aa1c-dcc1889a0253, 202aa591-c645-4c72-a502-2eefc031ea79, 7b7ce7a2-922f-4a57-a3e8-1cd4d63cc696, 9a42ca18-72b8-4b87-bbe7-5957d9075d86, 381add6f-c3fe-447c-84a4-708a8f7e1f87, 7e1bf84e-a047-466f-b149-cac5f748c8bb, 8909c4b0-0436-440f-8efd-bd6b9f3704a7, deaa291e-3dff-4019-9bf6-ea9dae309070, 9784291c-a058-4713-9da0-30759f5bdcf0, 9fde873f-7a69-4e4b-b418-cda2e8b8dacd, 50f940a1-2ee0-4ec7-a18f-f5a2ecd76fae, 644f4b50-d081-4dec-9fc2-179d8a9fe7d0, 90962325-2bb6-4944-8671-c130fea40f91, e991c06c-fe77-4af6-b572-3e2e564e5292 ... (50+ distinct) |\n| ordered_at | TIMESTAMP | — | ordered_at | all | Order Date | When the order was placed. | 2022-10-31 09:52:00 .. 2026-10-29 19:52:00 |\n| store_id | TEXT | — | store_id | all | Store | Store where the order was placed. | 6d39b5a4-283b-4cb3-88df-be4641b2f2d1, eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe, 3a7988ca-388b-4279-a803-1d5ccdc486e3, f17aa111-2c09-45f2-8b11-6651c243c077, 26167078-a9ea-47cd-8a54-09d4ac37aa6f, 7326f660-e458-4f3a-91ef-16a05a18b498 |\n| subtotal | INT | — | subtotal | all | Net Sales (cents) | Pre-tax order amount, in cents. | 0 .. 10000 |\n| tax_paid | INT | — | tax_paid | all | Tax Paid (cents) | Tax charged on the order, in cents. | 0 .. 776 |\n| order_total | INT | — | order_total | all | Order Total (cents) | Final order amount incl. tax, in cents. | 0 .. 10535 |\n| order_weekday | INT | — | CAST(EXTRACT(ISODOW FROM ordered_at) AS INT) | count, count_distinct, min, max | Order weekday | ISO day of week the order was placed: 1 = Monday … 7 = Sunday. Use with order_hour for day-part and staffing analysis. | 1 .. 7 |\n| order_hour | INT | — | CAST(EXTRACT(HOUR FROM ordered_at) AS INT) | count, count_distinct, min, max | Order hour | Hour of day the order was placed (0–23, store local time as stored in ordered_at). Use with order_weekday for peak-hour heatmaps. | 7 .. 19 |\n\n## Measures (8)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| total_revenue | order_total:dollars | Total Revenue | Gross sales including tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| net_sales | subtotal:dollars | Net Sales (pre-tax) | Sales before tax, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| tax_collected | tax_paid:dollars | Tax Collected | Total tax collected, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| order_count | id:count | Orders | Number of orders. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| unique_customers | customer:count_distinct | Unique Customers | Distinct customers who ordered. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| avg_order_value | order_total:sum / nullif(id:count, 0) / 100.0 | Average Order Value | Revenue per order, in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n| effective_tax_rate | tax_paid:sum / nullif(subtotal:sum, 0) | Effective Tax Rate | Tax collected as a share of net sales. | {\"format\": {\"precision\": 1, \"symbol\": null, \"type\": \"percent\"}} |\n| sales_weighted_aov | order_total:weighted_avg / 100.0 | Sales-Weighted Avg Order | Average order total weighted by subtotal (larger orders weigh more), in dollars. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Aggregations (2)\n\n| name | formula | params | description |\n| --- | --- | --- | --- |\n| dollars | SUM({value}) / 100.0 | — | Sum of an integer-cents column expressed in dollars. |\n| weighted_avg | (built-in override) | weight=subtotal | Weighted average defaulting the weight to order subtotal. |\n\n## Joins (3)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| customers | customer = id | many_to_one |\n| stores | store_id = id | many_to_one |\n| items | id = order_id | one_to_many |\n\n## Data Profile SQL\n\n```sql\nSELECT\n  orders.customer AS \"orders.customer\",\n  orders.store_id AS \"orders.store_id\",\n  COUNT(*) AS \"orders._count\",\n  COUNT(DISTINCT orders.ordered_at) AS \"orders.ordered_at_count_distinct\",\n  CAST(AVG(orders.subtotal) AS DOUBLE) AS \"orders.subtotal_avg\",\n  CAST(AVG(orders.tax_paid) AS DOUBLE) AS \"orders.tax_paid_avg\",\n  CAST(AVG(orders.order_total) AS DOUBLE) AS \"orders.order_total_avg\",\n  COUNT(CAST(CAST(EXTRACT(ISODOW FROM orders.ordered_at) AS INT) AS BIGINT)) AS \"orders.order_weekday_count\",\n  COUNT(CAST(CAST(EXTRACT(HOUR FROM orders.ordered_at) AS INT) AS BIGINT)) AS \"orders.order_hour_count\"\nFROM orders AS orders\nGROUP BY\n  orders.customer,\n  orders.store_id\nORDER BY\n  \"orders.customer\" ASC,\n  \"orders.store_id\" ASC\nLIMIT 0\n```\n\n## Data Profile\n\nNo results.\n\n## Learnings (3)\n\n- **Mjaffle-data-coverage** (`demo_database.orders.ordered_at`): Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \"this month / this year / YTD\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\n- **Mjaffle-money-in-cents** (`demo_database.orders.order_total`, `demo_database.orders.subtotal`, `demo_database.orders.tax_paid`): Money is stored as **integer cents**. On `orders` the columns `subtotal`, `tax_paid`, and `order_total` are cents; so are `products.price` and `supplies.cost`. Do not `sum` these raw columns for a dollar figure. Use the `dollars` aggregation (`order_total:dollars`) or the pre-built dollar measures (`total_revenue`, `net_sales`, `tax_collected`, `avg_order_value`), which divide by 100.\n- **Mjaffle-new-customers** (`demo_database.orders.customer`, `demo_database.orders.ordered_at`, `demo_database.orders.unique_customers`): A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "dimensions": [
+      {
+       "expression": "case when subtotal < 500 then 'under $5' when subtotal < 1000 then '$5 to $10' when subtotal < 2000 then '$10 to $20' when subtotal >= 2000 then '$20 or more' end",
+       "name": "band"
+      }
+     ],
+     "measures": [
+      "order_count",
+      "net_sales",
+      {
+       "formula": "net_sales / subtotal:dollars(partition_by=[])",
+       "name": "share"
+      }
+     ],
+     "filters": [
+      "ordered_at >= '2025-01-01'",
+      "ordered_at < '2026-01-01'"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.order_count\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"Orders\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.net_sales\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"Net Sales (pre-tax)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.share\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"share\",\n      \"granularity\": null,\n      \"aggregation\": \"dollars(partition_by=[])\"\n    },\n    {\n      \"name\": \"orders.band\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"band\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.band\": \"$10 to $20\",\n      \"orders.order_count\": 71778,\n      \"orders.net_sales\": 1118561.0,\n      \"orders.share\": 0.2603292840392523\n    },\n    {\n      \"orders.band\": \"$20 or more\",\n      \"orders.order_count\": 43870,\n      \"orders.net_sales\": 1547130.0,\n      \"orders.share\": 0.36007266945267036\n    },\n    {\n      \"orders.band\": \"$5 to $10\",\n      \"orders.order_count\": 232467,\n      \"orders.net_sales\": 1401521.0,\n      \"orders.share\": 0.3261842300026346\n    },\n    {\n      \"orders.band\": \"under $5\",\n      \"orders.order_count\": 60191,\n      \"orders.net_sales\": 229504.0,\n      \"orders.share\": 0.05341381650544276\n    }\n  ],\n  \"row_count\": 4,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e912-a012-7a72-80d3-a14f9e5d0bcd\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.order_count",
+     "orders.net_sales",
+     "orders.share",
+     "orders.band"
+    ],
+    "rows": [
+     [
+      71778,
+      1118561.0,
+      0.2603292840392523,
+      "$10 to $20"
+     ],
+     [
+      43870,
+      1547130.0,
+      0.36007266945267036,
+      "$20 or more"
+     ],
+     [
+      232467,
+      1401521.0,
+      0.3261842300026346,
+      "$5 to $10"
+     ],
+     [
+      60191,
+      229504.0,
+      0.05341381650544276,
+      "under $5"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "band",
+     "orders",
+     "sales_dollars",
+     "share_of_sales"
+    ],
+    "rows": [
+     [
+      "under $5",
+      60191,
+      229504,
+      0.05341381650544276
+     ],
+     [
+      "$5 to $10",
+      232467,
+      1401521,
+      0.3261842300026346
+     ],
+     [
+      "$10 to $20",
+      71778,
+      1118561,
+      0.2603292840392523
+     ],
+     [
+      "$20 or more",
+      43870,
+      1547130,
+      0.36007266945267036
+     ]
+    ],
+    "message": "I grouped 2025 orders by their pre-tax subtotal. Each band includes its lower limit and stops just below its upper limit: under $5, $5 to under $10, $10 to under $20, and $20 or more. Sales are pre-tax net sales in dollars, and the four shares add up to 1. Orders of $5 to $10 are the most common at 232,467, but orders of $20 or more bring in the largest share of sales at about 36%."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 6,
+  "output_tokens": 467,
+  "cache_read_tokens": 212711,
+  "cache_write_tokens": 7997,
+  "partial": false
+ },
+ "cost_usd": 0.0918912,
+ "duration_s": 12.057949100038968,
+ "turns": 6,
+ "end_reason": "submitted",
+ "error": null
+}

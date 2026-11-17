@@ -4,9 +4,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select table_name, column_name, data_type from information_schema.columns where table_name ilike '%order%' or table_name ilike '%customer%'"
+    "sql": "select table_name, column_name, data_type from information_schema.columns where table_name in (select table_name from information_schema.tables) and (table_name ilike '%order%' or table_name ilike '%customer%')"
    },
-   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"order_items\", \"id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"line_amount\", \"DOUBLE\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders\", \"order_date\", \"DATE\"], [\"order_items\", \"id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"customers\", \"tags\", \"VARCHAR[]\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -15,6 +15,56 @@
      "data_type"
     ],
     "rows": [
+     [
+      "orders",
+      "id",
+      "INTEGER"
+     ],
+     [
+      "orders",
+      "customer_id",
+      "INTEGER"
+     ],
+     [
+      "orders",
+      "amount",
+      "DOUBLE"
+     ],
+     [
+      "orders",
+      "status",
+      "VARCHAR"
+     ],
+     [
+      "orders",
+      "order_date",
+      "DATE"
+     ],
+     [
+      "order_items",
+      "id",
+      "INTEGER"
+     ],
+     [
+      "order_items",
+      "order_id",
+      "INTEGER"
+     ],
+     [
+      "order_items",
+      "product_id",
+      "INTEGER"
+     ],
+     [
+      "order_items",
+      "quantity",
+      "INTEGER"
+     ],
+     [
+      "order_items",
+      "line_amount",
+      "DOUBLE"
+     ],
      [
       "customers",
       "id",
@@ -51,29 +101,9 @@
       "DOUBLE"
      ],
      [
-      "orders",
-      "id",
-      "INTEGER"
-     ],
-     [
-      "orders",
-      "customer_id",
-      "INTEGER"
-     ],
-     [
-      "orders",
-      "amount",
-      "DOUBLE"
-     ],
-     [
-      "orders",
-      "status",
-      "VARCHAR"
-     ],
-     [
-      "orders",
-      "order_date",
-      "DATE"
+      "customers",
+      "tags",
+      "VARCHAR[]"
      ],
      [
       "orders_flat",
@@ -124,31 +154,6 @@
       "orders_flat",
       "discount",
       "DOUBLE"
-     ],
-     [
-      "order_items",
-      "id",
-      "INTEGER"
-     ],
-     [
-      "order_items",
-      "order_id",
-      "INTEGER"
-     ],
-     [
-      "order_items",
-      "product_id",
-      "INTEGER"
-     ],
-     [
-      "order_items",
-      "quantity",
-      "INTEGER"
-     ],
-     [
-      "order_items",
-      "line_amount",
-      "DOUBLE"
      ]
     ],
     "warnings": []
@@ -158,9 +163,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select avg(c.credit), count(*), count(c.credit), count(c.id), (select count(*) from orders where customer_id is not null), (select count(*) from customers), (select count(distinct id) from customers) from orders o left join customers c on c.id=o.customer_id where o.customer_id is not null"
+    "sql": "select avg(c.credit), count(*), count(c.credit), count(c.id), (select count(*) from orders), (select count(*) from orders where customer_id is not null), (select count(*) from customers), (select count(distinct id) from customers) from orders o left join customers c on o.customer_id=c.id where o.customer_id is not null"
    },
-   "result_text": "{\"columns\": [\"avg(c.credit)\", \"count_star()\", \"count(c.credit)\", \"count(c.id)\", \"(SELECT count_star() FROM orders WHERE (customer_id IS NOT NULL))\", \"(SELECT count_star() FROM customers)\", \"(SELECT count(DISTINCT id) FROM customers)\"], \"rows\": [[540.5968063872256, 5010, 5010, 5010, 5010, 202, 202]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"avg(c.credit)\", \"count_star()\", \"count(c.credit)\", \"count(c.id)\", \"(SELECT count_star() FROM orders)\", \"(SELECT count_star() FROM orders WHERE (customer_id IS NOT NULL))\", \"(SELECT count_star() FROM customers)\", \"(SELECT count(DISTINCT id) FROM customers)\"], \"rows\": [[540.5968063872256, 5010, 5010, 5010, 5016, 5010, 202, 202]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -168,6 +173,7 @@
      "count_star()",
      "count(c.credit)",
      "count(c.id)",
+     "(SELECT count_star() FROM orders)",
      "(SELECT count_star() FROM orders WHERE (customer_id IS NOT NULL))",
      "(SELECT count_star() FROM customers)",
      "(SELECT count(DISTINCT id) FROM customers)"
@@ -178,6 +184,7 @@
       5010,
       5010,
       5010,
+      5016,
       5010,
       202,
       202
@@ -191,14 +198,14 @@
    "tool": "submit_answer",
    "args": {
     "columns": [
-     "avg_customer_credit"
+     "avg_credit"
     ],
     "rows": [
      [
       540.5968063872256
      ]
     ],
-    "message": "Average customer credit limit over the 5,010 orders that have a customer, weighted by order: 540.5968063872256. Every order matched a customer with a credit limit."
+    "message": "Average of customers.credit across 5,010 orders with a non-null customer_id (joined orders to customers; every such order matched a customer with a credit value). Orders-weighted."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -208,13 +215,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 248,
-  "cache_read_tokens": 2241,
-  "cache_write_tokens": 981,
+  "output_tokens": 278,
+  "cache_read_tokens": 2240,
+  "cache_write_tokens": 1020,
   "partial": false
  },
- "cost_usd": 0.0103292,
- "duration_s": 8.063567341014277,
+ "cost_usd": 0.011124,
+ "duration_s": 7.9423186760395765,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

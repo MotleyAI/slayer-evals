@@ -4,9 +4,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH c AS (SELECT customer, SUM(subtotal) s FROM orders WHERE ordered_at >= '2025-01-01' AND ordered_at < '2026-01-01' GROUP BY customer),\nn AS (SELECT CAST(CEIL(COUNT(*)*0.1) AS INT) k, COUNT(*) total FROM c),\nr AS (SELECT s, ROW_NUMBER() OVER (ORDER BY s DESC) rn FROM c)\nSELECT (SELECT SUM(s) FROM r, n WHERE rn<=k)*1.0/(SELECT SUM(s) FROM c) share, k, total,\n(SELECT s FROM r, n WHERE rn=k) kth, (SELECT s FROM r, n WHERE rn=k+1) next, (SELECT MAX(ordered_at) FROM orders) mx FROM n"
+    "sql": "with c as (select customer, sum(subtotal) s from orders where ordered_at>='2025-01-01' and ordered_at<'2026-01-01' group by customer),\nr as (select *, row_number() over (order by s desc) rn, count(*) over () n from c)\nselect max(n) n, ceil(max(n)*0.1) k, sum(s) filter (where rn<=ceil(n*0.1))*1.0/sum(s) share, count(*) filter (where customer is null) nulls,\n(select min(s) from r r2 where rn<=ceil(n*0.1)) cut, (select count(*) from r r3 where s=(select min(s) from r r2 where rn<=ceil(n*0.1))) ties\nfrom r"
    },
-   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 4: ... SUM(s) FROM r, n WHERE rn<=k)*1.0/(SELECT SUM(s) FROM c) share, k, total,\n                                                                     ^",
+   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 3: ...(n)*0.1) k, sum(s) filter (where rn<=ceil(n*0.1))*1.0/sum(s) share, count(*) filter (where customer is null) nulls,\n                                                                        ^",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -14,47 +14,49 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH c AS (SELECT customer, SUM(subtotal) s FROM orders WHERE ordered_at >= '2025-01-01' AND ordered_at < '2026-01-01' GROUP BY customer),\nn AS (SELECT CAST(CEIL(COUNT(*)*0.1) AS INT) k, COUNT(*) total FROM c),\nr AS (SELECT s, ROW_NUMBER() OVER (ORDER BY s DESC) rn FROM c)\nSELECT (SELECT SUM(s) FROM r, n WHERE rn<=k)*1.0/(SELECT SUM(s) FROM c) AS top_share, k, total,\n(SELECT s FROM r, n WHERE rn=k) kth, (SELECT s FROM r, n WHERE rn=k+1) nxt, (SELECT MAX(ordered_at) FROM orders) mx FROM n"
+    "sql": "with c as (select customer, sum(subtotal) s from orders where ordered_at>='2025-01-01' and ordered_at<'2026-01-01' group by customer),\nr as (select *, row_number() over (order by s desc) rn, count(*) over () n from c)\nselect max(n) n, ceil(max(n)*0.1) k, sum(s) filter (where rn<=ceil(n*0.1))*1.0/sum(s) as shr, count(*) filter (where customer is null) nulls,\n(select min(s) from r r2 where rn<=ceil(n*0.1)) cut, (select count(*) from r r3 where s=(select min(s) from r r2 where rn<=ceil(n*0.1))) ties\nfrom r"
    },
-   "result_text": "{\"columns\": [\"top_share\", \"k\", \"total\", \"kth\", \"nxt\", \"mx\"], \"rows\": [[0.2241011507393088, 279, 2790, 282900, 282500, \"2026-10-29T19:52:00\"]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "top_share",
-     "k",
-     "total",
-     "kth",
-     "nxt",
-     "mx"
-    ],
-    "rows": [
-     [
-      0.2241011507393088,
-      279,
-      2790,
-      282900,
-      282500,
-      "2026-10-29T19:52:00"
-     ]
-    ],
-    "warnings": []
-   },
+   "result_text": "Parser Error: syntax error at or near \"nulls\"\n\nLINE 3: ...))*1.0/sum(s) as shr, count(*) filter (where customer is null) nulls,\n                                                                          ^",
+   "is_error": true,
+   "parsed": null,
    "audit": null
   },
   {
    "tool": "sql",
    "args": {
-    "sql": "SELECT COUNT(*) FROM orders WHERE customer IS NULL"
+    "sql": "with c as (select customer, sum(subtotal) s from orders where ordered_at>='2025-01-01' and ordered_at<'2026-01-01' group by customer),\nr as (select *, row_number() over (order by s desc) rn, count(*) over () n from c)\nselect max(n) n, ceil(max(n)*0.1) k, sum(s) filter (where rn<=ceil(n*0.1))*1.0/sum(s) as shr, count(*) filter (where customer is null) as nnull,\n(select min(s) from r r2 where rn<=ceil(n*0.1)) cut, (select count(*) from r r3 where s=(select min(s) from r r2 where rn<=ceil(n*0.1))) ties\nfrom r"
    },
-   "result_text": "{\"columns\": [\"count_star()\"], \"rows\": [[0]], \"truncated\": false}",
+   "result_text": "Parser Error: syntax error at or near \"ties\"\n\nLINE 4: ... r r3 where s=(select min(s) from r r2 where rn<=ceil(n*0.1))) ties\n                                                                          ^",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "with c as (select customer, sum(subtotal) s from orders where ordered_at>='2025-01-01' and ordered_at<'2026-01-01' group by customer),\nr as (select *, row_number() over (order by s desc) rn, count(*) over () n from c)\nselect max(n) n, ceil(max(n)*0.1) k, sum(s) filter (where rn<=ceil(n*0.1))*1.0/sum(s) as shr, count(*) filter (where customer is null) as nnull,\n(select min(s) from r r2 where rn<=ceil(n*0.1)) as cut, (select count(*) from r r3 where s=(select min(s) from r r2 where rn<=ceil(n*0.1))) as tie_cnt, (select max(s) from r r4 where rn>ceil(n*0.1)) as next_s\nfrom r"
+   },
+   "result_text": "{\"columns\": [\"n\", \"k\", \"shr\", \"nnull\", \"cut\", \"tie_cnt\", \"next_s\"], \"rows\": [[2790, 279.0, 0.2241011507393088, 0, 282900, 1, 282500]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "count_star()"
+     "n",
+     "k",
+     "shr",
+     "nnull",
+     "cut",
+     "tie_cnt",
+     "next_s"
     ],
     "rows": [
      [
-      0
+      2790,
+      279.0,
+      0.2241011507393088,
+      0,
+      282900,
+      1,
+      282500
      ]
     ],
     "warnings": []
@@ -65,7 +67,7 @@
    "tool": "submit_answer",
    "args": {
     "columns": [
-     "top10pct_share_of_2025_sales",
+     "top10pct_share_of_2025_pretax_sales",
      "top10pct_customer_count"
     ],
     "rows": [
@@ -74,7 +76,7 @@
       279
      ]
     ],
-    "message": "The top 10% of 2025 customers by spend (279 customers) produced 0.2241011507393088, or about 22.4%, of 2025 pre-tax sales. Sales are measured on orders.subtotal (pre-tax), for all of calendar year 2025. 2,790 customers ordered in 2025, and 10% of that, rounded up, is 279. Ranking by spend leaves no ties at the cutoff: customer #279 spent $2,829.00 and customer #280 spent $2,825.00."
+    "message": "Pre-tax basis (orders.subtotal), orders placed in calendar 2025. 2,790 customers ordered in 2025; the top 10% (ceil = 279) by 2025 spend accounted for 22.41% of 2025 pre-tax sales. No ties at the cutoff ($2,829.00 vs next $2,825.00)."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -83,15 +85,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 882,
-  "cache_read_tokens": 9458,
-  "cache_write_tokens": 1337,
+  "input_tokens": 8,
+  "output_tokens": 1256,
+  "cache_read_tokens": 13350,
+  "cache_write_tokens": 1601,
   "partial": false
  },
- "cost_usd": 0.0262406,
- "duration_s": 12.86271666304674,
- "turns": 6,
+ "cost_usd": 0.035827,
+ "duration_s": 18.081764221016783,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

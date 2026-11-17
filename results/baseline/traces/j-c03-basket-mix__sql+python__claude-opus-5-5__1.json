@@ -6,7 +6,7 @@
    "args": {
     "sql": "select type, count(*) from products group by 1; "
    },
-   "result_text": "{\"columns\": [\"type\", \"count_star()\"], \"rows\": [[\"beverage\", 5], [\"jaffle\", 5]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"type\", \"count_star()\"], \"rows\": [[\"jaffle\", 5], [\"beverage\", 5]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -15,11 +15,11 @@
     ],
     "rows": [
      [
-      "beverage",
+      "jaffle",
       5
      ],
      [
-      "jaffle",
+      "beverage",
       5
      ]
     ],
@@ -124,9 +124,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with o as (select o.id, count(*) filter (where p.type='beverage') b, count(*) filter (where p.type='jaffle') j, count(*) filter (where p.type is null) u\nfrom orders o join items i on i.order_id=o.id left join products p on p.sku=i.sku\nwhere o.ordered_at>='2025-01-01' and o.ordered_at<'2026-01-01' group by 1)\nselect case when b>0 and j>0 then 'both' when b>0 then 'beverages only' when j>0 then 'jaffles only' else 'other' end mix, count(*) n, count(*)/sum(count(*)) over () share, sum(u) unk\nfrom o group by 1 order by 1"
+    "sql": "with o as (select o.id, max(case when p.type='beverage' then 1 else 0 end) b, max(case when p.type='jaffle' then 1 else 0 end) j, max(case when p.sku is null then 1 else 0 end) unk\nfrom orders o join items i on i.order_id=o.id left join products p on p.sku=i.sku\nwhere o.ordered_at>='2025-01-01' and o.ordered_at<'2026-01-01' group by o.id)\nselect case when b=1 and j=1 then 'both' when b=1 then 'beverages only' when j=1 then 'jaffles only' else 'other' end mix, count(*) n, count(*)/sum(count(*)) over () share, sum(unk) from o group by 1 order by 1"
    },
-   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 4: ... 'other' end mix, count(*) n, count(*)/sum(count(*)) over () share, sum(u) unk\n                                                                        ^",
+   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 4: ... 'other' end mix, count(*) n, count(*)/sum(count(*)) over () share, sum(unk) from o group by 1 order by 1\n                                                                        ^",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -134,16 +134,16 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with o as (select o.id, count(*) filter (where p.type='beverage') b, count(*) filter (where p.type='jaffle') j, count(*) filter (where p.type is null) u\nfrom orders o join items i on i.order_id=o.id left join products p on p.sku=i.sku\nwhere o.ordered_at>='2025-01-01' and o.ordered_at<'2026-01-01' group by 1)\nselect case when b>0 and j>0 then 'both' when b>0 then 'beverages only' when j>0 then 'jaffles only' else 'other' end mix, count(*) n, count(*)/sum(count(*)) over () as shr, sum(u) unk\nfrom o group by 1 order by 1"
+    "sql": "with o as (select o.id, max(case when p.type='beverage' then 1 else 0 end) b, max(case when p.type='jaffle' then 1 else 0 end) j, max(case when p.sku is null then 1 else 0 end) unk\nfrom orders o join items i on i.order_id=o.id left join products p on p.sku=i.sku\nwhere o.ordered_at>='2025-01-01' and o.ordered_at<'2026-01-01' group by o.id)\nselect case when b=1 and j=1 then 'both' when b=1 then 'beverages only' when j=1 then 'jaffles only' else 'other' end mix, count(*) n, count(*)/sum(count(*)) over () as shr, sum(unk) u from o group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"mix\", \"n\", \"shr\", \"unk\"], \"rows\": [[\"beverages only\", 308674, 0.7612351445531467, 0], [\"both\", 89632, 0.22104559657304354, 0], [\"jaffles only\", 7185, 0.017719258873809776, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"mix\", \"n\", \"shr\", \"u\"], \"rows\": [[\"beverages only\", 308674, 0.7612351445531467, 0], [\"both\", 89632, 0.22104559657304354, 0], [\"jaffles only\", 7185, 0.017719258873809776, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "mix",
      "n",
      "shr",
-     "unk"
+     "u"
     ],
     "rows": [
      [
@@ -194,7 +194,7 @@
       0.22104559657304354
      ]
     ],
-    "message": "Covers the 405,491 orders placed in 2025 that had at least one item. Each order is classified by the product types of its items. About 76% contained only beverages, 22% had both and under 2% contained only jaffles. Every 2025 item matched a beverage or jaffle product."
+    "message": "There were 405,491 orders in 2025 that had at least one item. Of these, 76.1% contained only beverages, 1.8% only jaffles and 22.1% both. Each order was grouped by the product types of its items, and orders with no items were left out. Every item matched a product listed as either a beverage or a jaffle."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -204,13 +204,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 729,
-  "cache_read_tokens": 9538,
-  "cache_write_tokens": 1337,
+  "output_tokens": 766,
+  "cache_read_tokens": 9544,
+  "cache_write_tokens": 1368,
   "partial": false
  },
- "cost_usd": 0.0231966,
- "duration_s": 14.018389906967059,
+ "cost_usd": 0.024092799999999998,
+ "duration_s": 13.746641453006305,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

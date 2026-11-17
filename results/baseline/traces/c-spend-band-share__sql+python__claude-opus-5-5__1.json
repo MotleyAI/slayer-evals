@@ -6,7 +6,7 @@
    "args": {
     "sql": "select table_name, column_name, data_type from information_schema.columns order by table_name"
    },
-   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"customers\", \"tags\", \"VARCHAR[]\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"products\", \"ratings\", \"INTEGER[]\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -104,6 +104,11 @@
       "customers",
       "discount",
       "DOUBLE"
+     ],
+     [
+      "customers",
+      "tags",
+      "VARCHAR[]"
      ],
      [
       "events",
@@ -241,6 +246,11 @@
       "DOUBLE"
      ],
      [
+      "products",
+      "ratings",
+      "INTEGER[]"
+     ],
+     [
       "regions",
       "id",
       "INTEGER"
@@ -369,7 +379,7 @@
       0.41637354708286345
      ]
     ],
-    "message": "High-spend customers account for about 58.4% of total revenue (194,165.78); all other orders account for about 41.6% (138,522.67). A customer counts as high-spend when the sum of all their order amounts is over 2000. Orders with no customer are counted in 'other'. Revenue is the sum of orders.amount over all 5,016 orders, including the 606 with status 'bad', since the question didn't say to filter by status."
+    "message": "Orders from high-spend customers bring in about 58.4% of revenue (194,165.78). All other orders bring in about 41.6% (138,522.67). A customer counts as high-spend when the sum of all their order amounts is above 2000. The 6 orders with no customer are in 'other'. All 5,016 orders are counted, including the 606 with status 'bad' (37,980.90), because the question says to use all order amounts. Leaving those out would change the results."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -379,13 +389,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 598,
-  "cache_read_tokens": 7349,
-  "cache_write_tokens": 2023,
+  "output_tokens": 590,
+  "cache_read_tokens": 7423,
+  "cache_write_tokens": 2054,
   "partial": false
  },
- "cost_usd": 0.023576800000000002,
- "duration_s": 11.575279535958543,
+ "cost_usd": 0.0235866,
+ "duration_s": 11.786458359041717,
  "turns": 7,
  "end_reason": "submitted",
  "error": null
