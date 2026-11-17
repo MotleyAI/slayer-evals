@@ -357,6 +357,20 @@ def test_extra_zero_row_ignores_uncompared_columns():
     assert m.ok, m.reason
 
 
+def test_zero_row_cannot_repeat_a_list_key_given_as_text():
+    cmp = Compare(keys=["tags"], values=["customers"], extra_zero_rows=True)
+    truth = Table(columns=["tags", "customers"], rows=[[["vip"], 3], [["eu"], 2]])
+    result = res(["tags", "customers"], [['["vip"]', 3], ['["eu"]', 2], ['["vip"]', 0]])
+    assert not match_tables(truth, result, cmp).ok
+
+
+def test_zero_row_cannot_repeat_a_numeric_key_within_tolerance():
+    cmp = Compare(keys=["customer_id"], values=["orders"], extra_zero_rows=True)
+    truth = Table(columns=["customer_id", "orders"], rows=[[1, 3], [2, 5]])
+    result = res(["customer_id", "orders"], [[1, 3], [2, 5], [1.0000000001, 0]])
+    assert not match_tables(truth, result, cmp).ok
+
+
 @pytest.mark.parametrize("extra", [[], ["Arctic"]], ids=["empty", "short"])
 def test_malformed_extra_row_fails_without_crashing(extra: list):
     truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])

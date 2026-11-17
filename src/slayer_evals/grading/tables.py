@@ -207,7 +207,8 @@ def _without_zero_rows(truth: Table, result: Table, compare: Compare) -> MatchRe
     width = len(result.columns)
     candidates = [i for i, row in enumerate(result.rows) if _could_be_zero_row(row, width, compare)]
     strict = compare.model_copy(update={"extra_zero_rows": False})
-    want_keys = {tuple(normalize(r[truth.columns.index(k)]) for k in compare.keys) for r in truth.rows}
+    want_keys = [[normalize(r[truth.columns.index(k)]) for k in compare.keys] for r in truth.rows]
+    list_keys = [any(isinstance(w[j], ListCell) for w in want_keys) for j in range(len(compare.keys))]
     for drop in itertools.islice(itertools.combinations(candidates, surplus), MAX_ASSIGNMENTS):
         kept = Table(columns=result.columns, rows=[r for i, r in enumerate(result.rows) if i not in drop])
         m = match_tables(truth, kept, strict)
@@ -216,7 +217,10 @@ def _without_zero_rows(truth: Table, result: Table, compare: Compare) -> MatchRe
         idx = [result.columns.index(m.columns[k]) for k in compare.keys]
         values = [result.columns.index(m.columns[v]) for v in compare.values]
         dropped = [result.rows[i] for i in drop]
-        if any(tuple(normalize(r[i]) for i in idx) in want_keys for r in dropped):
+        got_keys = [
+            [as_list(r[i]) if lst else normalize(r[i]) for i, lst in zip(idx, list_keys, strict=True)] for r in dropped
+        ]
+        if any(_rows_equal(w, g, compare.tolerance) for w in want_keys for g in got_keys):
             continue
         if all(_is_zero(r[i]) for r in dropped for i in values):
             return MatchResult(
