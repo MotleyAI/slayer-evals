@@ -205,6 +205,13 @@ class Runner:
         self.semaphore = asyncio.Semaphore(cfg.concurrency)
         self.results_path = run_dir / "results.jsonl"
 
+    def _slayer_version(self, combo: Combo) -> str:
+        """The SLayer version that answers `combo`'s trials: the Motley backend's, or the local one."""
+        if combo.motley:
+            assert self.cfg.motley_slayer_version is not None
+            return self.cfg.motley_slayer_version
+        return self.slayer_version
+
     def _stem(self, combo: Combo, trial: int) -> str:
         return trial_stem(combo.task.id, combo.profile, combo.model, trial)
 
@@ -306,7 +313,7 @@ class Runner:
             profile=combo.profile,
             model=combo.model,
             trial=trial,
-            slayer_version=self.slayer_version,
+            slayer_version=self._slayer_version(combo),
             verdict=verdict,
             end_reason=outcome.trace.end_reason,
             usage=outcome.trace.usage,
@@ -366,6 +373,8 @@ def run_benchmark(cfg: RunConfig, environ: Mapping[str, str] | None = None) -> P
     motley = any(PROFILE_SPECS[p].surface == "motley" for p in cfg.profiles)
     if motley and not cfg.motley_seed_command:
         raise ValueError("the Motley profiles need a seed command (--motley-seed-cmd)")
+    if motley and not cfg.motley_slayer_version:
+        raise ValueError("the Motley profiles need the backend's SLayer version (--motley-slayer-version)")
     credentials = resolve_auth(cfg.auth_mode, cfg.env_file, os.environ if environ is None else environ)
     assert cfg.auth_mode is not None
     tasks = select_tasks(load_tasks(cfg.tasks_dir), cfg)

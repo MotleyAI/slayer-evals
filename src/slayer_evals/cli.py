@@ -85,6 +85,7 @@ def _parser() -> argparse.ArgumentParser:
         type=shlex.split,
         help="command that seeds one Motley org; --user-id, --store and --db are appended",
     )
+    r.add_argument("--motley-slayer-version", help="the SLayer version the Motley backend runs, recorded per trial")
 
     rep = sub.add_parser("report", help="(re)generate report.md of a run directory")
     rep.add_argument("run_dir", type=Path)
@@ -138,6 +139,7 @@ def _run(args: argparse.Namespace) -> int:
         slayer_command=args.slayer_command,
         motley_url=args.motley_url,
         motley_seed_command=args.motley_seed_cmd,
+        motley_slayer_version=args.motley_slayer_version,
     )
     run_dir = run_benchmark(cfg)
     print(f"run written to {run_dir} (report: {run_dir / 'report.md'})")

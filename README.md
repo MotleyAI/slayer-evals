@@ -204,7 +204,7 @@ Motley and raw SQL side by side:
 ```bash
 poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset-dir data \
   --profiles slayer,motley,motley+python \
-  --motley-seed-cmd "/path/to/storyline/backend/scripts/eval_backend.sh seed"
+  --motley-seed-cmd "/path/to/storyline/backend/scripts/eval_backend.sh seed" --motley-slayer-version 1.8.2
 ```
 
 * `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Storyline's `eval_backend.sh seed`
@@ -212,6 +212,9 @@ poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset
   with `--user-id <id> --store <the trial's store copy> --db <the build's database file of the task's dataset>`, so
   every trial gets its own org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times
   out (600 s) ends that trial with `error`.
+* `--motley-slayer-version` is the SLayer version the Motley backend runs (storyline's `motley-slayer` pin); it is
+  required with a Motley profile, and each Motley trial's results line records it, while the other profiles record the
+  local SLayer's version.
 * `--motley-url` is the backend's MCP endpoint (default `http://localhost:8100/api/v1/mcp/`, the eval backend's). Its
   host must match the backend's `public_base_url`, or the backend answers 421.
 * Storyline's `docs/eval_org_seed.md` describes the eval backend and the seed.
