@@ -11,7 +11,7 @@ MAX_TRUTH_ROWS = 20
 REFUSAL_ROWS = ("Q9", "Q18")
 MIN_TRAPS = 12
 MIN_THREE_ROW_TASKS = 2
-SUITE_DIRS: dict[Suite, str] = {"capability": "capability", "combo": "combo", "trap": "traps"}
+SUITE_DIRS: dict[Suite, str] = {"capability": "capability", "combo": "combo", "trap": "traps", "jaffle": "jaffle"}
 # DSL names and syntax, and hints at a pitfall's mechanism, that a prompt must not contain (whole words, any case).
 PROMPT_DENY_LIST = (
     "partition_by",
@@ -92,6 +92,8 @@ DENY_PATTERNS = tuple((kw, _pattern(kw)) for kw in PROMPT_DENY_LIST)
 
 
 def check_coverage(tasks: list[Task]) -> list[str]:
+    """Row, refusal, trap and multi-row coverage of the `bench` tasks; other datasets' tasks do not count."""
+    tasks = [t for t in tasks if t.dataset == "bench"]
     rows = {r for t in tasks for r in t.rows}
     problems = [f"row {r} has no task" for r in COVERED_ROWS if r not in rows]
     problems += [f"row {r} is not covered but has tasks" for r in UNCOVERED_ROWS if r in rows]

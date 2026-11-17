@@ -16,11 +16,10 @@ from slayer.mcp.server import create_mcp_server
 from slayer.sql.engine_factory import invalidate_engine
 from slayer.storage.yaml_storage import YAMLStorage
 
-from slayer_evals.core import ParsedResult, Table, Task
+from slayer_evals.core import DATASET_SPECS, Dataset, ParsedResult, Table, Task
 from slayer_evals.tasks.suite import ROW_MARKERS
 from slayer_evals.tasks.truth import json_value
 
-DATASOURCE = "bench"
 _ERROR_RE = re.compile(r"Error executing tool [\w.-]+: ([A-Za-z_][\w.]*):")
 
 
@@ -43,14 +42,22 @@ def _error_kind(exc: ToolError) -> str:
     return m.group(1).rsplit(".", 1)[-1] if m else type(exc).__name__
 
 
+def _dataset_of(tasks: list[Task]) -> Dataset:
+    datasets: set[Dataset] = {t.dataset for t in tasks}
+    if len(datasets) > 1:
+        raise ProofError(f"reference queries run on one dataset's store at a time, got {', '.join(sorted(datasets))}")
+    return datasets.pop() if datasets else "bench"
+
+
 async def _references(tasks: list[Task], store_dir: Path, db_path: Path) -> dict[str, ReferenceResult]:
+    datasource = DATASET_SPECS[_dataset_of(tasks)].datasource
     with tempfile.TemporaryDirectory(prefix="slayer-evals-proof-") as tmp:
         store = Path(tmp) / "store"
         shutil.copytree(store_dir, store)
         storage = YAMLStorage(base_dir=str(store))
-        ds = await storage.get_datasource(DATASOURCE)
+        ds = await storage.get_datasource(datasource)
         if ds is None:
-            raise ProofError(f"{store_dir} has no datasource {DATASOURCE!r}")
+            raise ProofError(f"{store_dir} has no datasource {datasource!r}")
         # The template holds the trial-relative database file; point the copy at the built one.
         absolute = ds.model_copy(update={"database": str(db_path.resolve())})
         await storage.save_datasource(absolute)
@@ -77,7 +84,7 @@ async def _reference(server: Any, task: Task) -> ReferenceResult:
 
 
 def run_references(tasks: list[Task], store_dir: Path, db_path: Path) -> dict[str, ReferenceResult]:
-    """Each task's `slayer_query` through SLayer's `query` tool, in process, on a copy of the store template."""
+    """Each task's `slayer_query` through SLayer's `query` tool, in process, on a copy of the tasks' dataset's store."""
     return asyncio.run(_references(tasks, store_dir, db_path))
 
 
@@ -115,11 +122,12 @@ def missing_markers(task: Task) -> list[str]:
     return [r for r in task.rows if ROW_MARKERS.get(r) and not any(m in text for m in ROW_MARKERS[r])]
 
 
-async def _saved(store_dir: Path) -> set[str]:
+async def _saved(store_dir: Path, dataset: Dataset) -> set[str]:
     storage = YAMLStorage(base_dir=str(store_dir))
+    datasource = DATASET_SPECS[dataset].datasource
     names: set[str] = set()
-    for name in await storage.list_models(data_source=DATASOURCE):
-        model = await storage.get_model(name, data_source=DATASOURCE)
+    for name in await storage.list_models(data_source=datasource):
+        model = await storage.get_model(name, data_source=datasource)
         if model is None:
             continue
         if model.source_queries:
@@ -128,6 +136,6 @@ async def _saved(store_dir: Path) -> set[str]:
     return names
 
 
-def saved_definitions(store_dir: Path) -> set[str]:
-    """Names of the store template's saved queries (query-backed models) and saved measures."""
-    return asyncio.run(_saved(store_dir))
+def saved_definitions(store_dir: Path, dataset: Dataset = "bench") -> set[str]:
+    """Names of a dataset's store template's saved queries (query-backed models) and saved measures."""
+    return asyncio.run(_saved(store_dir, dataset))

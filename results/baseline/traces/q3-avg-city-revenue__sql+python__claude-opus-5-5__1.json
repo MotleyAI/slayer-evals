@@ -278,30 +278,32 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select (select count(*) from customers where region_id is null) nr, (select count(*) from customers where region_id not in (select id from regions)) bad, (select count(*) from customers where city is null) nc, (select count(*) from orders where customer_id not in (select id from customers)) orph, (select count(*) from orders where amount is null) na, (select count(*) from customers c join cities ci using(city) where ci.region_id<>c.region_id) mism, (select count(*) from (select city from cities group by city having count(*)>1)) dupcity, (select count(*) from (select id from customers group by id having count(*)>1)) dupcust"
+    "sql": "select (select count(*) from customers) n, (select count(*) from customers where region_id is null) nr, (select count(*) from customers where city is null) nc, (select count(*) from customers c join cities ci using(city) where c.region_id is distinct from ci.region_id) mismatch, (select count(*) from regions) nreg, (select count(distinct city) from cities) ncity, (select count(*) from cities) ncrow, (select count(*) from orders where customer_id not in (select id from customers)) orph, (select count(*) from orders where amount is null) na"
    },
-   "result_text": "{\"columns\": [\"nr\", \"bad\", \"nc\", \"orph\", \"na\", \"mism\", \"dupcity\", \"dupcust\"], \"rows\": [[1, 0, 0, 0, 0, 35, 1, 0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"n\", \"nr\", \"nc\", \"mismatch\", \"nreg\", \"ncity\", \"ncrow\", \"orph\", \"na\"], \"rows\": [[202, 1, 0, 35, 5, 9, 10, 0, 0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
+     "n",
      "nr",
-     "bad",
      "nc",
+     "mismatch",
+     "nreg",
+     "ncity",
+     "ncrow",
      "orph",
-     "na",
-     "mism",
-     "dupcity",
-     "dupcust"
+     "na"
     ],
     "rows": [
      [
+      202,
       1,
-      0,
-      0,
-      0,
       0,
       35,
-      1,
+      5,
+      9,
+      10,
+      0,
       0
      ]
     ],
@@ -312,53 +314,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select r.name region, count(*) n_cities, avg(rev) avg_rev from (select c.region_id, c.city, sum(o.amount) rev from orders o join customers c on o.customer_id=c.id group by 1,2) x left join regions r on r.id=x.region_id group by 1 order by 1"
+    "sql": "select * from cities order by city"
    },
-   "result_text": "{\"columns\": [\"region\", \"n_cities\", \"avg_rev\"], \"rows\": [[\"East\", 2, 34369.34999999998], [\"North\", 3, 36444.919999999984], [\"South\", 3, 34756.633333333324], [\"West\", 2, 24575.895000000004], [null, 1, 677.83]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "region",
-     "n_cities",
-     "avg_rev"
-    ],
-    "rows": [
-     [
-      "East",
-      2,
-      34369.34999999998
-     ],
-     [
-      "North",
-      3,
-      36444.919999999984
-     ],
-     [
-      "South",
-      3,
-      34756.633333333324
-     ],
-     [
-      "West",
-      2,
-      24575.895000000004
-     ],
-     [
-      null,
-      1,
-      677.83
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select * from cities where city in (select city from cities group by city having count(*)>1)"
-   },
-   "result_text": "{\"columns\": [\"city\", \"region_id\", \"population\", \"size_class\"], \"rows\": [[\"Oslo\", 1, 700000, \"large\"], [\"Oslo\", 2, 3000, \"small\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"city\", \"region_id\", \"population\", \"size_class\"], \"rows\": [[\"Bergen\", 1, 290000, \"medium\"], [\"Lisbon\", 4, 545000, \"large\"], [\"Naples\", 2, 900000, \"large\"], [\"Oslo\", 1, 700000, \"large\"], [\"Oslo\", 2, 3000, \"small\"], [\"Porto\", 4, 230000, \"medium\"], [\"Prague\", 3, 1300000, \"large\"], [\"Rome\", 2, 2800000, \"large\"], [\"Trondheim\", 1, 210000, \"medium\"], [\"Vienna\", 3, 1900000, \"large\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -368,6 +326,24 @@
      "size_class"
     ],
     "rows": [
+     [
+      "Bergen",
+      1,
+      290000,
+      "medium"
+     ],
+     [
+      "Lisbon",
+      4,
+      545000,
+      "large"
+     ],
+     [
+      "Naples",
+      2,
+      900000,
+      "large"
+     ],
      [
       "Oslo",
       1,
@@ -379,6 +355,192 @@
       2,
       3000,
       "small"
+     ],
+     [
+      "Porto",
+      4,
+      230000,
+      "medium"
+     ],
+     [
+      "Prague",
+      3,
+      1300000,
+      "large"
+     ],
+     [
+      "Rome",
+      2,
+      2800000,
+      "large"
+     ],
+     [
+      "Trondheim",
+      1,
+      210000,
+      "medium"
+     ],
+     [
+      "Vienna",
+      3,
+      1900000,
+      "large"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select c.city, c.region_id, count(*) from customers c group by all order by 1,2"
+   },
+   "result_text": "{\"columns\": [\"city\", \"region_id\", \"count_star()\"], \"rows\": [[\"Bergen\", 1, 29], [\"Lisbon\", 4, 19], [\"Naples\", 2, 16], [\"Oslo\", 1, 17], [\"Oslo\", 2, 18], [\"Paris\", null, 1], [\"Porto\", 4, 14], [\"Prague\", 3, 22], [\"Rome\", 2, 31], [\"Trondheim\", 1, 13], [\"Vienna\", 3, 22]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "city",
+     "region_id",
+     "count_star()"
+    ],
+    "rows": [
+     [
+      "Bergen",
+      1,
+      29
+     ],
+     [
+      "Lisbon",
+      4,
+      19
+     ],
+     [
+      "Naples",
+      2,
+      16
+     ],
+     [
+      "Oslo",
+      1,
+      17
+     ],
+     [
+      "Oslo",
+      2,
+      18
+     ],
+     [
+      "Paris",
+      null,
+      1
+     ],
+     [
+      "Porto",
+      4,
+      14
+     ],
+     [
+      "Prague",
+      3,
+      22
+     ],
+     [
+      "Rome",
+      2,
+      31
+     ],
+     [
+      "Trondheim",
+      1,
+      13
+     ],
+     [
+      "Vienna",
+      3,
+      22
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select * from regions"
+   },
+   "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "id",
+     "name"
+    ],
+    "rows": [
+     [
+      1,
+      "North"
+     ],
+     [
+      2,
+      "South"
+     ],
+     [
+      3,
+      "East"
+     ],
+     [
+      4,
+      "West"
+     ],
+     [
+      5,
+      "Arctic"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "with c as (select cu.region_id, cu.city, sum(o.amount) rev from orders o join customers cu on cu.id=o.customer_id group by all)\nselect r.name region, avg(rev) avg_city_revenue, count(*) n_cities from c left join regions r on r.id=c.region_id group by all order by 1"
+   },
+   "result_text": "{\"columns\": [\"region\", \"avg_city_revenue\", \"n_cities\"], \"rows\": [[\"East\", 34369.34999999998, 2], [\"North\", 36444.919999999984, 3], [\"South\", 34756.633333333324, 3], [\"West\", 24575.895000000004, 2], [null, 677.83, 1]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "region",
+     "avg_city_revenue",
+     "n_cities"
+    ],
+    "rows": [
+     [
+      "East",
+      34369.34999999998,
+      2
+     ],
+     [
+      "North",
+      36444.919999999984,
+      3
+     ],
+     [
+      "South",
+      34756.633333333324,
+      3
+     ],
+     [
+      "West",
+      24575.895000000004,
+      2
+     ],
+     [
+      null,
+      677.83,
+      1
      ]
     ],
     "warnings": []
@@ -414,7 +576,7 @@
       677.83
      ]
     ],
-    "message": "Each city's revenue is the sum of orders.amount for its customers, grouped by the customer's region and city. I then averaged those totals by region, so every city counts once. Orders from a customer with no region are in the null group (1 city). Because cities are grouped together with their region, the two cities named Oslo (in different regions) are counted separately. City counts: East 2, North 3, South 3, West 2."
+    "message": "Each customer's region_id decides their region. A city is identified by city name plus region, because \"Oslo\" exists in both North and South. A city's revenue is the total of its customers' order amounts, and each region's figure is the plain average across its cities: North and South have 3 cities each, East and West 2 each. The null group is one customer in Paris with no region. Arctic has no customers or orders, so it isn't listed."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -423,15 +585,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 667,
-  "cache_read_tokens": 4626,
-  "cache_write_tokens": 1817,
+  "input_tokens": 8,
+  "output_tokens": 816,
+  "cache_read_tokens": 7390,
+  "cache_write_tokens": 2572,
   "partial": false
  },
- "cost_usd": 0.023374199999999998,
- "duration_s": 13.980233955997392,
- "turns": 7,
+ "cost_usd": 0.030690000000000002,
+ "duration_s": 14.164920051989611,
+ "turns": 9,
  "end_reason": "submitted",
  "error": null
 }

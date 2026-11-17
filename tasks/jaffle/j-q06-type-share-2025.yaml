@@ -1,0 +1,12 @@
+id: j-q06-type-share-2025
+dataset: jaffle
+prompt: >-
+  What share of 2025 product sales came from jaffles vs beverages? Answer with one row per product type: the type, its
+  sales in dollars and its share of the total as a fraction.
+truth_sql: |
+  select p.type as type, sum(p.price) / 100.0 as sales, sum(p.price) * 1.0 / sum(sum(p.price)) over () as share
+  from items i join orders o on o.id = i.order_id join products p on p.sku = i.sku
+  where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by p.type
+slayer_query: {"query": {"source_model": "items", "dimensions": ["products.type"], "measures": [{"formula": "line_sales", "name": "sales"}, {"formula": "sum(unit_price) / sum(unit_price, partition_by=[])", "name": "share"}], "filters": ["orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"]}}
+compare: {keys: [type], values: [sales, share]}

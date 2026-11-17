@@ -278,77 +278,32 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select isodow(order_date) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () share, count(*), count(amount) from orders where year(order_date)=2025 group by 1 order by 1"
+    "sql": "select status, count(*), sum(amount), count(order_date), count(amount) from orders group by 1"
    },
-   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 1: ...) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () share, count(*), count(amount) from orders where year(order...\n                                                                      ^",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select isodow(order_date) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () as shr, count(*), count(amount) from orders where year(order_date)=2025 group by 1 order by 1"
-   },
-   "result_text": "{\"columns\": [\"d\", \"rev\", \"shr\", \"count_star()\", \"count(amount)\"], \"rows\": [[1, 17801.52, 0.15461315400665318, 253, 253], [2, 15026.919999999996, 0.1305146693206904, 239, 239], [3, 16595.06000000001, 0.14413457769503119, 250, 250], [4, 14658.31, 0.12731314750129563, 223, 223], [5, 16222.330000000007, 0.14089727206647248, 232, 232], [6, 16655.449999999993, 0.1446590884317806, 250, 250], [7, 18176.28, 0.15786809097807658, 276, 276]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"sum(amount)\", \"count(order_date)\", \"count(amount)\"], \"rows\": [[\"bad\", 606, 37980.90000000004, 606, 606], [\"ok\", 4410, 294707.5499999996, 4410, 4410]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "d",
-     "rev",
-     "shr",
+     "status",
      "count_star()",
+     "sum(amount)",
+     "count(order_date)",
      "count(amount)"
     ],
     "rows": [
      [
-      1,
-      17801.52,
-      0.15461315400665318,
-      253,
-      253
+      "bad",
+      606,
+      37980.90000000004,
+      606,
+      606
      ],
      [
-      2,
-      15026.919999999996,
-      0.1305146693206904,
-      239,
-      239
-     ],
-     [
-      3,
-      16595.06000000001,
-      0.14413457769503119,
-      250,
-      250
-     ],
-     [
-      4,
-      14658.31,
-      0.12731314750129563,
-      223,
-      223
-     ],
-     [
-      5,
-      16222.330000000007,
-      0.14089727206647248,
-      232,
-      232
-     ],
-     [
-      6,
-      16655.449999999993,
-      0.1446590884317806,
-      250,
-      250
-     ],
-     [
-      7,
-      18176.28,
-      0.15786809097807658,
-      276,
-      276
+      "ok",
+      4410,
+      294707.5499999996,
+      4410,
+      4410
      ]
     ],
     "warnings": []
@@ -356,12 +311,27 @@
    "audit": null
   },
   {
-   "tool": "submit_answer",
+   "tool": "sql",
    "args": {
+    "sql": "select isodow(order_date) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () share from orders where year(order_date)=2025 group by 1 order by 1"
+   },
+   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 1: ...) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () share from orders where year(order_date)=2025 group by 1...\n                                                                      ^",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "select isodow(order_date) d, sum(amount) rev, sum(amount)/sum(sum(amount)) over () as \"share\" from orders where order_date >= '2025-01-01' and order_date < '2026-01-01' group by 1 order by 1"
+   },
+   "result_text": "{\"columns\": [\"d\", \"rev\", \"share\"], \"rows\": [[1, 17801.52, 0.15461315400665318], [2, 15026.919999999996, 0.1305146693206904], [3, 16595.06000000001, 0.14413457769503119], [4, 14658.31, 0.12731314750129563], [5, 16222.330000000007, 0.14089727206647248], [6, 16655.449999999993, 0.1446590884317806], [7, 18176.28, 0.15786809097807658]], \"truncated\": false}",
+   "is_error": false,
+   "parsed": {
     "columns": [
-     "iso_day_of_week",
-     "revenue",
-     "share_of_2025"
+     "d",
+     "rev",
+     "share"
     ],
     "rows": [
      [
@@ -400,7 +370,56 @@
       0.15786809097807658
      ]
     ],
-    "message": "2025 revenue by ISO day of week (Monday=1 to Sunday=7), using the sum of orders.amount for orders dated in 2025, with all statuses included. Each share is that day's revenue divided by total 2025 revenue (about 115,136)."
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "iso_day_of_week",
+     "revenue_2025",
+     "share_of_2025_revenue"
+    ],
+    "rows": [
+     [
+      1,
+      17801.52,
+      0.15461315400665318
+     ],
+     [
+      2,
+      15026.919999999996,
+      0.1305146693206904
+     ],
+     [
+      3,
+      16595.06000000001,
+      0.14413457769503119
+     ],
+     [
+      4,
+      14658.31,
+      0.12731314750129563
+     ],
+     [
+      5,
+      16222.330000000007,
+      0.14089727206647248
+     ],
+     [
+      6,
+      16655.449999999993,
+      0.1446590884317806
+     ],
+     [
+      7,
+      18176.28,
+      0.15786809097807658
+     ]
+    ],
+    "message": "These are the 2025 revenue totals for each day of the week (Monday = 1 to Sunday = 7), with each day's share of the full-year 2025 revenue. Revenue is the sum of orders.amount for orders dated in 2025, including orders of every status. Some orders are marked \"bad\"; I counted them because the question defines revenue as the sum of order amounts and doesn't say to exclude any. If they should be left out, the totals and shares would change. Sunday has the most revenue (about 15.8%) and Thursday the least (about 12.7%)."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -409,15 +428,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 332,
-  "cache_read_tokens": 4656,
-  "cache_write_tokens": 1665,
+  "input_tokens": 8,
+  "output_tokens": 527,
+  "cache_read_tokens": 7276,
+  "cache_write_tokens": 1983,
   "partial": false
  },
- "cost_usd": 0.0159202,
- "duration_s": 10.719074627995724,
- "turns": 6,
+ "cost_usd": 0.0219422,
+ "duration_s": 12.315348857024219,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

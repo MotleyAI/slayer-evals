@@ -2,7 +2,7 @@
 
 ## Purpose and context
 
-A capability benchmark for agents answering analytics questions over a seeded demo database: it measures whether an
+A capability benchmark for agents answering analytics questions over seeded demo databases: it measures whether an
 agent given SLayer's MCP server reaches for SLayer's DSL (partitioned aggregates, transforms, multi-stage queries, …)
 rather than pulling raw rows and post-processing them, and how it compares with an agent given direct SQL access,
 including on traps where naive SQL silently returns wrong numbers. Each trial is graded on correctness and on whether
@@ -23,10 +23,12 @@ flowchart TD
   runner["runner"]
   tasks["tasks"]
   agents --> core
+  cli --> core
   cli --> dataset
   cli --> report
   cli --> runner
   cli --> tasks
+  dataset --> core
   grading --> core
   report --> core
   runner --> agents

@@ -1,0 +1,11 @@
+id: j-q07-aov-by-store
+dataset: jaffle
+prompt: >-
+  What is the average order value by store, and which store is highest? Answer with one row per store: the store name
+  and its average order value in dollars.
+truth_sql: |
+  select s.name as store, sum(o.subtotal) / 100.0 / count(*) as aov
+  from orders o join stores s on s.id = o.store_id
+  group by s.name
+slayer_query: {"query": {"source_model": "orders", "dimensions": ["stores.name"], "measures": [{"formula": "net_sales / order_count", "name": "aov"}]}}
+compare: {keys: [store], values: [aov]}

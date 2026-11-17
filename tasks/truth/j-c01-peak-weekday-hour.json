@@ -1,0 +1,16 @@
+{
+ "columns": [
+  "weekday",
+  "hour",
+  "net_sales",
+  "share"
+ ],
+ "rows": [
+  [
+   "Monday",
+   13,
+   125011.0,
+   0.02909454569489815
+  ]
+ ]
+}

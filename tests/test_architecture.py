@@ -17,7 +17,7 @@ ALLOWED = {
     "agents": {"core"},
     "runner": {"core", "dataset", "tasks", "agents", "grading", "report"},
     "report": {"core"},
-    "cli": {"runner", "report", "dataset", "tasks"},
+    "cli": {"core", "runner", "report", "dataset", "tasks"},
 }
 
 

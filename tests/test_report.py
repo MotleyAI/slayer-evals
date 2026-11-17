@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from slayer_evals.core import Profile, ToolCall, Trace, TrialResult, Verdict
 from slayer_evals.report import render_report, write_report
 from tests.helpers import REPO
 
@@ -383,3 +384,208 @@ def test_new_rows_in_the_per_row_table(tmp_path: Path):
     assert (q26["Feature"], q26["Tasks"], q26["Trials"]) == ("Metrics without a join path", "1", "1")
     assert (q27["Feature"], q27["Tasks"], q27["Trials"]) == ("List columns", "2", "2")
     assert pitfall_counts(report, "null_element", "slayer") == ("1", "1")
+
+
+MOTLEY_URL = "http://localhost:8000/api/v1/mcp/"
+MOTLEY_NOTE = (
+    "Motley's `query` cannot run a saved query by name with `refine` yet (DEV-2260); "
+    "saved-query tasks are answered with one inline query."
+)
+BARE_ERROR = "TimeDimensionColumnError: A time dimension must reference a raw date column; 'month' is already bucketed."
+
+
+def _motley_result(profile: Profile, passed: bool) -> TrialResult:
+    verdict = Verdict(
+        correct=passed,
+        single_query=passed,
+        correct_reasons=["rows match" if passed else "message mentions none of ['bucketed']"],
+        single_query_reasons=["query #1 returns the answer" if passed else "no call returned TimeDimensionColumnError"],
+    )
+    return TrialResult(
+        task_id="q18-a",
+        covers=["Q18"],
+        profile=profile,
+        model=MODEL,
+        trial=1,
+        slayer_version="1.8.5",
+        verdict=verdict,
+        end_reason="submitted",
+    )
+
+
+@pytest.fixture
+def motley_report(tmp_path: Path) -> str:
+    run = tmp_path / "run"
+    (run / "traces").mkdir(parents=True)
+    md = json.loads((FIXTURES / "run_repeat" / "metadata.json").read_text())
+    md.update(
+        models=[MODEL],
+        profiles=["slayer", "motley", "motley+python"],
+        n=1,
+        motley_url=MOTLEY_URL,
+        motley_server_info="motley 1.30.0",
+    )
+    (run / "metadata.json").write_text(json.dumps(md))
+    rs = [_motley_result("slayer", True), _motley_result("motley", True), _motley_result("motley+python", False)]
+    (run / "results.jsonl").write_text("".join(r.model_dump_json() + "\n" for r in rs))
+    failed = ToolCall(
+        tool="query",
+        args={"query": {"source_model": "orders", "time_dimensions": [{"dimension": "month", "granularity": "year"}]}},
+        result_text=BARE_ERROR,
+        is_error=True,
+    )
+    trace = Trace(profile="motley+python", calls=[failed])
+    (run / "traces" / f"q18-a__motley+python__{MODEL}__1.json").write_text(trace.model_dump_json())
+    return render_report(run)
+
+
+def test_motley_metadata_rows(motley_report: str):
+    rows = {r["Run"]: r[""] for r in table_with(motley_report, "Run")}
+    assert rows["Motley MCP"] == MOTLEY_URL
+    assert rows["MCP server info"] == "motley 1.30.0"
+
+
+def test_motley_sections_open_with_the_saved_query_note(motley_report: str):
+    for profile in ("motley", "motley+python"):
+        first = next(x for x in section(motley_report, profile).splitlines() if x.strip())
+        assert first == MOTLEY_NOTE, profile
+    assert MOTLEY_NOTE not in section(motley_report, "slayer")
+    assert motley_report.count(MOTLEY_NOTE) == 2
+
+
+def test_failed_motley_call_digest_names_the_bare_error_class(motley_report: str):
+    entry = failures(motley_report).split("**q18-a**", 1)[1]
+    assert "motley+python" in entry.split("\n", 1)[0]
+    assert "`query`" in entry
+    assert "error TimeDimensionColumnError" in entry
+
+
+def test_run_without_motley_has_no_motley_rows_or_note(repeat_report: str):
+    assert "Motley" not in repeat_report
+    assert "MCP server info" not in repeat_report
+
+
+# The Jaffle sub-suite
+
+
+def _jaffle_result(task_id: str, profile: Profile, trial: int, correct: bool, single: bool, model: str = MODEL):
+    return TrialResult(
+        task_id=task_id,
+        dataset="jaffle",
+        covers=[],
+        profile=profile,
+        model=model,
+        trial=trial,
+        slayer_version="1.8.5",
+        verdict=Verdict(correct=correct, single_query=single),
+        end_reason="submitted",
+    )
+
+
+JAFFLE_RESULTS = [
+    _jaffle_result("j-q01-stores", "slayer", 1, True, True),
+    _jaffle_result("j-q01-stores", "slayer", 2, False, False),
+    _jaffle_result("j-q01-stores", RAW, 1, True, True),
+    _jaffle_result("j-q01-stores", RAW, 2, True, False),
+    _jaffle_result("j-c09-brooklyn-cogs-margin", "slayer+python", 1, True, False),
+    _jaffle_result("j-c09-brooklyn-cogs-margin", "slayer", 1, True, True, model=OTHER_MODEL),
+]
+
+
+def jaffle_section(report: str) -> str:
+    lines = report.splitlines()
+    start = next(i for i, x in enumerate(lines) if x.startswith("#") and "jaffle" in x.lower())
+    level = lines[start].split(" ", 1)[0]
+    end = next(
+        (
+            i
+            for i in range(start + 1, len(lines))
+            if lines[i].startswith("#") and len(lines[i].split(" ", 1)[0]) <= len(level)
+        ),
+        len(lines),
+    )
+    return "\n".join(lines[start:end])
+
+
+@pytest.fixture
+def mixed_run(tmp_path: Path) -> Path:
+    run = tmp_path / "run"
+    shutil.copytree(FIXTURES / "run_repeat", run)
+    with (run / "results.jsonl").open("a") as f:
+        for r in JAFFLE_RESULTS:
+            f.write(r.model_dump_json() + "\n")
+    return run
+
+
+def test_jaffle_headline_row(mixed_run: Path):
+    report = render_report(mixed_run)
+    assert suite_counts(report, "jaffle", "slayer") == ("2", "1", "1", "1")
+    assert suite_counts(report, "jaffle", RAW) == ("2", "2", "1", "1")
+    assert suite_counts(report, "jaffle", "slayer+python") == ("1", "1", "0", "0")
+    assert suite_counts(report, "jaffle", "slayer", OTHER_MODEL) == ("1", "1", "1", "1")
+
+
+def test_bench_suites_unchanged_by_jaffle_trials(mixed_run: Path, repeat_report: str):
+    report = render_report(mixed_run)
+    for suite in ("capability", "combo", "trap"):
+        for profile in ("slayer", "slayer+python", RAW):
+            assert suite_counts(report, suite, profile) == suite_counts(repeat_report, suite, profile), (suite, profile)
+
+
+def test_row_and_pitfall_tables_count_bench_trials_only(mixed_run: Path, repeat_report: str):
+    report = render_report(mixed_run)
+    for profile in ("slayer", "slayer+python", RAW):
+        assert table_with(section(report, profile), "Row", "Tasks", "Trials") == table_with(
+            section(repeat_report, profile), "Row", "Tasks", "Trials"
+        ), profile
+    assert table_with(report, "Pitfall", "Trials", "Correct") == table_with(
+        repeat_report, "Pitfall", "Trials", "Correct"
+    )
+
+
+def test_jaffle_section_lists_each_task(mixed_run: Path):
+    text = jaffle_section(render_report(mixed_run))
+    rows = table_with(text, "Task", "Profile", "Model", "Trials", "Correct", "Single query", "Passed")
+    got = {
+        (bare(r["Task"]), bare(r["Profile"]), bare(r["Model"])): (
+            r["Trials"],
+            r["Correct"],
+            r["Single query"],
+            r["Passed"],
+        )
+        for r in rows
+    }
+    assert got[("j-q01-stores", "slayer", MODEL)] == ("2", "1", "1", "1")
+    assert got[("j-q01-stores", RAW, MODEL)] == ("2", "2", "1", "1")
+    assert got[("j-c09-brooklyn-cogs-margin", "slayer+python", MODEL)] == ("1", "1", "0", "0")
+    assert got[("j-c09-brooklyn-cogs-margin", "slayer", OTHER_MODEL)] == ("1", "1", "1", "1")
+    assert not any(t.startswith(("q", "c", "t", "s", "x")) for t, _, _ in got)
+
+
+def test_jaffle_section_states_how_rules_reach_each_profile(mixed_run: Path):
+    text = " ".join(jaffle_section(render_report(mixed_run)).lower().split())
+    assert "business rules" in text
+    assert "system prompt" in text
+    assert "search" in text
+
+
+def test_jaffle_report_regenerates_byte_identical(mixed_run: Path):
+    first = write_report(mixed_run).read_bytes()
+    assert write_report(mixed_run).read_bytes() == first
+
+
+def test_run_without_jaffle(repeat_report: str):
+    suites = {bare(r["Suite"]) for r in table_with(repeat_report, "Suite", "Profile", "Model", "Trials")}
+    assert suites == {"capability", "combo", "trap"}
+    assert not any(x.startswith("#") and "jaffle" in x.lower() for x in repeat_report.splitlines())
+
+
+def test_headline_lists_only_suites_with_trials(tmp_path: Path):
+    run = tmp_path / "run"
+    (run / "traces").mkdir(parents=True)
+    md = json.loads((FIXTURES / "run_repeat" / "metadata.json").read_text())
+    (run / "metadata.json").write_text(json.dumps({**md, "models": [MODEL], "profiles": ["slayer", RAW], "n": 2}))
+    (run / "results.jsonl").write_text("".join(r.model_dump_json() + "\n" for r in JAFFLE_RESULTS[:4]))
+    report = render_report(run)
+    suites = {bare(r["Suite"]) for r in table_with(report, "Suite", "Profile", "Model", "Trials")}
+    assert suites == {"jaffle"}

@@ -1,0 +1,16 @@
+id: j-c12-jaffle-beverage-attach
+dataset: jaffle
+prompt: >-
+  For each store, what share of 2025 orders containing at least one jaffle also contained a beverage? Answer with one
+  row per store: the store name, its number of 2025 orders with at least one jaffle and the share of those orders that
+  also had a beverage, as a fraction.
+truth_sql: |
+  with b as (
+    select o.store_id, i.order_id, max(case when p.type = 'jaffle' then 1 else 0 end) as has_j,
+           max(case when p.type = 'beverage' then 1 else 0 end) as has_b
+    from items i join orders o on o.id = i.order_id join products p on p.sku = i.sku
+    where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01' group by 1, 2)
+  select s.name as store, count(*) as jaffle_orders, avg(has_b) as attach_rate
+  from b join stores s on s.id = b.store_id where has_j = 1 group by 1
+slayer_query: {"query": [{"name": "baskets", "source_model": {"source_name": "items", "columns": [{"name": "is_j", "sql": "CASE WHEN products.type = 'jaffle' THEN 1 ELSE 0 END", "type": "number"}, {"name": "is_b", "sql": "CASE WHEN products.type = 'beverage' THEN 1 ELSE 0 END", "type": "number"}]}, "dimensions": ["orders.stores.name", "order_id"], "measures": [{"formula": "max(is_j)", "name": "has_j"}, {"formula": "max(is_b)", "name": "has_b"}], "filters": ["orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"]}, {"source_model": "baskets", "dimensions": ["orders__stores__name"], "measures": [{"formula": "count(*)", "name": "jaffle_orders"}, {"formula": "avg(has_b)", "name": "attach_rate"}], "filters": ["has_j == 1"]}]}
+compare: {keys: [store], values: [jaffle_orders, attach_rate]}

@@ -1,0 +1,34 @@
+{
+ "columns": [
+  "product",
+  "type",
+  "units_sold"
+ ],
+ "rows": [
+  [
+   "adele-ade",
+   "beverage",
+   93243
+  ],
+  [
+   "chai and mighty",
+   "beverage",
+   92952
+  ],
+  [
+   "for richer or pourover ",
+   "beverage",
+   93371
+  ],
+  [
+   "tangaroo",
+   "beverage",
+   93483
+  ],
+  [
+   "vanilla ice",
+   "beverage",
+   93458
+  ]
+ ]
+}

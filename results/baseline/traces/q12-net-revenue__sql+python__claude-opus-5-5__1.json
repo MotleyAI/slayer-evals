@@ -278,9 +278,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select count(*), count(o.customer_id), count(c.id), count(c.region_id), count(r.id), count(o.amount), count(c.discount), count(distinct r.name), (select count(*) from regions), (select count(distinct id) from customers), (select count(*) from customers) from orders o left join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id"
+    "sql": "select count(*), count(o.customer_id), count(c.id), count(c.region_id), count(r.id), count(c.discount), count(o.amount), sum(case when c.id is not null and c.discount is null then 1 end) from orders o left join customers c on o.customer_id=c.id left join regions r on c.region_id=r.id"
    },
-   "result_text": "{\"columns\": [\"count_star()\", \"count(o.customer_id)\", \"count(c.id)\", \"count(c.region_id)\", \"count(r.id)\", \"count(o.amount)\", \"count(c.discount)\", \"count(DISTINCT r.\\\"name\\\")\", \"(SELECT count_star() FROM regions)\", \"(SELECT count(DISTINCT id) FROM customers)\", \"(SELECT count_star() FROM customers)\"], \"rows\": [[5016, 5010, 5010, 5000, 5000, 5016, 5010, 4, 5, 202, 202]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"count_star()\", \"count(o.customer_id)\", \"count(c.id)\", \"count(c.region_id)\", \"count(r.id)\", \"count(c.discount)\", \"count(o.amount)\", \"sum(CASE  WHEN (((c.id IS NOT NULL) AND (c.discount IS NULL))) THEN (1) ELSE NULL END)\"], \"rows\": [[5016, 5010, 5010, 5000, 5000, 5010, 5016, null]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -289,12 +289,9 @@
      "count(c.id)",
      "count(c.region_id)",
      "count(r.id)",
-     "count(o.amount)",
      "count(c.discount)",
-     "count(DISTINCT r.\"name\")",
-     "(SELECT count_star() FROM regions)",
-     "(SELECT count(DISTINCT id) FROM customers)",
-     "(SELECT count_star() FROM customers)"
+     "count(o.amount)",
+     "sum(CASE  WHEN (((c.id IS NOT NULL) AND (c.discount IS NULL))) THEN (1) ELSE NULL END)"
     ],
     "rows": [
      [
@@ -303,12 +300,9 @@
       5010,
       5000,
       5000,
-      5016,
       5010,
-      4,
-      5,
-      202,
-      202
+      5016,
+      null
      ]
     ],
     "warnings": []
@@ -318,79 +312,41 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select * from regions"
+    "sql": "select r.name region, sum(o.amount - c.discount) total, count(*) from orders o join customers c on o.customer_id=c.id left join regions r on c.region_id=r.id group by 1 order by 1"
    },
-   "result_text": "{\"columns\": [\"id\", \"name\"], \"rows\": [[1, \"North\"], [2, \"South\"], [3, \"East\"], [4, \"West\"], [5, \"Arctic\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"region\", \"total\", \"count_star()\"], \"rows\": [[\"East\", 64730.69999999997, 1053], [\"North\", 104835.75999999997, 1613], [\"South\", 99462.89999999995, 1584], [\"West\", 47717.790000000015, 750], [null, 627.83, 10]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "id",
-     "name"
-    ],
-    "rows": [
-     [
-      1,
-      "North"
-     ],
-     [
-      2,
-      "South"
-     ],
-     [
-      3,
-      "East"
-     ],
-     [
-      4,
-      "West"
-     ],
-     [
-      5,
-      "Arctic"
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "select r.name, count(*), sum(o.amount - c.discount) from orders o join customers c on c.id=o.customer_id left join regions r on r.id=c.region_id group by 1 order by 1"
-   },
-   "result_text": "{\"columns\": [\"name\", \"count_star()\", \"sum((o.amount - c.discount))\"], \"rows\": [[\"East\", 1053, 64730.69999999997], [\"North\", 1613, 104835.75999999997], [\"South\", 1584, 99462.89999999995], [\"West\", 750, 47717.790000000015], [null, 10, 627.83]], \"truncated\": false}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "name",
-     "count_star()",
-     "sum((o.amount - c.discount))"
+     "region",
+     "total",
+     "count_star()"
     ],
     "rows": [
      [
       "East",
-      1053,
-      64730.69999999997
+      64730.69999999997,
+      1053
      ],
      [
       "North",
-      1613,
-      104835.75999999997
+      104835.75999999997,
+      1613
      ],
      [
       "South",
-      1584,
-      99462.89999999995
+      99462.89999999995,
+      1584
      ],
      [
       "West",
-      750,
-      47717.790000000015
+      47717.790000000015,
+      750
      ],
      [
       null,
-      10,
-      627.83
+      627.83,
+      10
      ]
     ],
     "warnings": []
@@ -402,7 +358,7 @@
    "args": {
     "columns": [
      "region",
-     "net_amount"
+     "total"
     ],
     "rows": [
      [
@@ -426,7 +382,7 @@
       627.83
      ]
     ],
-    "message": "Per region: total of (order amount − the ordering customer's discount). Orders were joined to customers, and customers to regions with a left join. 10 orders whose customer has no region are grouped under null. 6 orders with no customer are left out. Arctic is not listed because it has no orders."
+    "message": "Sum of (order amount − customer discount) by customer region. Orders with no customer are excluded. Orders whose customer has no region are grouped under null."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -436,14 +392,14 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 503,
-  "cache_read_tokens": 3647,
-  "cache_write_tokens": 2809,
+  "output_tokens": 407,
+  "cache_read_tokens": 4615,
+  "cache_write_tokens": 1801,
   "partial": false
  },
- "cost_usd": 0.024858400000000003,
- "duration_s": 11.252342414998566,
- "turns": 7,
+ "cost_usd": 0.018092,
+ "duration_s": 8.521975547017064,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

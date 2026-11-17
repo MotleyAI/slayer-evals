@@ -1,0 +1,15 @@
+id: j-c06-top-decile-share
+dataset: jaffle
+prompt: >-
+  What share of 2025 pre-tax sales came from the top 10% of customers by 2025 spend? Answer with one row: that share
+  as a fraction and the number of customers in the top 10%, rounding 10% of the customers up to a whole customer.
+truth_sql: |
+  with c as (
+    select customer, sum(subtotal) as spend from orders o
+    where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01' group by 1),
+  r as (select *, ntile(10) over (order by spend desc) as decile from c)
+  select sum(spend) filter (where decile = 1) * 1.0 / sum(spend) as top_decile_share,
+         count(*) filter (where decile = 1) as top_decile_customers
+  from r
+slayer_query: {"query": [{"name": "per_customer", "source_model": "orders", "dimensions": ["customer"], "measures": [{"formula": "sum(subtotal)", "name": "spend"}, {"formula": "ntile(0 - sum(subtotal), n=10)", "name": "decile"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}, {"source_model": {"source_name": "per_customer", "columns": [{"name": "top_spend", "sql": "CASE WHEN decile = 1 THEN spend ELSE 0 END", "type": "number"}, {"name": "is_top", "sql": "CASE WHEN decile = 1 THEN 1 ELSE 0 END", "type": "number"}]}, "measures": [{"formula": "sum(top_spend) * 1.0 / sum(spend)", "name": "top_decile_share"}, {"formula": "sum(is_top)", "name": "top_decile_customers"}]}]}
+compare: {values: [top_decile_share, top_decile_customers]}

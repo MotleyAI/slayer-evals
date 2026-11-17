@@ -23,20 +23,35 @@
    "audit": null
   },
   {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "monthly_rev"
+   },
+   "result_text": "# `monthly_rev`\nColumns: order_date, rev\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: _(none)_",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
    "tool": "query",
    "args": {
     "query": {
      "source_model": "orders",
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "rev"
-      }
-     ],
      "time_dimensions": [
       {
        "dimension": "order_date",
        "granularity": "month"
+      }
+     ],
+     "measures": [
+      {
+       "formula": "sum(amount)",
+       "name": "rev"
+      },
+      {
+       "formula": "change(sum(amount))",
+       "name": "inc"
       }
      ],
      "order": [
@@ -48,93 +63,114 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.order_date\": \"2023-01-01 00:00:00\", \"orders.rev\": 11356.550000000005}, {\"orders.order_date\": \"2023-02-01 00:00:00\", \"orders.rev\": 7588.9199999999955}, {\"orders.order_date\": \"2023-03-01 00:00:00\", \"orders.rev\": 9598.640000000005}, {\"orders.order_date\": \"2023-04-01 00:00:00\", \"orders.rev\": 8788.950000000003}, {\"orders.order_date\": \"2023-05-01 00:00:00\", \"orders.rev\": 9185.519999999999}, {\"orders.order_date\": \"2023-06-01 00:00:00\", \"orders.rev\": 8602.980000000001}, {\"orders.order_date\": \"2023-07-01 00:00:00\", \"orders.rev\": 11245.799999999988}, {\"orders.order_date\": \"2023-08-01 00:00:00\", \"orders.rev\": 10485.599999999999}, {\"orders.order_date\": \"2023-09-01 00:00:00\", \"orders.rev\": 8871.960000000001}, {\"orders.order_date\": \"2023-10-01 00:00:00\", \"orders.rev\": 8656.970000000003}, {\"orders.order_date\": \"2023-11-01 00:00:00\", \"orders.rev\": 8390.810000000001}, {\"orders.order_date\": \"2023-12-01 00:00:00\", \"orders.rev\": 8594.849999999997}, {\"orders.order_date\": \"2024-01-01 00:00:00\", \"orders.rev\": 8795.049999999997}, {\"orders.order_date\": \"2024-02-01 00:00:00\", \"orders.rev\": 7419.6}, {\"orders.order_date\": \"2024-03-01 00:00:00\", \"orders.rev\": 11469.280000000008}, {\"orders.order_date\": \"2024-04-01 00:00:00\", \"orders.rev\": 11767.950000000003}, {\"orders.order_date\": \"2024-05-01 00:00:00\", \"orders.rev\": 9366.480000000001}, {\"orders.order_date\": \"2024-06-01 00:00:00\", \"orders.rev\": 9352.83}, {\"orders.order_date\": \"2024-07-01 00:00:00\", \"orders.rev\": 10177.420000000004}, {\"orders.order_date\": \"2024-09-01 00:00:00\", \"orders.rev\": 9259.910000000003}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}]}",
+   "result_text": "{\"data\": [{\"orders.order_date\": \"2023-01-01 00:00:00\", \"orders.rev\": 11356.550000000005, \"orders.inc\": null}, {\"orders.order_date\": \"2023-02-01 00:00:00\", \"orders.rev\": 7588.9199999999955, \"orders.inc\": -3767.630000000009}, {\"orders.order_date\": \"2023-03-01 00:00:00\", \"orders.rev\": 9598.640000000005, \"orders.inc\": 2009.7200000000093}, {\"orders.order_date\": \"2023-04-01 00:00:00\", \"orders.rev\": 8788.950000000003, \"orders.inc\": -809.6900000000023}, {\"orders.order_date\": \"2023-05-01 00:00:00\", \"orders.rev\": 9185.519999999999, \"orders.inc\": 396.56999999999607}, {\"orders.order_date\": \"2023-06-01 00:00:00\", \"orders.rev\": 8602.980000000001, \"orders.inc\": -582.5399999999972}, {\"orders.order_date\": \"2023-07-01 00:00:00\", \"orders.rev\": 11245.799999999988, \"orders.inc\": 2642.819999999987}, {\"orders.order_date\": \"2023-08-01 00:00:00\", \"orders.rev\": 10485.599999999999, \"orders.inc\": -760.1999999999898}, {\"orders.order_date\": \"2023-09-01 00:00:00\", \"orders.rev\": 8871.960000000001, \"orders.inc\": -1613.6399999999976}, {\"orders.order_date\": \"2023-10-01 00:00:00\", \"orders.rev\": 8656.970000000003, \"orders.inc\": -214.98999999999796}, {\"orders.order_date\": \"2023-11-01 00:00:00\", \"orders.rev\": 8390.810000000001, \"orders.inc\": -266.1600000000017}, {\"orders.order_date\": \"2023-12-01 00:00:00\", \"orders.rev\": 8594.849999999997, \"orders.inc\": 204.03999999999542}, {\"orders.order_date\": \"2024-01-01 00:00:00\", \"orders.rev\": 8795.049999999997, \"orders.inc\": 200.20000000000073}, {\"orders.order_date\": \"2024-02-01 00:00:00\", \"orders.rev\": 7419.6, \"orders.inc\": -1375.449999999997}, {\"orders.order_date\": \"2024-03-01 00:00:00\", \"orders.rev\": 11469.280000000008, \"orders.inc\": 4049.6800000000076}, {\"orders.order_date\": \"2024-04-01 00:00:00\", \"orders.rev\": 11767.950000000003, \"orders.inc\": 298.6699999999946}, {\"orders.order_date\": \"2024-05-01 00:00:00\", \"orders.rev\": 9366.480000000001, \"orders.inc\": -2401.470000000001}, {\"orders.order_date\": \"2024-06-01 00:00:00\", \"orders.rev\": 9352.83, \"orders.inc\": -13.650000000001455}, {\"orders.order_date\": \"2024-07-01 00:00:00\", \"orders.rev\": 10177.420000000004, \"orders.inc\": 824.5900000000038}, {\"orders.order_date\": \"2024-09-01 00:00:00\", \"orders.rev\": 9259.910000000003, \"orders.inc\": null}], \"warnings\": [{\"kind\": \"truncated\", \"returned_rows\": 20, \"hint\": \"pass a higher 'limit' to get more rows\"}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.inc\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.order_date",
-     "orders.rev"
+     "orders.rev",
+     "orders.inc"
     ],
     "rows": [
      [
       "2023-01-01 00:00:00",
-      11356.550000000005
+      11356.550000000005,
+      null
      ],
      [
       "2023-02-01 00:00:00",
-      7588.9199999999955
+      7588.9199999999955,
+      -3767.630000000009
      ],
      [
       "2023-03-01 00:00:00",
-      9598.640000000005
+      9598.640000000005,
+      2009.7200000000093
      ],
      [
       "2023-04-01 00:00:00",
-      8788.950000000003
+      8788.950000000003,
+      -809.6900000000023
      ],
      [
       "2023-05-01 00:00:00",
-      9185.519999999999
+      9185.519999999999,
+      396.56999999999607
      ],
      [
       "2023-06-01 00:00:00",
-      8602.980000000001
+      8602.980000000001,
+      -582.5399999999972
      ],
      [
       "2023-07-01 00:00:00",
-      11245.799999999988
+      11245.799999999988,
+      2642.819999999987
      ],
      [
       "2023-08-01 00:00:00",
-      10485.599999999999
+      10485.599999999999,
+      -760.1999999999898
      ],
      [
       "2023-09-01 00:00:00",
-      8871.960000000001
+      8871.960000000001,
+      -1613.6399999999976
      ],
      [
       "2023-10-01 00:00:00",
-      8656.970000000003
+      8656.970000000003,
+      -214.98999999999796
      ],
      [
       "2023-11-01 00:00:00",
-      8390.810000000001
+      8390.810000000001,
+      -266.1600000000017
      ],
      [
       "2023-12-01 00:00:00",
-      8594.849999999997
+      8594.849999999997,
+      204.03999999999542
      ],
      [
       "2024-01-01 00:00:00",
-      8795.049999999997
+      8795.049999999997,
+      200.20000000000073
      ],
      [
       "2024-02-01 00:00:00",
-      7419.6
+      7419.6,
+      -1375.449999999997
      ],
      [
       "2024-03-01 00:00:00",
-      11469.280000000008
+      11469.280000000008,
+      4049.6800000000076
      ],
      [
       "2024-04-01 00:00:00",
-      11767.950000000003
+      11767.950000000003,
+      298.6699999999946
      ],
      [
       "2024-05-01 00:00:00",
-      9366.480000000001
+      9366.480000000001,
+      -2401.470000000001
      ],
      [
       "2024-06-01 00:00:00",
-      9352.83
+      9352.83,
+      -13.650000000001455
      ],
      [
       "2024-07-01 00:00:00",
-      10177.420000000004
+      10177.420000000004,
+      824.5900000000038
      ],
      [
       "2024-09-01 00:00:00",
-      9259.910000000003
+      9259.910000000003,
+      null
      ]
     ],
     "warnings": [
@@ -151,24 +187,20 @@
    "args": {
     "query": {
      "source_model": "orders",
+     "time_dimensions": [
+      {
+       "dimension": "order_date",
+       "granularity": "month"
+      }
+     ],
      "measures": [
       {
        "formula": "sum(amount)",
        "name": "rev"
       },
       {
-       "formula": "count(*)",
-       "name": "n"
-      }
-     ],
-     "time_dimensions": [
-      {
-       "dimension": "order_date",
-       "granularity": "month",
-       "date_range": [
-        "2024-11-01",
-        "2025-12-31"
-       ]
+       "formula": "change(sum(amount))",
+       "name": "inc"
       }
      ],
      "order": [
@@ -177,88 +209,99 @@
        "direction": "asc"
       }
      ],
+     "offset": 19,
      "limit": 100
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.order_date\": \"2024-11-01 00:00:00\", \"orders.rev\": 9247.110000000002, \"orders.n\": 148}, {\"orders.order_date\": \"2024-12-01 00:00:00\", \"orders.rev\": 10371.18, \"orders.n\": 146}, {\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 10070.12, \"orders.n\": 159}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.rev\": 8920.94, \"orders.n\": 144}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.rev\": 9816.199999999999, \"orders.n\": 146}, {\"orders.order_date\": \"2025-04-01 00:00:00\", \"orders.rev\": 8541.85, \"orders.n\": 138}, {\"orders.order_date\": \"2025-05-01 00:00:00\", \"orders.rev\": 11804.920000000002, \"orders.n\": 166}, {\"orders.order_date\": \"2025-06-01 00:00:00\", \"orders.rev\": 9697.670000000002, \"orders.n\": 135}, {\"orders.order_date\": \"2025-07-01 00:00:00\", \"orders.rev\": 8337.360000000002, \"orders.n\": 131}, {\"orders.order_date\": \"2025-08-01 00:00:00\", \"orders.rev\": 9446.379999999997, \"orders.n\": 143}, {\"orders.order_date\": \"2025-09-01 00:00:00\", \"orders.rev\": 10191.819999999996, \"orders.n\": 140}, {\"orders.order_date\": \"2025-10-01 00:00:00\", \"orders.rev\": 9750.920000000007, \"orders.n\": 133}, {\"orders.order_date\": \"2025-11-01 00:00:00\", \"orders.rev\": 7270.0, \"orders.n\": 118}, {\"orders.order_date\": \"2025-12-01 00:00:00\", \"orders.rev\": 11287.689999999999, \"orders.n\": 170}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.order_date\": \"2024-09-01 00:00:00\", \"orders.rev\": 9259.910000000003, \"orders.inc\": null}, {\"orders.order_date\": \"2024-10-01 00:00:00\", \"orders.rev\": 8958.220000000005, \"orders.inc\": -301.6899999999987}, {\"orders.order_date\": \"2024-11-01 00:00:00\", \"orders.rev\": 9247.110000000002, \"orders.inc\": 288.8899999999976}, {\"orders.order_date\": \"2024-12-01 00:00:00\", \"orders.rev\": 10371.18, \"orders.inc\": 1124.069999999998}, {\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.rev\": 10070.12, \"orders.inc\": -301.0599999999995}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.rev\": 8920.94, \"orders.inc\": -1149.1800000000003}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.rev\": 9816.199999999999, \"orders.inc\": 895.2599999999984}, {\"orders.order_date\": \"2025-04-01 00:00:00\", \"orders.rev\": 8541.85, \"orders.inc\": -1274.3499999999985}, {\"orders.order_date\": \"2025-05-01 00:00:00\", \"orders.rev\": 11804.920000000002, \"orders.inc\": 3263.0700000000015}, {\"orders.order_date\": \"2025-06-01 00:00:00\", \"orders.rev\": 9697.670000000002, \"orders.inc\": -2107.25}, {\"orders.order_date\": \"2025-07-01 00:00:00\", \"orders.rev\": 8337.360000000002, \"orders.inc\": -1360.3099999999995}, {\"orders.order_date\": \"2025-08-01 00:00:00\", \"orders.rev\": 9446.379999999997, \"orders.inc\": 1109.019999999995}, {\"orders.order_date\": \"2025-09-01 00:00:00\", \"orders.rev\": 10191.819999999996, \"orders.inc\": 745.4399999999987}, {\"orders.order_date\": \"2025-10-01 00:00:00\", \"orders.rev\": 9750.920000000007, \"orders.inc\": -440.8999999999887}, {\"orders.order_date\": \"2025-11-01 00:00:00\", \"orders.rev\": 7270.0, \"orders.inc\": -2480.9200000000073}, {\"orders.order_date\": \"2025-12-01 00:00:00\", \"orders.rev\": 11287.689999999999, \"orders.inc\": 4017.6899999999987}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.inc\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.order_date",
      "orders.rev",
-     "orders.n"
+     "orders.inc"
     ],
     "rows": [
      [
+      "2024-09-01 00:00:00",
+      9259.910000000003,
+      null
+     ],
+     [
+      "2024-10-01 00:00:00",
+      8958.220000000005,
+      -301.6899999999987
+     ],
+     [
       "2024-11-01 00:00:00",
       9247.110000000002,
-      148
+      288.8899999999976
      ],
      [
       "2024-12-01 00:00:00",
       10371.18,
-      146
+      1124.069999999998
      ],
      [
       "2025-01-01 00:00:00",
       10070.12,
-      159
+      -301.0599999999995
      ],
      [
       "2025-02-01 00:00:00",
       8920.94,
-      144
+      -1149.1800000000003
      ],
      [
       "2025-03-01 00:00:00",
       9816.199999999999,
-      146
+      895.2599999999984
      ],
      [
       "2025-04-01 00:00:00",
       8541.85,
-      138
+      -1274.3499999999985
      ],
      [
       "2025-05-01 00:00:00",
       11804.920000000002,
-      166
+      3263.0700000000015
      ],
      [
       "2025-06-01 00:00:00",
       9697.670000000002,
-      135
+      -2107.25
      ],
      [
       "2025-07-01 00:00:00",
       8337.360000000002,
-      131
+      -1360.3099999999995
      ],
      [
       "2025-08-01 00:00:00",
       9446.379999999997,
-      143
+      1109.019999999995
      ],
      [
       "2025-09-01 00:00:00",
       10191.819999999996,
-      140
+      745.4399999999987
      ],
      [
       "2025-10-01 00:00:00",
       9750.920000000007,
-      133
+      -440.8999999999887
      ],
      [
       "2025-11-01 00:00:00",
       7270.0,
-      118
+      -2480.9200000000073
      ],
      [
       "2025-12-01 00:00:00",
       11287.689999999999,
-      170
+      4017.6899999999987
      ]
     ],
     "warnings": []
@@ -275,18 +318,18 @@
     "rows": [
      [
       "2025-12",
-      11287.69
+      11287.689999999999
      ],
      [
       "2025-05",
-      11804.92
+      11804.920000000002
      ],
      [
       "2025-08",
-      9446.38
+      9446.379999999997
      ]
     ],
-    "message": "The three 2025 months with the biggest revenue increase over the month before were December, May and August. December's increase was the largest. Revenue is the total order amount for each month, including orders of every status. January was compared with December 2024."
+    "message": "The three 2025 months with the biggest revenue increase over the previous month were December (+4,017.69), May (+3,263.07) and August (+1,109.02). Revenue is the sum of all order amounts, with no status filter. January was compared against December 2024, and every 2025 month has data."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -296,14 +339,14 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 633,
-  "cache_read_tokens": 96241,
-  "cache_write_tokens": 2602,
+  "output_tokens": 759,
+  "cache_read_tokens": 96563,
+  "cache_write_tokens": 3297,
   "partial": false
  },
- "cost_usd": 0.0449502,
- "duration_s": 15.862630395000451,
- "turns": 7,
+ "cost_usd": 0.0510096,
+ "duration_s": 14.800814339017961,
+ "turns": 8,
  "end_reason": "submitted",
  "error": null
 }

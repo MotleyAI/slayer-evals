@@ -27,16 +27,6 @@
    "args": {
     "query": {
      "source_model": "orders",
-     "measures": [
-      {
-       "formula": "sum(amount)",
-       "name": "revenue"
-      },
-      {
-       "formula": "time_shift(sum(amount), -1)",
-       "name": "prev_revenue"
-      }
-     ],
      "time_dimensions": [
       {
        "dimension": "order_date",
@@ -47,16 +37,21 @@
        ]
       }
      ],
-     "order": [
+     "measures": [
       {
-       "column": "order_date"
+       "formula": "sum(amount)",
+       "name": "revenue"
+      },
+      {
+       "formula": "time_shift(sum(amount), -1)",
+       "name": "prev_revenue"
       }
      ]
     },
     "format": "json",
     "show_sql": true
    },
-   "result_text": "SQL:\nWITH base AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  WHERE\n    (\n      orders.order_date >= CAST('2025-01-01' AS DATE)\n      AND orders.order_date < CAST('2025-04-01' AS DATE)\n    )\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), shifted_prev_revenue AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), sjoin_prev_revenue AS (\n  SELECT\n    base.\"orders.order_date\",\n    base.\"orders.revenue\",\n    shifted_prev_revenue.\"orders.revenue\" AS \"orders.prev_revenue\"\n  FROM base\n  LEFT JOIN shifted_prev_revenue\n    ON base.\"orders.order_date\" - INTERVAL 1 MONTH IS NOT DISTINCT FROM shifted_prev_revenue.\"orders.order_date\"\n)\nSELECT\n  \"orders.order_date\",\n  \"orders.revenue\",\n  \"orders.prev_revenue\"\nFROM (\n  SELECT\n    \"orders.order_date\",\n    \"orders.revenue\",\n    \"orders.prev_revenue\"\n  FROM sjoin_prev_revenue\n) AS _outer\nORDER BY\n  \"orders.order_date\" ASC\nLIMIT 21\n\n{\"data\": [{\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.revenue\": 10070.12, \"orders.prev_revenue\": 10371.18}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.revenue\": 8920.94, \"orders.prev_revenue\": 10070.12}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.revenue\": 9816.199999999999, \"orders.prev_revenue\": 8920.94}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.prev_revenue\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH base AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  WHERE\n    (\n      orders.order_date >= CAST('2025-01-01' AS DATE)\n      AND orders.order_date < CAST('2025-04-01' AS DATE)\n    )\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), shifted_prev_revenue AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), sjoin_prev_revenue AS (\n  SELECT\n    base.\"orders.order_date\",\n    base.\"orders.revenue\",\n    shifted_prev_revenue.\"orders.revenue\" AS \"orders.prev_revenue\"\n  FROM base\n  LEFT JOIN shifted_prev_revenue\n    ON base.\"orders.order_date\" - INTERVAL 1 MONTH IS NOT DISTINCT FROM shifted_prev_revenue.\"orders.order_date\"\n)\nSELECT\n  \"orders.order_date\",\n  \"orders.revenue\",\n  \"orders.prev_revenue\"\nFROM (\n  SELECT\n    \"orders.order_date\",\n    \"orders.revenue\",\n    \"orders.prev_revenue\"\n  FROM sjoin_prev_revenue\n) AS _outer\nLIMIT 21\n\n{\"data\": [{\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.revenue\": 8920.94, \"orders.prev_revenue\": 10070.12}, {\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.revenue\": 10070.12, \"orders.prev_revenue\": 10371.18}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.revenue\": 9816.199999999999, \"orders.prev_revenue\": 8920.94}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.prev_revenue\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -66,14 +61,14 @@
     ],
     "rows": [
      [
-      "2025-01-01 00:00:00",
-      10070.12,
-      10371.18
-     ],
-     [
       "2025-02-01 00:00:00",
       8920.94,
       10070.12
+     ],
+     [
+      "2025-01-01 00:00:00",
+      10070.12,
+      10371.18
      ],
      [
       "2025-03-01 00:00:00",
@@ -95,22 +90,22 @@
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
       10371.18
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       10070.12
      ],
      [
-      "2025-03",
-      9816.2,
+      "2025-03-01",
+      9816.199999999999,
       8920.94
      ]
     ],
-    "message": "Here is monthly revenue for Q1 2025, with each month's figure next to the month before it. January's comparison uses December 2024 ($10,371.18). Revenue is the sum of order amounts across all orders, with no filter on order status."
+    "message": "Here is revenue (sum of order amounts) by month for Q1 2025, next to the revenue of the month before. January's previous month is December 2024 (10,371.18).\n\n| Month | Revenue | Previous month's revenue |\n|---|---|---|\n| January 2025 | 10,070.12 | 10,371.18 |\n| February 2025 | 8,920.94 | 10,070.12 |\n| March 2025 | 9,816.20 | 8,920.94 |\n\nAll orders are counted whatever their status, since no status filter was applied. The exact March value submitted is 9816.199999999999, which is floating-point noise for 9,816.20."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -120,13 +115,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 433,
-  "cache_read_tokens": 71600,
-  "cache_write_tokens": 1334,
+  "output_tokens": 430,
+  "cache_read_tokens": 71682,
+  "cache_write_tokens": 1333,
   "partial": false
  },
- "cost_usd": 0.029674,
- "duration_s": 17.46667965898814,
+ "cost_usd": 0.029625400000000003,
+ "duration_s": 12.475581078964751,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

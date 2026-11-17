@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 _NUM_RE = re.compile(r"^-?\d+(\.\d+)?([eE][-+]?\d+)?$")
 _INT_RE = re.compile(r"^-?\d+$")
 _SEPARATOR_RE = re.compile(r"^\|(\s*:?-+:?\s*\|)+$")
+# Motley's markdown footer when rows were cut off.
+_MOTLEY_TRUNCATED_RE = re.compile(r"^_\(truncated to \d+ rows")
 _WARNING_KINDS = (
     (re.compile(r"^showing first \d+ rows"), "truncated"),
     (re.compile(r"broadcast across"), "broadcast"),
@@ -61,14 +63,33 @@ def _rows_from_records(records: list[Any]) -> tuple[list[str], list[list[Any]]] 
     return columns, [[r.get(c) for c in columns] for r in records]
 
 
-def _from_columns_rows(columns: Any, rows: Any, truncated: Any) -> ParsedResult | None:
-    """The `sql` tool's `{columns, rows, truncated}` shape."""
-    if not isinstance(columns, list) or not all(isinstance(c, str) for c in columns):
+def _record_rows(columns: list[Any], rows: list[Any]) -> list[list[Any]] | None:
+    """Motley's column objects with records keyed by exactly their unique names, as list rows."""
+    names = [c.get("name") for c in columns]
+    if not all(isinstance(n, str) for n in names) or len(set(names)) != len(names):
         return None
-    if not isinstance(rows, list) or not all(isinstance(r, list) for r in rows):
+    if not all(isinstance(r, dict) and set(r) == set(names) for r in rows):
+        return None
+    return [[r[n] for n in names] for r in rows]
+
+
+def _from_columns_rows(columns: Any, rows: Any, truncated: Any) -> ParsedResult | None:
+    """`{columns, rows, truncated}`: column names with list rows (the `sql` tool), or Motley's column objects with records."""
+    if not isinstance(columns, list) or not isinstance(rows, list):
+        return None
+    if all(isinstance(c, str) for c in columns):
+        if not all(isinstance(r, list) for r in rows):
+            return None
+        names, table = columns, rows
+    elif all(isinstance(c, dict) for c in columns):
+        table = _record_rows(columns, rows)
+        if table is None:
+            return None
+        names = [c["name"] for c in columns]
+    else:
         return None
     warnings = [ResultWarning(kind="truncated")] if truncated is True else []
-    return ParsedResult(columns=columns, rows=rows, warnings=warnings)
+    return ParsedResult(columns=names, rows=table, warnings=warnings)
 
 
 def _from_json(text: str) -> ParsedResult | None:
@@ -124,6 +145,8 @@ def _from_markdown(text: str) -> ParsedResult | None:
         i += 1
     warnings: list[ResultWarning] = []
     rest = lines[i:]
+    if any(_MOTLEY_TRUNCATED_RE.match(x.strip()) for x in rest):
+        warnings.append(ResultWarning(kind="truncated"))
     if "Warnings:" in [x.strip() for x in rest]:
         start = [x.strip() for x in rest].index("Warnings:") + 1
         for line in rest[start:]:

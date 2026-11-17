@@ -278,9 +278,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "select status, count(*), count(customer_id), min(order_date), max(order_date) from orders group by 1"
+    "sql": "select status, count(*), count(customer_id), min(order_date), max(order_date), count(order_date) from orders group by 1"
    },
-   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(customer_id)\", \"min(order_date)\", \"max(order_date)\"], \"rows\": [[\"ok\", 4410, 4404, \"2023-01-01\", \"2025-12-31\"], [\"bad\", 606, 606, \"2023-01-01\", \"2025-12-31\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"count_star()\", \"count(customer_id)\", \"min(order_date)\", \"max(order_date)\", \"count(order_date)\"], \"rows\": [[\"ok\", 4410, 4404, \"2023-01-01\", \"2025-12-31\", 4410], [\"bad\", 606, 606, \"2023-01-01\", \"2025-12-31\", 606]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -288,7 +288,8 @@
      "count_star()",
      "count(customer_id)",
      "min(order_date)",
-     "max(order_date)"
+     "max(order_date)",
+     "count(order_date)"
     ],
     "rows": [
      [
@@ -296,14 +297,16 @@
       4410,
       4404,
       "2023-01-01",
-      "2025-12-31"
+      "2025-12-31",
+      4410
      ],
      [
       "bad",
       606,
       606,
       "2023-01-01",
-      "2025-12-31"
+      "2025-12-31",
+      606
      ]
     ],
     "warnings": []
@@ -313,85 +316,62 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select last_day(make_date(2025,i,1)) me, i from range(1,13) t(i))\nselect strftime(me,'%Y-%m') month, me, (select count(distinct customer_id) from orders o where o.order_date between me - 89 and me) customers from m order by me"
+    "sql": "with m as (select last_day(make_date(2025, g, 1)) as me from range(1,13) t(g))\nselect strftime(me,'%Y-%m') as month, (select count(distinct customer_id) from orders o where o.order_date between m.me - interval 89 day and m.me) as customers from m order by 1"
    },
-   "result_text": "Parser Error: syntax error at or near \"month\"\n\nLINE 2: select strftime(me,'%Y-%m') month, me, (select count(distinct customer_id) from orders...\n                                    ^",
-   "is_error": true,
-   "parsed": null,
-   "audit": null
-  },
-  {
-   "tool": "sql",
-   "args": {
-    "sql": "with m as (select last_day(make_date(2025,i::int,1)) me from range(1,13) t(i))\nselect strftime(me,'%Y-%m') as mon, me, (select count(distinct customer_id) from orders o where o.order_date between me - 89 and me) as customers from m order by me"
-   },
-   "result_text": "{\"columns\": [\"mon\", \"me\", \"customers\"], \"rows\": [[\"2025-01\", \"2025-01-31\", 159], [\"2025-02\", \"2025-02-28\", 162], [\"2025-03\", \"2025-03-31\", 160], [\"2025-04\", \"2025-04-30\", 160], [\"2025-05\", \"2025-05-31\", 154], [\"2025-06\", \"2025-06-30\", 154], [\"2025-07\", \"2025-07-31\", 155], [\"2025-08\", \"2025-08-31\", 158], [\"2025-09\", \"2025-09-30\", 158], [\"2025-10\", \"2025-10-31\", 162], [\"2025-11\", \"2025-11-30\", 161], [\"2025-12\", \"2025-12-31\", 159]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"month\", \"customers\"], \"rows\": [[\"2025-01\", 159], [\"2025-02\", 162], [\"2025-03\", 160], [\"2025-04\", 160], [\"2025-05\", 154], [\"2025-06\", 154], [\"2025-07\", 155], [\"2025-08\", 158], [\"2025-09\", 158], [\"2025-10\", 162], [\"2025-11\", 161], [\"2025-12\", 159]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
-     "mon",
-     "me",
+     "month",
      "customers"
     ],
     "rows": [
      [
       "2025-01",
-      "2025-01-31",
       159
      ],
      [
       "2025-02",
-      "2025-02-28",
       162
      ],
      [
       "2025-03",
-      "2025-03-31",
       160
      ],
      [
       "2025-04",
-      "2025-04-30",
       160
      ],
      [
       "2025-05",
-      "2025-05-31",
       154
      ],
      [
       "2025-06",
-      "2025-06-30",
       154
      ],
      [
       "2025-07",
-      "2025-07-31",
       155
      ],
      [
       "2025-08",
-      "2025-08-31",
       158
      ],
      [
       "2025-09",
-      "2025-09-30",
       158
      ],
      [
       "2025-10",
-      "2025-10-31",
       162
      ],
      [
       "2025-11",
-      "2025-11-30",
       161
      ],
      [
       "2025-12",
-      "2025-12-31",
       159
      ]
     ],
@@ -404,72 +384,59 @@
    "args": {
     "columns": [
      "month",
-     "window_end",
-     "distinct_customers"
+     "distinct_customers_90d"
     ],
     "rows": [
      [
       "2025-01",
-      "2025-01-31",
       159
      ],
      [
       "2025-02",
-      "2025-02-28",
       162
      ],
      [
       "2025-03",
-      "2025-03-31",
       160
      ],
      [
       "2025-04",
-      "2025-04-30",
       160
      ],
      [
       "2025-05",
-      "2025-05-31",
       154
      ],
      [
       "2025-06",
-      "2025-06-30",
       154
      ],
      [
       "2025-07",
-      "2025-07-31",
       155
      ],
      [
       "2025-08",
-      "2025-08-31",
       158
      ],
      [
       "2025-09",
-      "2025-09-30",
       158
      ],
      [
       "2025-10",
-      "2025-10-31",
       162
      ],
      [
       "2025-11",
-      "2025-11-30",
       161
      ],
      [
       "2025-12",
-      "2025-12-31",
       159
      ]
     ],
-    "message": "For each month of 2025, I counted distinct customers in the orders table whose order date fell in the 90 days ending on that month's last day (last day minus 89 days through the last day, both included). Orders of both statuses ('ok' and 'bad') are counted. Orders with no customer ID (6 'ok' orders in the table overall) are left out. The counts range from 154 to 162."
+    "message": "Distinct customers with at least one order in the 90 days ending on each month's last day (the last day plus the 89 days before it). Orders of every status, including 'bad', are counted. The 6 orders with no customer ID are left out."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -478,15 +445,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 8,
-  "output_tokens": 555,
-  "cache_read_tokens": 7178,
-  "cache_write_tokens": 1944,
+  "input_tokens": 6,
+  "output_tokens": 416,
+  "cache_read_tokens": 4570,
+  "cache_write_tokens": 1663,
   "partial": false
  },
- "cost_usd": 0.0222876,
- "duration_s": 22.45572983600141,
- "turns": 7,
+ "cost_usd": 0.017573,
+ "duration_s": 10.106740045011975,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

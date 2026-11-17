@@ -1,0 +1,39 @@
+{
+ "columns": [
+  "store",
+  "customers",
+  "median_orders"
+ ],
+ "rows": [
+  [
+   "Brooklyn",
+   701,
+   167.0
+  ],
+  [
+   "Chicago",
+   601,
+   157.0
+  ],
+  [
+   "Los Angeles",
+   145,
+   24.0
+  ],
+  [
+   "New Orleans",
+   343,
+   70.0
+  ],
+  [
+   "Philadelphia",
+   450,
+   158.0
+  ],
+  [
+   "San Francisco",
+   550,
+   146.0
+  ]
+ ]
+}

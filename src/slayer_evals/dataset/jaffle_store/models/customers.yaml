@@ -1,0 +1,34 @@
+version: 12
+name: customers
+sql_table: customers
+source_kind: table
+query_variables: {}
+columns:
+- name: id
+  sql: id
+  type: TEXT
+  primary_key: true
+  unique: false
+  hidden: false
+- name: name
+  sql: name
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Customer name.
+  label: Customer
+  hidden: false
+measures:
+- formula: id:count_distinct
+  name: customer_count
+  label: Customers
+  description: Number of distinct customers.
+  meta:
+    format:
+      type: integer
+      symbol: null
+      precision: 0
+aggregations: []
+joins: []
+filters: []
+hidden: false

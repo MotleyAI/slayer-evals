@@ -1,0 +1,13 @@
+id: j-c05-median-orders-per-customer
+dataset: jaffle
+prompt: >-
+  In 2025, what was the median number of orders per customer at each store? Answer with one row per store: the store
+  name, the number of customers who ordered there in 2025 and the median number of 2025 orders per customer.
+truth_sql: |
+  with c as (
+    select o.store_id, o.customer, count(*) as n from orders o
+    where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01' group by 1, 2)
+  select s.name as store, count(*) as customers, median(n) as median_orders
+  from c join stores s on s.id = c.store_id group by 1
+slayer_query: {"query": [{"name": "per_customer", "source_model": "orders", "dimensions": ["stores.name", "customer"], "measures": [{"formula": "count(*)", "name": "n"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}, {"source_model": "per_customer", "dimensions": ["stores__name"], "measures": [{"formula": "count(*)", "name": "customers"}, {"formula": "median(n)", "name": "median_orders"}]}]}
+compare: {keys: [store], values: [customers, median_orders]}

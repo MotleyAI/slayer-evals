@@ -15,11 +15,11 @@ import pytest
 from pydantic import ValidationError
 
 import slayer_evals.runner.run as run_module
-from slayer_evals.core import RunMetadata, Trace, TrialResult
-from slayer_evals.dataset import BuiltDataset
+from slayer_evals.core import DATASET_SPECS, RunMetadata, Trace, TrialResult
+from slayer_evals.dataset import BuiltDataset, jaffle_rules
 from slayer_evals.runner import AuthError, RunConfig, run_benchmark, select_tasks
 from tests.fake_agents import SLEEPER_PID, STATE_ENV, TRANSCRIPT_TAG, recorded_runs
-from tests.helpers import REPO, make_task, write_task
+from tests.helpers import REPO, make_jaffle_task, make_task, write_task
 
 FAKE = "tests.fake_agents:ScriptedAgent"
 ENV = {"ANTHROPIC_API_KEY": "sk-ant-api-test"}
@@ -41,6 +41,12 @@ def task_doc(tid: str, row: str | list[str], prompt: str, truth: str = "select 7
     }
 
 
+def jaffle_doc(tid: str, prompt: str, truth: str = "select 7.0 as v", **kw: Any) -> dict[str, Any]:
+    doc = task_doc(tid, "Q1", prompt, truth, dataset="jaffle", **kw)
+    del doc["covers"]
+    return doc
+
+
 @pytest.fixture
 def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     state = tmp_path / "state"
@@ -53,7 +59,7 @@ def config(tmp_path: Path, built: BuiltDataset, tasks_dir: Path, **kw: Any) -> R
     """A fake-agent run in `slayer` only, unless `profiles` is given (None: the default profiles)."""
     base: dict[str, Any] = {
         "tasks_dir": tasks_dir,
-        "dataset_dir": built.dir,
+        "dataset_dir": built.dir.parent,
         "out_dir": tmp_path / "runs",
         "agent": FAKE,
         "auth_mode": "api-key",
@@ -90,6 +96,7 @@ def test_defaults():
     assert c.auth_mode is None
     assert c.task_ids == []
     assert c.rows == []
+    assert c.suites == []
 
 
 def test_select_by_rows_and_ids():
@@ -108,6 +115,26 @@ def test_select_by_any_covered_row():
     assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q4"]))] == ["combo"]
     assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q2", "Q1"]))] == ["combo", "plain"]
     assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q7"]))] == ["trap"]
+
+
+def test_select_by_suites():
+    tasks = [
+        make_task(id="a", covers=["Q1"]),
+        make_task(id="b", covers=["Q2", "Q4"]),
+        make_task(id="c", covers=["Q6", "fan_out"]),
+        make_jaffle_task(id="j-q01"),
+        make_jaffle_task(id="j-q02"),
+    ]
+    assert [t.id for t in select_tasks(tasks, RunConfig(suites=["jaffle"]))] == ["j-q01", "j-q02"]
+    assert [t.id for t in select_tasks(tasks, RunConfig(suites=["trap", "capability"]))] == ["a", "c"]
+    assert [t.id for t in select_tasks(tasks, RunConfig(rows=["Q1"]))] == ["a"]
+    assert len(select_tasks(tasks, RunConfig())) == 5
+
+
+def test_suite_filter_combines_with_ids():
+    tasks = [make_task(id="a", covers=["Q1"]), make_jaffle_task(id="j-q01"), make_jaffle_task(id="j-q02")]
+    cfg = RunConfig(suites=["jaffle"], task_ids=["a", "j-q02"])
+    assert [t.id for t in select_tasks(tasks, cfg)] == ["j-q02"]
 
 
 @pytest.mark.parametrize("model", ["a/b", "..", ".hidden", "a__b", ""])
@@ -419,3 +446,108 @@ def test_missing_auth_mode_refuses_before_running(tmp_path: Path, built: BuiltDa
     with pytest.raises(AuthError):
         run_benchmark(cfg, environ=ENV)
     assert recorded_runs(env) == []
+
+
+# Datasets of a run
+
+
+def test_trial_gets_its_tasks_dataset(tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7\nID a"), jaffle_doc("j-a", "ANSWER 7\nID j"))
+    run_dir = run_benchmark(config(tmp_path, built, td, profiles=["slayer", "sql+python"]), environ=ENV)
+    runs = recorded_runs(env)
+    assert len(runs) == 4
+    for rec in runs:
+        dataset = "jaffle" if "ID j" in rec["input"]["prompt"] else "bench"
+        e = rec["input"]["env"]
+        assert Path(e["db_path"]).name == DATASET_SPECS[dataset].db_file
+        assert rec["datasources"] == [DATASET_SPECS[dataset].datasource]
+        assert Path(e["db_path"]).parent != (built_jaffle if dataset == "jaffle" else built).dir
+    jaffle_orders = {rec["orders"] for rec in runs if "ID j" in rec["input"]["prompt"]}
+    assert min(jaffle_orders) > 1_000_000
+    rs = results(run_dir)
+    assert {(r.task_id, r.dataset) for r in rs} == {("a", "bench"), ("j-a", "jaffle")}
+    assert all(r.passed for r in rs)
+
+
+def test_business_rules_only_for_raw_sql_on_jaffle(
+    tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, env: Path
+):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7\nID a"), jaffle_doc("j-a", "ANSWER 7\nID j"))
+    run_benchmark(config(tmp_path, built, td, profiles=["slayer", "slayer+python", "sql+python"]), environ=ENV)
+    rules = {
+        (rec["input"]["prompt"].endswith("ID j"), rec["input"]["profile"]): rec["input"]["env"].get("business_rules")
+        for rec in recorded_runs(env)
+    }
+    assert len(rules) == 6
+    assert rules.pop((True, "sql+python")) == jaffle_rules()
+    assert set(rules.values()) == {None}
+
+
+def test_jaffle_agent_sees_no_dataset_name(tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, jaffle_doc("j-a", "ANSWER 7", truth=SECRET_SQL))
+    run_benchmark(config(tmp_path, built, td, profiles=["sql+python"]), environ=ENV)
+    (rec,) = recorded_runs(env)
+    assert set(rec["input"]) == {"prompt", "profile", "env"}
+    assert "dataset" not in rec["input"]["env"]
+    assert "secret truth marker" not in json.dumps(rec)
+
+
+def test_suite_filter_run(tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, env: Path):
+    td = tasks_dir_with(
+        tmp_path, task_doc("a", "Q1", "ANSWER 7"), jaffle_doc("j-a", "ANSWER 7"), jaffle_doc("j-b", "ANSWER 7")
+    )
+    run_dir = run_benchmark(config(tmp_path, built, td, suites=["jaffle"]), environ=ENV)
+    assert sorted(r.task_id for r in results(run_dir)) == ["j-a", "j-b"]
+
+
+def test_only_needed_datasets_built(tmp_path: Path, env: Path, monkeypatch: pytest.MonkeyPatch):
+    built_sets: list[set[str]] = []
+    real = run_module.build_datasets
+
+    def spy(root: Path, datasets: Any, *args: Any, **kw: Any) -> Any:
+        built_sets.append(set(datasets))
+        return real(root, datasets, *args, **kw)
+
+    monkeypatch.setattr(run_module, "build_datasets", spy)
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"), jaffle_doc("j-a", "ANSWER 7"))
+    cfg = RunConfig(
+        tasks_dir=td,
+        out_dir=tmp_path / "runs",
+        agent=FAKE,
+        auth_mode="api-key",
+        profiles=["slayer"],
+        task_ids=["a"],
+    )
+    rs = results(run_benchmark(cfg, environ=ENV))
+    assert built_sets == [{"bench"}]
+    assert [r.task_id for r in rs] == ["a"]
+
+
+def test_missing_datasets_reported(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"), jaffle_doc("j-a", "ANSWER 7"))
+    empty = tmp_path / "empty-build"
+    empty.mkdir()
+    cfg = config(tmp_path, built, td, dataset_dir=empty)
+    with pytest.raises(ValueError) as exc:
+        run_benchmark(cfg, environ=ENV)
+    assert "bench" in str(exc.value)
+    assert "jaffle" in str(exc.value)
+    assert recorded_runs(env) == []
+
+
+def test_flat_bench_build_is_not_a_build_root(tmp_path: Path, built: BuiltDataset, env: Path):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1", "ANSWER 7"))
+    cfg = config(tmp_path, built, td, dataset_dir=built.dir)
+    with pytest.raises(ValueError, match="bench"):
+        run_benchmark(cfg, environ=ENV)
+    assert recorded_runs(env) == []
+
+
+def test_truth_on_each_tasks_dataset(tmp_path: Path, built: BuiltDataset, built_jaffle: BuiltDataset, env: Path):
+    td = tasks_dir_with(
+        tmp_path,
+        task_doc("a", "Q1", "ANSWER 7", truth="select count(*) * 0 + 7.0 as v from regions"),
+        jaffle_doc("j-a", "ANSWER 7", truth="select count(*) * 0 + 7.0 as v from stores"),
+    )
+    rs = results(run_benchmark(config(tmp_path, built, td), environ=ENV))
+    assert sorted((r.task_id, r.passed) for r in rs) == [("a", True), ("j-a", True)]

@@ -1,0 +1,12 @@
+id: j-c04-ltv-by-first-store
+dataset: jaffle
+prompt: >-
+  What is the average lifetime pre-tax spend per customer for each store, attributing each customer to the store of
+  their first order? Answer with one row per store: the store name, the number of customers attributed to it and their
+  average lifetime spend in dollars.
+truth_sql: |
+  with f as (select customer, arg_min(store_id, ordered_at) as first_store, sum(subtotal) as ltv from orders group by 1)
+  select s.name as store, count(*) as customers, avg(ltv) / 100.0 as avg_lifetime_spend
+  from f join stores s on s.id = f.first_store group by 1
+slayer_query: {"query": [{"name": "per_customer", "source_model": "orders", "dimensions": ["customer"], "measures": [{"formula": "first(store_id)", "name": "first_store"}, {"formula": "sum(subtotal)", "name": "ltv"}]}, {"source_model": {"source_name": "per_customer", "joins": [{"target_model": "stores", "join_pairs": [["first_store", "id"]]}]}, "dimensions": ["stores.name"], "measures": [{"formula": "count(*)", "name": "customers"}, {"formula": "avg(ltv) / 100.0", "name": "avg_lifetime_spend"}]}]}
+compare: {keys: [store], values: [customers, avg_lifetime_spend]}

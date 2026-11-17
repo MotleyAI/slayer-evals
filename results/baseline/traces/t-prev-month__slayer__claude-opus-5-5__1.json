@@ -27,6 +27,16 @@
    "args": {
     "query": {
      "source_model": "orders",
+     "measures": [
+      {
+       "formula": "sum(amount)",
+       "name": "revenue"
+      },
+      {
+       "formula": "time_shift(sum(amount), -1)",
+       "name": "prev_revenue"
+      }
+     ],
      "time_dimensions": [
       {
        "dimension": "order_date",
@@ -37,20 +47,17 @@
        ]
       }
      ],
-     "measures": [
+     "order": [
       {
-       "formula": "sum(amount)",
-       "name": "revenue"
-      },
-      {
-       "formula": "time_shift(sum(amount), -1)",
-       "name": "prev_revenue"
+       "column": "order_date",
+       "direction": "asc"
       }
      ]
     },
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.revenue\": 10070.12, \"orders.prev_revenue\": 10371.18}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.revenue\": 9816.199999999999, \"orders.prev_revenue\": 8920.94}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.revenue\": 8920.94, \"orders.prev_revenue\": 10070.12}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.prev_revenue\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH base AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  WHERE\n    (\n      orders.order_date >= CAST('2025-01-01' AS DATE)\n      AND orders.order_date < CAST('2025-04-01' AS DATE)\n    )\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), shifted_prev_revenue AS (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.revenue\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n), sjoin_prev_revenue AS (\n  SELECT\n    base.\"orders.order_date\",\n    base.\"orders.revenue\",\n    shifted_prev_revenue.\"orders.revenue\" AS \"orders.prev_revenue\"\n  FROM base\n  LEFT JOIN shifted_prev_revenue\n    ON base.\"orders.order_date\" - INTERVAL 1 MONTH IS NOT DISTINCT FROM shifted_prev_revenue.\"orders.order_date\"\n)\nSELECT\n  \"orders.order_date\",\n  \"orders.revenue\",\n  \"orders.prev_revenue\"\nFROM (\n  SELECT\n    \"orders.order_date\",\n    \"orders.revenue\",\n    \"orders.prev_revenue\"\n  FROM sjoin_prev_revenue\n) AS _outer\nORDER BY\n  \"orders.order_date\" ASC\nLIMIT 21\n\n{\"data\": [{\"orders.order_date\": \"2025-01-01 00:00:00\", \"orders.revenue\": 10070.12, \"orders.prev_revenue\": 10371.18}, {\"orders.order_date\": \"2025-02-01 00:00:00\", \"orders.revenue\": 8920.94, \"orders.prev_revenue\": 10070.12}, {\"orders.order_date\": \"2025-03-01 00:00:00\", \"orders.revenue\": 9816.199999999999, \"orders.prev_revenue\": 8920.94}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.prev_revenue\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -65,18 +72,30 @@
       10371.18
      ],
      [
-      "2025-03-01 00:00:00",
-      9816.199999999999,
-      8920.94
-     ],
-     [
       "2025-02-01 00:00:00",
       8920.94,
       10070.12
+     ],
+     [
+      "2025-03-01 00:00:00",
+      9816.199999999999,
+      8920.94
      ]
     ],
     "warnings": []
    },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": "[\"month\", \"revenue\", \"prev_month_revenue\"]",
+    "rows": "[[\"2025-01-01\", 10070.12, 10371.18], [\"2025-02-01\", 8920.94, 10070.12], [\"2025-03-01\", 9816.199999999999, 8920.94]]",
+    "message": "Monthly revenue (sum of orders.amount) for Q1 2025, alongside the previous month's revenue (January's previous month is December 2024)."
+   },
+   "result_text": "<tool_use_error>Error: No such tool available: mcp__slayer__submit_answer</tool_use_error>",
+   "is_error": true,
+   "parsed": null,
    "audit": null
   },
   {
@@ -89,22 +108,22 @@
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
       10371.18
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       10070.12
      ],
      [
-      "2025-03",
-      9816.2,
+      "2025-03-01",
+      9816.199999999999,
       8920.94
      ]
     ],
-    "message": "Q1 2025 monthly revenue: January 10,070.12, February 8,920.94, March 9,816.20. For January, the previous month is December 2024, which comes to 10,371.18. Revenue is the sum of all order amounts, with no filter on order status."
+    "message": "Monthly revenue (sum of orders.amount) for Q1 2025, alongside the previous month's revenue (January's previous month is December 2024)."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -113,15 +132,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 6,
-  "output_tokens": 432,
-  "cache_read_tokens": 71229,
-  "cache_write_tokens": 1333,
+  "input_tokens": 8,
+  "output_tokens": 716,
+  "cache_read_tokens": 95810,
+  "cache_write_tokens": 2688,
   "partial": false
  },
- "cost_usd": 0.029574800000000002,
- "duration_s": 19.192343957998673,
- "turns": 6,
+ "cost_usd": 0.04695400000000001,
+ "duration_s": 13.767369528010022,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

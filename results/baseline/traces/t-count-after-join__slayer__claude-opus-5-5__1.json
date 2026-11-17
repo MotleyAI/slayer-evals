@@ -16,8 +16,8 @@
    "args": {
     "entity_type": "model",
     "reference": [
-     "customers",
-     "orders"
+     "bench.customers",
+     "bench.orders"
     ]
    },
    "result_text": "## bench.customers\n# `customers`\nColumns: id, name, region_id, city, tier, credit, discount\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: cities, regions\n\n---\n\n## bench.orders\n# `orders`\nColumns: id, customer_id, amount, status, order_date\nMeasures: aov\nAggregations: _(none)_\nJoins to: customers\nSaved queries: monthly_rev",
@@ -39,7 +39,7 @@
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"orders.status\": \"bad\", \"orders._count\": 606}, {\"orders.status\": \"ok\", \"orders._count\": 4410}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"orders.status\": \"ok\", \"orders._count\": 4410}, {\"orders.status\": \"bad\", \"orders._count\": 606}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -48,12 +48,12 @@
     ],
     "rows": [
      [
-      "bad",
-      606
-     ],
-     [
       "ok",
       4410
+     ],
+     [
+      "bad",
+      606
      ]
     ],
     "warnings": []
@@ -123,7 +123,7 @@
       35
      ]
     ],
-    "message": "Customers with at least one order whose status is 'bad', by tier: bronze has 87, silver 47 and gold 35, for 169 in total. Each customer is counted once, however many 'bad' orders they have."
+    "message": "Number of distinct customers in each tier with at least one order whose status is 'bad'."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -133,13 +133,13 @@
  ],
  "usage": {
   "input_tokens": 8,
-  "output_tokens": 388,
-  "cache_read_tokens": 95741,
-  "cache_write_tokens": 1702,
+  "output_tokens": 394,
+  "cache_read_tokens": 95853,
+  "cache_write_tokens": 1706,
   "partial": false
  },
- "cost_usd": 0.0354502,
- "duration_s": 12.15163888700772,
+ "cost_usd": 0.0356126,
+ "duration_s": 13.498365379986353,
  "turns": 7,
  "end_reason": "submitted",
  "error": null

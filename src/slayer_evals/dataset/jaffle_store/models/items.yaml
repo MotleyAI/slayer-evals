@@ -1,0 +1,86 @@
+version: 12
+name: items
+sql_table: items
+source_kind: table
+query_variables: {}
+columns:
+- name: id
+  sql: id
+  type: TEXT
+  primary_key: true
+  unique: false
+  hidden: false
+- name: order_id
+  sql: order_id
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Order this line belongs to.
+  label: Order
+  hidden: false
+- name: sku
+  sql: sku
+  type: TEXT
+  primary_key: false
+  unique: false
+  description: Product sold on this line.
+  label: Product
+  hidden: false
+- name: unit_price
+  sql: products.price / 100.0
+  type: DOUBLE
+  primary_key: false
+  unique: false
+  description: Price of the product on this line, in dollars (products.price is stored in cents). Row-level, so summing it
+    gives sales per item sold.
+  label: Unit Price
+  hidden: false
+  format:
+    type: currency
+    precision: 2
+    symbol: $
+  allowed_aggregations:
+  - sum
+  - avg
+  - min
+  - max
+measures:
+- formula: id:count
+  name: units_sold
+  label: Units Sold
+  description: Number of item units sold.
+  meta:
+    format:
+      type: integer
+      symbol: null
+      precision: 0
+- formula: unit_price:sum
+  name: line_sales
+  label: Line Sales
+  description: 'Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales
+    for the same period. Use for sales by product, SKU or product type.'
+  meta:
+    format:
+      type: currency
+      symbol: $
+      precision: 2
+aggregations: []
+joins:
+- target_model: orders
+  join_pairs:
+  - - order_id
+    - id
+  join_type: left
+  cardinality: many_to_one
+- target_model: products
+  join_pairs:
+  - - sku
+    - sku
+  join_type: left
+  cardinality: many_to_one
+filters: []
+description: 'Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores
+  and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales
+  measure here. Do NOT use products.price:sum from this model: it sums each distinct product''s price once, not once per item
+  sold.'
+hidden: false

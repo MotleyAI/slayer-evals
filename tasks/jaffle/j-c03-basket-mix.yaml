@@ -1,0 +1,18 @@
+id: j-c03-basket-mix
+dataset: jaffle
+prompt: >-
+  What share of 2025 orders contained only beverages, only jaffles, or both? Leave out orders with no items. Answer
+  with one row per mix, labelled exactly beverages only, jaffles only and both: the mix, its number of orders and its
+  share of those orders as a fraction.
+truth_sql: |
+  with b as (
+    select i.order_id, max(case when p.type = 'jaffle' then 1 else 0 end) as has_j,
+           max(case when p.type = 'beverage' then 1 else 0 end) as has_b
+    from items i join orders o on o.id = i.order_id join products p on p.sku = i.sku
+    where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01' group by 1)
+  select case when has_j = 1 and has_b = 1 then 'both' when has_j = 1 then 'jaffles only' else 'beverages only' end
+           as mix,
+         count(*) as orders, count(*) * 1.0 / sum(count(*)) over () as share
+  from b group by 1
+slayer_query: {"query": [{"name": "baskets", "source_model": {"source_name": "items", "columns": [{"name": "is_j", "sql": "CASE WHEN products.type = 'jaffle' THEN 1 ELSE 0 END", "type": "number"}, {"name": "is_b", "sql": "CASE WHEN products.type = 'beverage' THEN 1 ELSE 0 END", "type": "number"}]}, "dimensions": ["order_id"], "measures": [{"formula": "max(is_j)", "name": "has_j"}, {"formula": "max(is_b)", "name": "has_b"}], "filters": ["orders.ordered_at >= '2025-01-01'", "orders.ordered_at < '2026-01-01'"]}, {"source_model": "baskets", "dimensions": [{"expression": "iif(has_j == 1 and has_b == 1, 'both', iif(has_j == 1, 'jaffles only', 'beverages only'))", "name": "mix"}], "measures": [{"formula": "count(*)", "name": "orders"}, {"formula": "count(*) / sum(count(*), partition_by=[])", "name": "share"}]}]}
+compare: {keys: [mix], values: [orders, share]}

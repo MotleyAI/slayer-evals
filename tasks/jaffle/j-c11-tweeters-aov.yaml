@@ -1,0 +1,15 @@
+id: j-c11-tweeters-aov
+dataset: jaffle
+prompt: >-
+  In 2025, did customers who tweeted at least once that year have a higher pre-tax average order value than customers
+  who did not tweet? Answer with two rows, labelled exactly tweeted and did not tweet: the segment, its number of
+  customers who ordered in 2025, their number of 2025 orders and their average order value in dollars.
+truth_sql: |
+  with t as (select distinct user_id from tweets where tweeted_at >= '2025-01-01' and tweeted_at < '2026-01-01')
+  select case when t.user_id is null then 'did not tweet' else 'tweeted' end as segment,
+         count(distinct o.customer) as customers, count(*) as orders, sum(o.subtotal) / 100.0 / count(*) as net_aov
+  from orders o left join t on t.user_id = o.customer
+  where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01'
+  group by 1
+slayer_query: {"query": [{"name": "tweeters", "source_model": "tweets", "dimensions": ["user_id"], "measures": [{"formula": "count(*)", "name": "tweets"}], "filters": ["tweeted_at >= '2025-01-01'", "tweeted_at < '2026-01-01'"]}, {"source_model": {"source_name": "orders", "joins": [{"target_model": "tweeters", "join_pairs": [["customer", "user_id"]]}], "columns": [{"name": "segment", "sql": "CASE WHEN tweeters.user_id IS NULL THEN 'did not tweet' ELSE 'tweeted' END", "type": "string"}]}, "dimensions": ["segment"], "measures": [{"formula": "count_distinct(customer)", "name": "customers"}, {"formula": "count(*)", "name": "orders"}, {"formula": "net_sales / order_count", "name": "net_aov"}], "filters": ["ordered_at >= '2025-01-01'", "ordered_at < '2026-01-01'"]}]}
+compare: {keys: [segment], values: [customers, orders, net_aov]}

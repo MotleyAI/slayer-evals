@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from slayer.storage.yaml_storage import YAMLStorage
 
-from slayer_evals.core import Table, Task
+from slayer_evals.core import Dataset, Table, Task
 from slayer_evals.dataset import BuiltDataset
 from slayer_evals.grading import match_tables
 from slayer_evals.grading.tables import resolve_column
@@ -21,7 +21,7 @@ from slayer_evals.tasks import (
     run_references,
     saved_definitions,
 )
-from tests.helpers import REPO, make_task
+from tests.helpers import REPO, make_jaffle_task, make_task
 
 TASKS_DIR = REPO / "tasks"
 COUNT_QUERY = {"query": {"source_model": "orders", "measures": [{"formula": "count(*)", "name": "n"}]}}
@@ -269,7 +269,35 @@ def test_saved_definitions(built: BuiltDataset):
     assert "orders" not in names
 
 
-# The committed task set.
+# The proof machinery on the Jaffle store.
+
+
+def test_reference_query_on_the_jaffle_store(
+    built_jaffle: BuiltDataset, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(os, "chdir", no_chdir)
+    task = make_jaffle_task(
+        id="j-stores",
+        truth_sql="select count(*) as n from stores",
+        slayer_query={"query": {"source_model": "stores", "measures": [{"formula": "count(*)", "name": "n"}]}},
+        compare={"values": ["n"]},
+    )
+    truth = compute_truths([task], built_jaffle.db_path)["j-stores"]
+    assert truth.rows == [[6]]
+    ref = run_references([task], built_jaffle.store_dir, built_jaffle.db_path)["j-stores"]
+    assert ref.error is None
+    assert reference_problems(task, truth, ref) == []
+
+
+def test_saved_definitions_of_the_jaffle_store(built_jaffle: BuiltDataset, built: BuiltDataset):
+    jaffle = saved_definitions(built_jaffle.store_dir, dataset="jaffle")
+    assert {"net_sales", "order_count", "line_sales"} <= jaffle
+    assert "monthly_rev" not in jaffle
+    assert "net_sales" not in saved_definitions(built.store_dir)
+
+
+# The committed task set, each task on its own dataset.
 
 
 @pytest.fixture(scope="module")
@@ -278,12 +306,35 @@ def committed() -> list[Task]:
 
 
 @pytest.fixture(scope="module")
-def truths(committed: list[Task], built: BuiltDataset) -> dict[str, Table]:
-    return compute_truths(committed, built.db_path)
+def datasets(built: BuiltDataset, built_jaffle: BuiltDataset) -> dict[Dataset, BuiltDataset]:
+    return {"bench": built, "jaffle": built_jaffle}
 
 
-def test_reference_query_answers_every_task(committed: list[Task], truths: dict[str, Table], built: BuiltDataset):
-    refs = run_references(committed, built.store_dir, built.db_path)
+def by_dataset(tasks: list[Task]) -> dict[Dataset, list[Task]]:
+    out: dict[Dataset, list[Task]] = {}
+    for t in tasks:
+        out.setdefault(t.dataset, []).append(t)
+    return out
+
+
+@pytest.fixture(scope="module")
+def truths(committed: list[Task], datasets: dict[Dataset, BuiltDataset]) -> dict[str, Table]:
+    out: dict[str, Table] = {}
+    for dataset, tasks in by_dataset(committed).items():
+        out |= compute_truths(tasks, datasets[dataset].db_path)
+    return out
+
+
+def test_committed_set_spans_both_datasets(committed: list[Task]):
+    assert set(by_dataset(committed)) == {"bench", "jaffle"}
+
+
+def test_reference_query_answers_every_task(
+    committed: list[Task], truths: dict[str, Table], datasets: dict[Dataset, BuiltDataset]
+):
+    refs: dict[str, ReferenceResult] = {}
+    for dataset, tasks in by_dataset(committed).items():
+        refs |= run_references(tasks, datasets[dataset].store_dir, datasets[dataset].db_path)
     assert set(refs) == {t.id for t in committed}
     problems = [p for t in committed for p in reference_problems(t, truths[t.id], refs[t.id])]
     assert problems == []
@@ -301,7 +352,9 @@ def test_covered_rows_have_their_markers(committed: list[Task]):
     assert [p for t in committed for p in marker_problems(t)] == []
 
 
-def test_saved_definitions_exist(committed: list[Task], built: BuiltDataset):
-    names = saved_definitions(built.store_dir)
-    unknown = [f"{t.id}: {n}" for t in committed for n in t.uses_saved if n not in names]
+def test_saved_definitions_exist(committed: list[Task], datasets: dict[Dataset, BuiltDataset]):
+    unknown = []
+    for dataset, tasks in by_dataset(committed).items():
+        names = saved_definitions(datasets[dataset].store_dir, dataset=dataset)
+        unknown += [f"{t.id}: {n}" for t in tasks for n in t.uses_saved if n not in names]
     assert unknown == []

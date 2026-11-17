@@ -18,9 +18,9 @@
    "args": {
     "model_name": "monthly_rev",
     "show_sql": true,
-    "num_rows": 20
+    "compact": false
    },
-   "result_text": "# Model: `monthly_rev`\n\n- **data_source:** `bench`\n- **row_count:** 35\n\n## Backing Query\n\n**1. final**\n- source_model: `orders`\n- time_dimensions: order_date\n- measures: rev\n\n## Backing Query SQL\n\n```sql\nSELECT\n  _stage_inner.\"orders.order_date\" AS \"order_date\",\n  _stage_inner.\"orders.rev\" AS \"rev\"\nFROM (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n) AS _stage_inner\n```\n\n## Columns (2)\n\n| name | type | unique | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| order_date | TIMESTAMP | yes | order_date | all | 2023-01-01 00:00:00 .. 2025-12-01 00:00:00 |\n| rev | DOUBLE | — | rev | all | 7270.0 .. 11804.920000000002 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (0)\n\n_(none)_\n\n## Data Profile SQL\n\n```sql\nWITH monthly_rev AS (\n  SELECT\n    _stage_inner.\"orders.order_date\" AS \"order_date\",\n    _stage_inner.\"orders.rev\" AS \"rev\"\n  FROM (\n    SELECT\n      DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n    FROM orders AS orders\n    GROUP BY\n      DATE_TRUNC('MONTH', orders.order_date)\n  ) AS _stage_inner\n)\nSELECT\n  COUNT(*) AS \"monthly_rev._count\",\n  COUNT(DISTINCT monthly_rev.order_date) AS \"monthly_rev.order_date_count_distinct\",\n  CAST(AVG(monthly_rev.rev) AS DOUBLE) AS \"monthly_rev.rev_avg\"\nFROM monthly_rev AS monthly_rev\nLIMIT 20\n```\n\n## Data Profile\n\n| _count | order_date_count_distinct | rev_avg |\n| --- | --- | --- |\n| 35 | 35 | 9505.384285714286 |",
+   "result_text": "# Model: `monthly_rev`\n\n- **data_source:** `bench`\n- **row_count:** 35\n\n## Backing Query\n\n**1. final**\n- source_model: `orders`\n- time_dimensions: order_date\n- measures: rev\n\n## Backing Query SQL\n\n```sql\nSELECT\n  _stage_inner.\"orders.order_date\" AS \"order_date\",\n  _stage_inner.\"orders.rev\" AS \"rev\"\nFROM (\n  SELECT\n    DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n    CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n  FROM orders AS orders\n  GROUP BY\n    DATE_TRUNC('MONTH', orders.order_date)\n) AS _stage_inner\n```\n\n## Columns (2)\n\n| name | type | unique | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| order_date | TIMESTAMP | yes | order_date | all | 2023-01-01 00:00:00 .. 2025-12-01 00:00:00 |\n| rev | DOUBLE | — | rev | all | 7270.0 .. 11804.920000000002 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (0)\n\n_(none)_\n\n## Data Profile SQL\n\n```sql\nWITH monthly_rev AS (\n  SELECT\n    _stage_inner.\"orders.order_date\" AS \"order_date\",\n    _stage_inner.\"orders.rev\" AS \"rev\"\n  FROM (\n    SELECT\n      DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n    FROM orders AS orders\n    GROUP BY\n      DATE_TRUNC('MONTH', orders.order_date)\n  ) AS _stage_inner\n)\nSELECT\n  COUNT(*) AS \"monthly_rev._count\",\n  COUNT(DISTINCT monthly_rev.order_date) AS \"monthly_rev.order_date_count_distinct\",\n  CAST(AVG(monthly_rev.rev) AS DOUBLE) AS \"monthly_rev.rev_avg\"\nFROM monthly_rev AS monthly_rev\nLIMIT 3\n```\n\n## Data Profile\n\n| _count | order_date_count_distinct | rev_avg |\n| --- | --- | --- |\n| 35 | 35 | 9505.384285714286 |",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -52,14 +52,14 @@
      ],
      "order": [
       {
-       "column": "order_date",
-       "direction": "asc"
+       "column": "order_date"
       }
      ]
     },
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"monthly_rev.order_date\": \"2025-01-01 00:00:00\", \"monthly_rev.revenue\": 10070.12, \"monthly_rev.running_total\": 10070.12}, {\"monthly_rev.order_date\": \"2025-02-01 00:00:00\", \"monthly_rev.revenue\": 8920.94, \"monthly_rev.running_total\": 18991.06}, {\"monthly_rev.order_date\": \"2025-03-01 00:00:00\", \"monthly_rev.revenue\": 9816.199999999999, \"monthly_rev.running_total\": 28807.260000000002}, {\"monthly_rev.order_date\": \"2025-04-01 00:00:00\", \"monthly_rev.revenue\": 8541.85, \"monthly_rev.running_total\": 37349.11}, {\"monthly_rev.order_date\": \"2025-05-01 00:00:00\", \"monthly_rev.revenue\": 11804.920000000002, \"monthly_rev.running_total\": 49154.03}, {\"monthly_rev.order_date\": \"2025-06-01 00:00:00\", \"monthly_rev.revenue\": 9697.670000000002, \"monthly_rev.running_total\": 58851.7}, {\"monthly_rev.order_date\": \"2025-07-01 00:00:00\", \"monthly_rev.revenue\": 8337.360000000002, \"monthly_rev.running_total\": 67189.06}, {\"monthly_rev.order_date\": \"2025-08-01 00:00:00\", \"monthly_rev.revenue\": 9446.379999999997, \"monthly_rev.running_total\": 76635.44}, {\"monthly_rev.order_date\": \"2025-09-01 00:00:00\", \"monthly_rev.revenue\": 10191.819999999996, \"monthly_rev.running_total\": 86827.26}, {\"monthly_rev.order_date\": \"2025-10-01 00:00:00\", \"monthly_rev.revenue\": 9750.920000000007, \"monthly_rev.running_total\": 96578.18000000001}, {\"monthly_rev.order_date\": \"2025-11-01 00:00:00\", \"monthly_rev.revenue\": 7270.0, \"monthly_rev.running_total\": 103848.18000000001}, {\"monthly_rev.order_date\": \"2025-12-01 00:00:00\", \"monthly_rev.revenue\": 11287.689999999999, \"monthly_rev.running_total\": 115135.87000000001}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"monthly_rev.running_total\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nWITH monthly_rev AS (\n  SELECT\n    _stage_inner.\"orders.order_date\" AS \"order_date\",\n    _stage_inner.\"orders.rev\" AS \"rev\"\n  FROM (\n    SELECT\n      DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n    FROM orders AS orders\n    GROUP BY\n      DATE_TRUNC('MONTH', orders.order_date)\n  ) AS _stage_inner\n), base AS (\n  SELECT\n    DATE_TRUNC('MONTH', monthly_rev.order_date) AS \"monthly_rev.order_date\",\n    CAST(SUM(monthly_rev.rev) AS DOUBLE) AS \"monthly_rev.revenue\"\n  FROM monthly_rev AS monthly_rev\n  WHERE\n    (\n      monthly_rev.order_date >= CAST('2025-01-01 00:00:00' AS TIMESTAMP)\n      AND monthly_rev.order_date < CAST('2026-01-01 00:00:00' AS TIMESTAMP)\n    )\n  GROUP BY\n    DATE_TRUNC('MONTH', monthly_rev.order_date)\n), step1 AS (\n  SELECT\n    \"monthly_rev.order_date\",\n    \"monthly_rev.revenue\",\n    SUM(\"monthly_rev.revenue\") OVER (ORDER BY \"monthly_rev.order_date\") AS \"monthly_rev.running_total\"\n  FROM base\n)\nSELECT\n  \"monthly_rev.order_date\",\n  \"monthly_rev.revenue\",\n  \"monthly_rev.running_total\"\nFROM (\n  SELECT\n    \"monthly_rev.order_date\",\n    \"monthly_rev.revenue\",\n    \"monthly_rev.running_total\"\n  FROM step1\n) AS _outer\nORDER BY\n  \"monthly_rev.order_date\" ASC\nLIMIT 21\n\n{\"data\": [{\"monthly_rev.order_date\": \"2025-01-01 00:00:00\", \"monthly_rev.revenue\": 10070.12, \"monthly_rev.running_total\": 10070.12}, {\"monthly_rev.order_date\": \"2025-02-01 00:00:00\", \"monthly_rev.revenue\": 8920.94, \"monthly_rev.running_total\": 18991.06}, {\"monthly_rev.order_date\": \"2025-03-01 00:00:00\", \"monthly_rev.revenue\": 9816.199999999999, \"monthly_rev.running_total\": 28807.260000000002}, {\"monthly_rev.order_date\": \"2025-04-01 00:00:00\", \"monthly_rev.revenue\": 8541.85, \"monthly_rev.running_total\": 37349.11}, {\"monthly_rev.order_date\": \"2025-05-01 00:00:00\", \"monthly_rev.revenue\": 11804.920000000002, \"monthly_rev.running_total\": 49154.03}, {\"monthly_rev.order_date\": \"2025-06-01 00:00:00\", \"monthly_rev.revenue\": 9697.670000000002, \"monthly_rev.running_total\": 58851.7}, {\"monthly_rev.order_date\": \"2025-07-01 00:00:00\", \"monthly_rev.revenue\": 8337.360000000002, \"monthly_rev.running_total\": 67189.06}, {\"monthly_rev.order_date\": \"2025-08-01 00:00:00\", \"monthly_rev.revenue\": 9446.379999999997, \"monthly_rev.running_total\": 76635.44}, {\"monthly_rev.order_date\": \"2025-09-01 00:00:00\", \"monthly_rev.revenue\": 10191.819999999996, \"monthly_rev.running_total\": 86827.26}, {\"monthly_rev.order_date\": \"2025-10-01 00:00:00\", \"monthly_rev.revenue\": 9750.920000000007, \"monthly_rev.running_total\": 96578.18000000001}, {\"monthly_rev.order_date\": \"2025-11-01 00:00:00\", \"monthly_rev.revenue\": 7270.0, \"monthly_rev.running_total\": 103848.18000000001}, {\"monthly_rev.order_date\": \"2025-12-01 00:00:00\", \"monthly_rev.revenue\": 11287.689999999999, \"monthly_rev.running_total\": 115135.87000000001}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"monthly_rev.running_total\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -143,67 +143,67 @@
     ],
     "rows": [
      [
-      "2025-01",
+      "2025-01-01",
       10070.12,
       10070.12
      ],
      [
-      "2025-02",
+      "2025-02-01",
       8920.94,
       18991.06
      ],
      [
-      "2025-03",
-      9816.2,
-      28807.26
+      "2025-03-01",
+      9816.199999999999,
+      28807.260000000002
      ],
      [
-      "2025-04",
+      "2025-04-01",
       8541.85,
       37349.11
      ],
      [
-      "2025-05",
-      11804.92,
+      "2025-05-01",
+      11804.920000000002,
       49154.03
      ],
      [
-      "2025-06",
-      9697.67,
+      "2025-06-01",
+      9697.670000000002,
       58851.7
      ],
      [
-      "2025-07",
-      8337.36,
+      "2025-07-01",
+      8337.360000000002,
       67189.06
      ],
      [
-      "2025-08",
-      9446.38,
+      "2025-08-01",
+      9446.379999999997,
       76635.44
      ],
      [
-      "2025-09",
-      10191.82,
+      "2025-09-01",
+      10191.819999999996,
       86827.26
      ],
      [
-      "2025-10",
-      9750.92,
-      96578.18
+      "2025-10-01",
+      9750.920000000007,
+      96578.18000000001
      ],
      [
-      "2025-11",
+      "2025-11-01",
       7270,
-      103848.18
+      103848.18000000001
      ],
      [
-      "2025-12",
-      11287.69,
-      115135.87
+      "2025-12-01",
+      11287.689999999999,
+      115135.87000000001
      ]
     ],
-    "message": "2025 monthly revenue from the saved monthly_rev query, with a running total that starts in January 2025. Total revenue for 2025 is 115,135.87."
+    "message": "Monthly revenue for 2025 from the saved monthly_rev query, with a running total that starts in January 2025. Full-year 2025 revenue is 115,135.87."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -213,13 +213,13 @@
  ],
  "usage": {
   "input_tokens": 6,
-  "output_tokens": 522,
-  "cache_read_tokens": 70991,
-  "cache_write_tokens": 2027,
+  "output_tokens": 536,
+  "cache_read_tokens": 71075,
+  "cache_write_tokens": 2025,
   "partial": false
  },
- "cost_usd": 0.0347972,
- "duration_s": 12.679041080991738,
+ "cost_usd": 0.035084000000000004,
+ "duration_s": 11.885041481989902,
  "turns": 6,
  "end_reason": "submitted",
  "error": null

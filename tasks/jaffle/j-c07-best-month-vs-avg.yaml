@@ -1,0 +1,19 @@
+id: j-c07-best-month-vs-avg
+dataset: jaffle
+prompt: >-
+  For each store, which month of 2025 was its best by pre-tax sales, and how far above that store's average 2025 month
+  was it? Average only over months the store was open. Answer with one row per store: the store name, its best month
+  (the month's first day), that month's sales in dollars, the store's average monthly sales in dollars, and how far the
+  best month was above that average as a fraction.
+truth_sql: |
+  with m as (
+    select o.store_id, date_trunc('month', o.ordered_at) as month, sum(o.subtotal) / 100.0 as sales
+    from orders o where o.ordered_at >= '2025-01-01' and o.ordered_at < '2026-01-01' group by 1, 2),
+  w as (
+    select *, avg(sales) over (partition by store_id) as avg_month,
+           rank() over (partition by store_id order by sales desc) as rk
+    from m)
+  select s.name as store, cast(month as date) as best_month, sales, avg_month, sales / avg_month - 1 as above_avg
+  from w join stores s on s.id = w.store_id where rk = 1
+slayer_query: {"query": [{"name": "monthly", "source_model": "orders", "dimensions": ["stores.name"], "time_dimensions": [{"dimension": "ordered_at", "granularity": "month", "date_range": ["2025-01-01", "2025-12-31"]}], "measures": [{"formula": "net_sales", "name": "month_sales"}]}, {"source_model": "monthly", "dimensions": ["stores__name", "ordered_at"], "measures": [{"formula": "sum(month_sales)", "name": "sales"}, {"formula": "avg(month_sales, partition_by=stores__name)", "name": "avg_month"}, {"formula": "sum(month_sales) / avg(month_sales, partition_by=stores__name) - 1", "name": "above_avg"}], "filters": ["rank(sum(month_sales), partition_by=stores__name, direction='desc') == 1"]}]}
+compare: {keys: [store], values: [best_month, sales, avg_month, above_avg]}

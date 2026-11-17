@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from slayer_evals.core import COVERED_ROWS, PITFALLS, Table, Task
+from slayer_evals.core import COVERED_ROWS, PITFALLS, Dataset, Table, Task
 from slayer_evals.dataset import BuiltDataset
 from slayer_evals.tasks import (
     PROMPT_DENY_LIST,
@@ -18,11 +18,14 @@ from slayer_evals.tasks import (
     compute_truths,
     load_tasks,
 )
-from tests.helpers import REPO, make_task, write_task
+from slayer_evals.tasks import (
+    SUITE_DIRS as TASK_SUITE_DIRS,
+)
+from tests.helpers import REPO, make_jaffle_task, make_task, write_task
 
 TASKS_DIR = REPO / "tasks"
 REFUSAL = {"error": "TimeDimensionColumnError", "message_any": ["bucket"]}
-SUITE_DIRS = {"capability": "capability", "combo": "combo", "trap": "traps"}
+SUITE_DIRS = {"capability": "capability", "combo": "combo", "trap": "traps", "jaffle": "jaffle"}
 
 
 def _full_set() -> list[Task]:
@@ -37,6 +40,18 @@ def _full_set() -> list[Task]:
 
 def test_coverage_ok():
     assert check_coverage(_full_set()) == []
+
+
+def test_jaffle_tasks_outside_coverage():
+    jaffle = [make_jaffle_task(id=f"j-{k}") for k in range(30)]
+    assert check_coverage(_full_set() + jaffle) == []
+    gappy = [t for t in _full_set() if "Q7" not in t.covers and t.id not in ("trap-0", "combo-3b")]
+    assert check_coverage(gappy + jaffle) == check_coverage(gappy)
+    assert check_coverage(gappy)
+
+
+def test_suite_dirs():
+    assert TASK_SUITE_DIRS == SUITE_DIRS
 
 
 def test_coverage_missing_row():
@@ -171,10 +186,12 @@ def test_truth_size_limit():
 
 
 def _layout(tmp_path: Path, placements: dict[str, tuple[str, list[str]]]) -> Path:
+    """Task files by id: (folder, covers); empty covers makes a `jaffle` task."""
     for tid, (folder, covers) in placements.items():
         d = tmp_path / folder / tid
         d.mkdir(parents=True)
-        doc = make_task(id=tid, covers=covers).model_dump(exclude_none=True, exclude_defaults=True)
+        task = make_task(id=tid, covers=covers) if covers else make_jaffle_task(id=tid)
+        doc = task.model_dump(exclude_none=True, exclude_defaults=True)
         write_task(d, {"id": tid, **doc})
     return tmp_path
 
@@ -192,6 +209,24 @@ def test_misplaced_file(tmp_path: Path):
     problems = check_layout(root)
     assert len(problems) == 1
     assert "c.yaml" in problems[0]
+
+
+def test_layout_with_jaffle_ok(tmp_path: Path):
+    root = _layout(tmp_path, {"a": ("capability", ["Q4"]), "j": ("jaffle", [])})
+    assert check_layout(root) == []
+
+
+@pytest.mark.parametrize("folder", ["capability", "combo", "traps"])
+def test_misplaced_jaffle_file(tmp_path: Path, folder: str):
+    root = _layout(tmp_path, {"j": (folder, [])})
+    problems = check_layout(root)
+    assert len(problems) == 1
+    assert "j.yaml" in problems[0]
+
+
+def test_bench_task_under_jaffle_misplaced(tmp_path: Path):
+    root = _layout(tmp_path, {"a": ("jaffle", ["Q4"])})
+    assert any("a.yaml" in p for p in check_layout(root))
 
 
 def test_task_outside_a_suite_folder(tmp_path: Path):
@@ -292,10 +327,20 @@ def test_committed_prompts_neutral(committed: list[Task]):
     assert check_prompts(committed) == []
 
 
-def test_committed_snapshots_and_sizes(committed: list[Task], built: BuiltDataset):
-    truths = compute_truths(committed, built.db_path)
+def test_committed_snapshots_and_sizes(committed: list[Task], built: BuiltDataset, built_jaffle: BuiltDataset):
+    dbs: dict[Dataset, Path] = {"bench": built.db_path, "jaffle": built_jaffle.db_path}
+    truths: dict[str, Table] = {}
+    for dataset, db in dbs.items():
+        truths |= compute_truths([t for t in committed if t.dataset == dataset], db)
+    assert set(truths) == {t.id for t in committed}
     check_snapshots(truths, TASKS_DIR / "truth")
     assert check_truth_sizes(truths) == []
+
+
+def test_committed_coverage_counts_bench_tasks_only(committed: list[Task]):
+    bench = [t for t in committed if t.dataset == "bench"]
+    assert len(bench) < len(committed)
+    assert check_coverage(bench) == []
 
 
 def test_relative_date_task_is_xfail(committed: list[Task]):
@@ -342,4 +387,11 @@ def test_committed_list_tasks(committed: list[Task]):
 
 
 def test_committed_suite_sizes(committed: list[Task]):
-    assert Counter(t.suite for t in committed) == {"capability": 34, "combo": 15, "trap": 21}
+    assert Counter(t.suite for t in committed) == {"capability": 34, "combo": 15, "trap": 21, "jaffle": 24}
+
+
+def test_q9_is_xfail_only_in_the_motley_profiles(committed: list[Task]):
+    (q9,) = [t for t in committed if t.id == "q9-credit-by-status"]
+    assert q9.xfail is not None
+    assert q9.xfail.issue == "DEV-1951"
+    assert q9.xfail.profiles == ["motley", "motley+python"]

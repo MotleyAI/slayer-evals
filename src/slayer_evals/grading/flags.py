@@ -3,12 +3,23 @@
 import json
 from typing import Any
 
-from slayer_evals.core import ToolCall, TraceFlags
+from slayer_evals.core import PROFILE_SPECS, Profile, ToolCall, TraceFlags
 
 PYTHON_TOOL = "python"
 SQL_TOOL = "sql"
 # Calls that neither query the data nor go to SLayer.
 NON_QUERY_TOOLS = (PYTHON_TOOL, "submit_answer")
+# Motley's semantic-layer tools; its product tools (documents, feedback, …) are not data tools.
+MOTLEY_DATA_TOOLS = (
+    "query",
+    "inspect",
+    "search",
+    "create_model",
+    "edit_model",
+    "delete",
+    "save_memory",
+    "switch_branch",
+)
 QUERY_TOOLS = ("query", SQL_TOOL)
 MODEL_TOOLS = ("create_model", "edit_model")
 _SQL_LIST_KEYS = ("add_filters", "filters")
@@ -62,12 +73,22 @@ def _has_sql(call: ToolCall) -> bool:
     return call.tool == "query" and _query_has_sql(call.args.get("query"))
 
 
-def trace_flags(calls: list[ToolCall]) -> TraceFlags:
+def _is_data_tool(tool: str, profile: Profile) -> bool:
+    """Whether an error from `tool` counts as a query error in `profile`."""
+    surface = PROFILE_SPECS[profile].surface
+    if surface == "motley":
+        return tool in MOTLEY_DATA_TOOLS
+    if surface == "sql":
+        return tool == SQL_TOOL
+    return tool not in NON_QUERY_TOOLS
+
+
+def trace_flags(calls: list[ToolCall], profile: Profile = "slayer") -> TraceFlags:
     data = [c for c in calls if c.tool not in NON_QUERY_TOOLS]
     return TraceFlags(
         used_python=any(c.tool == PYTHON_TOOL for c in calls),
         raw_sql=any(_has_sql(c) for c in data),
         edited_models=any(c.tool in MODEL_TOOLS for c in data),
-        query_errors=any(c.is_error for c in data),
+        query_errors=any(c.is_error and _is_data_tool(c.tool, profile) for c in calls),
         several_queries=sum(c.tool in QUERY_TOOLS for c in data) > 1,
     )

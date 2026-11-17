@@ -26,6 +26,20 @@
    "audit": null
   },
   {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "column",
+    "reference": [
+     "bench.orders.status",
+     "bench.customers.tier"
+    ]
+   },
+   "result_text": "## bench.orders.status\n\n\n---\n\n## bench.customers.tier\n",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
    "tool": "query",
    "args": {
     "query": {
@@ -34,7 +48,9 @@
       "status"
      ],
      "measures": [
-      "count(*)"
+      {
+       "formula": "count(*)"
+      }
      ]
     },
     "format": "json"
@@ -68,73 +84,38 @@
      "dimensions": [
       "customers.tier"
      ],
-     "measures": [
-      "count_distinct(customer_id)"
-     ],
      "filters": [
       "status = 'bad'"
+     ],
+     "measures": [
+      {
+       "formula": "count_distinct(customer_id)",
+       "name": "n"
+      }
      ]
     },
-    "format": "json"
+    "format": "json",
+    "show_sql": true
    },
-   "result_text": "{\"data\": [{\"orders.customers.tier\": \"silver\", \"orders.customer_id_count_distinct\": 47}, {\"orders.customers.tier\": \"bronze\", \"orders.customer_id_count_distinct\": 87}, {\"orders.customers.tier\": \"gold\", \"orders.customer_id_count_distinct\": 35}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.customer_id_count_distinct\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "SQL:\nSELECT\n  customers.tier AS \"orders.customers.tier\",\n  COUNT(DISTINCT orders.customer_id) AS \"orders.n\"\nFROM orders AS orders\nLEFT JOIN customers AS customers\n  ON orders.customer_id = customers.id\nWHERE\n  orders.status = 'bad'\nGROUP BY\n  customers.tier\nLIMIT 21\n\n{\"data\": [{\"orders.customers.tier\": \"bronze\", \"orders.n\": 87}, {\"orders.customers.tier\": \"silver\", \"orders.n\": 47}, {\"orders.customers.tier\": \"gold\", \"orders.n\": 35}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"orders.n\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "orders.customers.tier",
-     "orders.customer_id_count_distinct"
+     "orders.n"
     ],
     "rows": [
-     [
-      "silver",
-      47
-     ],
      [
       "bronze",
       87
      ],
      [
+      "silver",
+      47
+     ],
+     [
       "gold",
       35
-     ]
-    ],
-    "warnings": []
-   },
-   "audit": null
-  },
-  {
-   "tool": "query",
-   "args": {
-    "query": {
-     "source_model": "customers",
-     "dimensions": [
-      "tier"
-     ],
-     "measures": [
-      "count(*)"
-     ]
-    },
-    "format": "json"
-   },
-   "result_text": "{\"data\": [{\"customers.tier\": \"gold\", \"customers._count\": 43}, {\"customers.tier\": \"silver\", \"customers._count\": 59}, {\"customers.tier\": \"bronze\", \"customers._count\": 100}], \"attributes\": {\"dimensions\": {}, \"measures\": {\"customers._count\": {\"label\": null, \"format\": {\"type\": \"integer\", \"precision\": null, \"symbol\": null}}}}}",
-   "is_error": false,
-   "parsed": {
-    "columns": [
-     "customers.tier",
-     "customers._count"
-    ],
-    "rows": [
-     [
-      "gold",
-      43
-     ],
-     [
-      "silver",
-      59
-     ],
-     [
-      "bronze",
-      100
      ]
     ],
     "warnings": []
@@ -146,7 +127,7 @@
    "args": {
     "columns": [
      "tier",
-     "customers_with_bad_order"
+     "customers_with_bad_orders"
     ],
     "rows": [
      [
@@ -162,7 +143,7 @@
       35
      ]
     ],
-    "message": "Customers with at least one 'bad' order, by tier: bronze 87, silver 47 and gold 35, for 169 in total. Each customer is counted once, even if they have several bad orders."
+    "message": "Number of distinct customers in each tier who have at least one order with status 'bad': bronze 87, silver 47, gold 35. No bad orders belong to a customer with a missing tier."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -172,13 +153,13 @@
  ],
  "usage": {
   "input_tokens": 10,
-  "output_tokens": 557,
-  "cache_read_tokens": 121203,
-  "cache_write_tokens": 2097,
+  "output_tokens": 536,
+  "cache_read_tokens": 121219,
+  "cache_write_tokens": 1878,
   "partial": false
  },
- "cost_usd": 0.0459056,
- "duration_s": 16.25764328399964,
+ "cost_usd": 0.044393800000000004,
+ "duration_s": 17.739068438997492,
  "turns": 8,
  "end_reason": "submitted",
  "error": null
