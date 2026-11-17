@@ -211,7 +211,9 @@ def _without_zero_rows(truth: Table, result: Table, compare: Compare) -> MatchRe
         if any(tuple(normalize(r[i]) for i in idx) in want_keys for r in dropped):
             continue
         if all(normalize(r[i]) in (None, 0.0) for r in dropped for i in values):
-            return MatchResult(ok=True, reason=f"{m.reason}; ignored {surplus} extra row(s) of zeros", columns=m.columns)
+            return MatchResult(
+                ok=True, reason=f"{m.reason}; ignored {surplus} extra row(s) of zeros", columns=m.columns
+            )
     return None
 
 
