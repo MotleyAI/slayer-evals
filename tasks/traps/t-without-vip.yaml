@@ -1,8 +1,7 @@
 id: t-without-vip
 covers: [Q27, null_element]
 prompt: >-
-  For each region, how many customers whose tags are on record do not carry the tag vip? Customers without a known
-  region form their own group.
+  For each region, how many customers whose tags are on record do not carry the tag vip?
 truth_sql: |
   select r.name as region, count(*) as customers
   from customers c left join regions r on r.id = c.region_id
