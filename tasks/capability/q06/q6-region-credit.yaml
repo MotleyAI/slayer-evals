@@ -10,4 +10,4 @@ truth_sql: |
   select o.region, o.revenue, c.total_credit
   from o left join c on o.region is not distinct from c.region
 slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(customers.credit)", "name": "total_credit"}]}}
-compare: {keys: [region], values: [revenue, total_credit]}
+compare: {keys: [region], values: [revenue, total_credit], extra_zero_rows: true}

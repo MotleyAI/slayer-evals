@@ -12,4 +12,4 @@ truth_sql: |
   from m a left join m b on b.region is not distinct from a.region and b.month = a.month - interval 1 month
   where a.month between date '2025-01-01' and date '2025-03-01'
 slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": ["2025-01-01", "2025-03-31"]}], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=order_date)", "name": "share_of_month"}, {"formula": "change(sum(amount))", "name": "revenue_change"}]}}
-compare: {keys: [month, region], values: [revenue, share_of_month, revenue_change]}
+compare: {keys: [month, region], values: [revenue, share_of_month, revenue_change], extra_zero_rows: true}

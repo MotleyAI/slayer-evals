@@ -3,6 +3,8 @@
 import datetime as dt
 import math
 
+import pytest
+
 from slayer_evals.core import Compare, Table
 from slayer_evals.grading import match_tables
 
@@ -194,3 +196,190 @@ def test_null_as_zero_does_not_equate_other_values():
     truth = Table(columns=["k", "v"], rows=[["a", None]])
     result = res(["k", "v"], [["a", 1.0]])
     assert not match_tables(truth, result, Compare(keys=["k"], values=["v"], null_as_zero=True)).ok
+
+
+# List-valued cells.
+
+LIST_CMP = Compare(keys=["region"], values=["tags"])
+
+
+def list_truth(cell: object) -> Table:
+    return Table(columns=["region", "tags"], rows=[["North", cell]])
+
+
+def list_result(cell: object) -> Table:
+    return res(["region", "tags"], [["North", cell]])
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        ["vip", "eu", "vip"],
+        ["vip", "eu", None],
+        ["eu", "vip"],
+        '["vip","eu"]',
+        '["eu", "vip", null]',
+        "vip, eu",
+        "eu,vip",
+    ],
+)
+def test_list_cells_compare_as_sets(cell: object):
+    assert match_tables(list_truth(["eu", "vip"]), list_result(cell), LIST_CMP).ok
+
+
+@pytest.mark.parametrize("cell", [["vip"], ["vip", "eu", "b2b"], None, [], "vip", '["vip"]', "vip, eu, b2b"])
+def test_list_cells_with_other_elements_differ(cell: object):
+    assert not match_tables(list_truth(["eu", "vip"]), list_result(cell), LIST_CMP).ok
+
+
+def test_truth_list_repeats_and_nulls_ignored():
+    assert match_tables(list_truth(["vip", None, "vip"]), list_result(["vip"]), LIST_CMP).ok
+
+
+def test_one_element_text_matches_a_one_element_list():
+    assert match_tables(list_truth(["vip"]), list_result("vip"), LIST_CMP).ok
+
+
+def test_null_is_not_an_empty_list():
+    assert not match_tables(list_truth([]), list_result(None), LIST_CMP).ok
+    assert not match_tables(list_truth(None), list_result([]), LIST_CMP).ok
+    assert match_tables(list_truth([]), list_result([]), LIST_CMP).ok
+    assert match_tables(list_truth([]), list_result("[]"), LIST_CMP).ok
+    assert match_tables(list_truth(None), list_result(None), LIST_CMP).ok
+
+
+def test_numeric_list_elements_within_tolerance():
+    assert match_tables(list_truth([1.5, 2.0]), list_result([2.0000000001, 1.5]), LIST_CMP).ok
+    assert not match_tables(list_truth([1.5, 2.0]), list_result([1.5, 2.1]), LIST_CMP).ok
+    assert match_tables(list_truth([1, 2]), list_result([2.0, 1.0, 2]), LIST_CMP).ok
+
+
+def test_numeric_list_text_within_tolerance():
+    assert match_tables(list_truth([1.5, 2.0]), list_result("[2.0000000001, 1.5]"), LIST_CMP).ok
+    assert match_tables(list_truth([1.5, 2.0]), list_result("2, 1.5"), LIST_CMP).ok
+    assert not match_tables(list_truth([1.5, 2.0]), list_result("1.5, 2.1"), LIST_CMP).ok
+
+
+def test_list_tolerance_follows_the_task():
+    loose = LIST_CMP.model_copy(update={"tolerance": 0.1})
+    assert match_tables(list_truth([1.5, 2.0]), list_result([1.5, 2.05]), loose).ok
+
+
+def test_text_outside_list_columns_stays_text():
+    cmp = Compare(keys=["region"], values=["label"])
+    truth = Table(columns=["region", "label"], rows=[["North", "vip, eu"]])
+    assert not match_tables(truth, res(["region", "label"], [["North", ["vip", "eu"]]]), cmp).ok
+    assert not match_tables(truth, res(["region", "label"], [["North", "eu, vip"]]), cmp).ok
+    assert match_tables(truth, res(["region", "label"], [["North", "vip, eu"]]), cmp).ok
+
+
+def test_list_column_with_null_cells_reads_text():
+    truth = Table(columns=["region", "tags"], rows=[["North", ["vip"]], ["South", None]])
+    result = res(["region", "tags"], [["South", None], ["North", "vip"]])
+    assert match_tables(truth, result, LIST_CMP).ok
+
+
+def test_list_key_column_unordered_rows():
+    truth = Table(columns=["tags", "n"], rows=[[["a", "b"], 1.0], [["c"], 2.0]])
+    result = res(["tags", "n"], [[["c"], 2.0], [["b", "a", "a"], 1.0]])
+    assert match_tables(truth, result, Compare(keys=["tags"], values=["n"])).ok
+
+
+def test_list_column_matched_by_values():
+    truth = Table(columns=["region", "tag_set"], rows=[["North", ["eu", "vip"]], ["Arctic", []]])
+    result = res(["regions.name", "regions.collected"], [["Arctic", []], ["North", ["vip", "eu"]]])
+    m = match_tables(truth, result, Compare(keys=["region"], values=["tag_set"]))
+    assert m.ok, m.reason
+    assert m.columns == {"region": "regions.name", "tag_set": "regions.collected"}
+
+
+def test_ordered_rows_with_list_cells():
+    truth = Table(columns=["k", "tags"], rows=[["a", ["x", "y"]], ["b", ["z"]]])
+    cmp = Compare(keys=["k"], values=["tags"], ordered=True)
+    assert match_tables(truth, res(["k", "tags"], [["a", ["y", "x"]], ["b", "z"]]), cmp).ok
+    assert not match_tables(truth, res(["k", "tags"], [["b", ["z"]], ["a", ["x", "y"]]]), cmp).ok
+
+
+def test_second_assignment_tried_when_the_closest_names_fail():
+    truth = Table(columns=["k", "a", "b"], rows=[[1, 5.0, 6.0], [2, 6.0, 5.0]])
+    result = res(["k", "aa", "bb"], [[1, 6.0, 5.0], [2, 5.0, 6.0]])
+    m = match_tables(truth, result, Compare(keys=["k"], values=["a", "b"]))
+    assert m.ok, m.reason
+    assert m.columns == {"k": "k", "a": "bb", "b": "aa"}
+
+
+ZERO_OK = Compare(keys=["region"], values=["customers"], extra_zero_rows=True)
+REGIONS = Table(columns=["region", "customers"], rows=[[None, 1], ["East", 10], ["North", 6]])
+
+
+@pytest.mark.parametrize("extra", [["Arctic", 0], ["Arctic", None], [None, 0]], ids=["zero", "null", "null-key"])
+def test_extra_zero_row_allowed_when_the_task_says_so(extra: list):
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "customers"], [["East", 10], extra, ["North", 6]])
+    m = match_tables(truth, result, ZERO_OK)
+    assert m.ok, m.reason
+    assert not match_tables(truth, result, Compare(keys=["region"], values=["customers"])).ok
+
+
+def test_extra_zero_row_with_renamed_columns():
+    result = res(["region", "customers_vip_and_eu"], [["East", 10], ["North", 6], ["Arctic", 0], [None, 1]])
+    m = match_tables(REGIONS, result, ZERO_OK)
+    assert m.ok, m.reason
+    assert m.columns == {"region": "region", "customers": "customers_vip_and_eu"}
+
+
+def test_extra_nonzero_row_still_fails():
+    result = res(["region", "customers"], [[None, 1], ["East", 10], ["North", 6], ["Arctic", 2]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_zero_row_cannot_repeat_a_truth_key():
+    result = res(["region", "customers"], [[None, 1], ["East", 10], ["North", 6], ["North", 0]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_missing_row_still_fails_with_extra_zero_rows():
+    result = res(["region", "customers"], [["East", 10], ["North", 6], ["Arctic", 0]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_extra_zero_row_with_a_numeric_key():
+    cmp = Compare(keys=["customer_id"], values=["orders"], extra_zero_rows=True)
+    truth = Table(columns=["customer_id", "orders"], rows=[[1, 3], [2, 5]])
+    m = match_tables(truth, res(["customer_id", "orders"], [[1, 3], [42, 0], [2, 5]]), cmp)
+    assert m.ok, m.reason
+
+
+def test_extra_zero_row_ignores_uncompared_columns():
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "region_id", "customers"], [["East", 1, 10], ["North", 2, 6], ["Arctic", 3, 0]])
+    m = match_tables(truth, result, ZERO_OK)
+    assert m.ok, m.reason
+
+
+def test_zero_row_cannot_repeat_a_list_key_given_as_text():
+    cmp = Compare(keys=["tags"], values=["customers"], extra_zero_rows=True)
+    truth = Table(columns=["tags", "customers"], rows=[[["vip"], 3], [["eu"], 2]])
+    result = res(["tags", "customers"], [['["vip"]', 3], ['["eu"]', 2], ['["vip"]', 0]])
+    assert not match_tables(truth, result, cmp).ok
+
+
+def test_zero_row_cannot_repeat_a_numeric_key_within_tolerance():
+    cmp = Compare(keys=["customer_id"], values=["orders"], extra_zero_rows=True)
+    truth = Table(columns=["customer_id", "orders"], rows=[[1, 3], [2, 5]])
+    result = res(["customer_id", "orders"], [[1, 3], [2, 5], [1.0000000001, 0]])
+    assert not match_tables(truth, result, cmp).ok
+
+
+@pytest.mark.parametrize("extra", [[], ["Arctic"]], ids=["empty", "short"])
+def test_malformed_extra_row_fails_without_crashing(extra: list):
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "customers"], [["East", 10], ["North", 6], extra])
+    assert not match_tables(truth, result, ZERO_OK).ok
+
+
+def test_ordered_match_ignores_the_extra_zero_row():
+    cmp = Compare(keys=["region"], values=["customers"], ordered=True, extra_zero_rows=True)
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    assert match_tables(truth, res(["region", "customers"], [["East", 10], ["North", 6], ["Arctic", 0]]), cmp).ok
+    assert not match_tables(truth, res(["region", "customers"], [["North", 6], ["East", 10], ["Arctic", 0]]), cmp).ok

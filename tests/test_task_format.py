@@ -120,6 +120,7 @@ def test_warning_expectation(tmp_path: Path):
         (_doc(covers=["Q22"]), "Q22"),
         (_doc(covers=["Q4", "Q22"]), "Q22"),
         (_doc(covers=["Q99"]), "Q99"),
+        (_doc(covers=["Q28"]), "Q28"),
         (_doc(covers=["Q4", "Q4"]), "Q4"),
         (_trap(covers=["Q6", "chasm", "chasm"]), "chasm"),
         (_trap(covers=["chasm"]), "covers"),
@@ -152,6 +153,22 @@ def test_naive_sql_tied_to_traps(tmp_path: Path, doc: dict[str, Any]):
         load_task(path)
     assert "bad.yaml" in str(exc.value)
     assert "naive_sql" in str(exc.value)
+
+
+def test_new_rows_and_pitfalls_accepted(tmp_path: Path):
+    q26 = load_task(write_task(tmp_path, _doc(id="q26", covers=["Q26"])))
+    assert q26.rows == ["Q26"]
+    assert q26.suite == "capability"
+    trap = load_task(write_task(tmp_path, _trap(id="t-null-element", covers=["Q27", "null_element"])))
+    assert trap.rows == ["Q27"]
+    assert trap.suite == "trap"
+
+
+@pytest.mark.parametrize("kind", ["count_after_unnest", "unnest_fan_out", "null_element", "same_element_and"])
+def test_list_pitfalls_make_traps(tmp_path: Path, kind: str):
+    task = load_task(write_task(tmp_path, _trap(id=f"t-{kind}", covers=["Q27", kind])))
+    assert task.suite == "trap"
+    assert task.covers == ["Q27", kind]
 
 
 def test_duplicate_id_rejected(tmp_path: Path):

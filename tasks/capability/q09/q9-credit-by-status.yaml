@@ -7,8 +7,8 @@ slayer_query: {"query": {"source_model": "orders", "dimensions": ["status"], "me
 expect:
   warning: [broadcast, associated]
   message_any: [broadcast, repeat, overlap, "same value", "same total", "same amount", "not attribut", "not additive",
-                "cannot be split", "can't be split", "counted in both", "counted in more than one", "double count",
-                "shouldn't be added", "should not be added", "fan out", "fans out"]
+                "cannot be split", "can't be split", "counted in both", "counts in both", "counted in more than one",
+                "add up to more", "double count", "shouldn't be added", "should not be added", "fan out", "fans out"]
 xfail:
   issue: DEV-1951
   reason: Motley's query drops result warnings

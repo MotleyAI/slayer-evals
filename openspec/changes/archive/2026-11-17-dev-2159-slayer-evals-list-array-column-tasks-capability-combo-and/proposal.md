@@ -1,0 +1,63 @@
+## Why
+
+SLayer 1.7.0 supports list (array) columns: `contains`, `contains_any`, `contains_all` and `length` over a list,
+element access through `L.value`, and the `collect` aggregation. The benchmark has no task that needs them. So nobody
+measures whether agents answer "how many customers have tag x" or "customers with both x and y" with one SLayer query,
+or whether naive SQL over lists silently returns wrong numbers. The matrix's row Q26 (metrics without a join path) is
+also uncovered.
+
+## What Changes
+
+- Dataset: `customers.tags VARCHAR[]` and `products.ratings INTEGER[]`, filled from their own seeded streams and
+  holding a repeated element, a NULL element, an empty list and a NULL list. The probe freeze covers the probe
+  columns, so no existing value or truth moves.
+- Rows Q1–Q27: Q26 "Metrics without a join path" and Q27 "List columns" become covered rows. Q27 gets row markers;
+  the prompt deny-list gains the list DSL names.
+- Four new pitfall kinds: `count_after_unnest`, `unnest_fan_out`, `null_element` and `same_element_and`.
+- 17 new tasks: 8 Q27 capability tasks, 1 Q26 capability task, 4 Q27 combo tasks (one also covering Q14 and Q15) and
+  4 traps.
+- Grading: a list cell compares as the set of its non-NULL elements (numbers within tolerance); JSON-list or
+  comma-separated text matches a list truth column.
+- Grading: a task may set `extra_zero_rows`, so an extra all-zero row for an empty group (set on the 11
+  every-region count, sum and share tasks) is ignored; an error task's refusal also counts as an empty answer naming the
+  problem in every profile, and a warning task's answer in `sql+python` counts when its message names the problem,
+  rows or not.
+- Results: every results line carries the SLayer version that answered it; a Motley trial records the Motley backend's
+  SLayer version, given by the new `--motley-slayer-version`. The report lists the versions when a results file mixes
+  them. **BREAKING** for results files written before this change: they lack `slayer_version` until backfilled.
+- Existing tasks fixed where the run showed a wrong truth or an ambiguous prompt: `q13-top-cities-count` (the two
+  Oslos are different cities), `q3-avg-city-revenue` (orders without a customer have no city), `q9-credit-by-status`
+  (two more accepted phrases) and the new `q27-tag-count-groups` (a tag listed twice is one tag) and `t-without-vip`.
+- `motley-slayer` pinned to the PyPI release 1.8.5 (replacing the git rev). The baseline is rerun: every task of every
+  suite in all five profiles, the SLayer and SQL profiles on that pin and the Motley profiles against a local Motley
+  backend; README and the baseline failure breakdown are rewritten.
+
+## Capabilities
+
+### New Capabilities
+
+(none)
+
+### Modified Capabilities
+- `benchmark-dataset`: list columns and their edge cases; the probe freeze and layout cover the probe columns.
+- `benchmark-tasks`: covered rows Q1–Q27 with Q26 and Q27; new pitfall kinds; Q27 markers; list DSL in the deny-list.
+- `grading`: list-valued cells compare as sets of normalized elements; `extra_zero_rows`; refusals without the
+  expected error, and raw-SQL warning answers with rows.
+- `benchmark-runs`: each results line records the SLayer version that answered it; Motley runs take the backend's
+  SLayer version.
+- `benchmark-report`: rows Q1–Q27; per-version trial counts; the baseline covers all five profiles and may combine runs.
+
+## Impact
+
+- Code: `src/slayer_evals/dataset/generator.py`, `dataset/models/customers.yaml` and `products.yaml`,
+  `core/task.py`, `core/results.py`, `tasks/suite.py`, `grading/tables.py`, `grading/verdict.py`, `runner/run.py`,
+  `runner/config.py`, `cli.py` and `report/render.py`.
+- Tasks: 17 new task files under `tasks/`, plus their truth snapshots; the existing tasks above and the 11 tasks given
+  `extra_zero_rows`.
+- Tests: `test_dataset.py`, `test_core_schemas.py`, `test_task_format.py`, `test_task_suite.py`,
+  `test_table_compare.py`, `test_runner.py`, `test_report.py` and fixtures (`probe_table_hashes.json` unchanged;
+  `run_repeat/results.jsonl` backfilled).
+- Dependencies: `pyproject.toml` / `poetry.lock` (`motley-slayer` rev).
+- Docs and results: `README.md`, `docs/baseline-failures.md` and `results/baseline/`.
+- Coordination: the DEV-2065 worktree's uncommitted `q6-events-per-customer` duplicates the new
+  `q26-events-per-customer`; the duplicate task id makes loading fail until one copy is dropped.

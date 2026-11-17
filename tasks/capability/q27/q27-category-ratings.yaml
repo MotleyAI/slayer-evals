@@ -1,0 +1,12 @@
+id: q27-category-ratings
+covers: [Q27]
+prompt: >-
+  For each product category, show the average of the ratings its products received and how many ratings they received
+  in total.
+truth_sql: |
+  select p.category, avg(u.rating) as avg_rating, count(u.rating) as n_ratings
+  from products p, unnest(p.ratings) as u(rating)
+  where u.rating is not null
+  group by 1
+slayer_query: {"query": {"source_model": "products", "dimensions": ["category"], "measures": [{"formula": "avg(ratings.value)", "name": "avg_rating"}, {"formula": "count(ratings.*)", "name": "n_ratings"}]}}
+compare: {keys: [category], values: [avg_rating, n_ratings]}

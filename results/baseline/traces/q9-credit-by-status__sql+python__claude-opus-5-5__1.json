@@ -6,7 +6,7 @@
    "args": {
     "sql": "select table_name, column_name, data_type from information_schema.columns order by table_name"
    },
-   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"table_name\", \"column_name\", \"data_type\"], \"rows\": [[\"campaign_members\", \"campaign_id\", \"INTEGER\"], [\"campaign_members\", \"customer_id\", \"INTEGER\"], [\"campaign_members\", \"joined_date\", \"DATE\"], [\"campaigns\", \"id\", \"INTEGER\"], [\"campaigns\", \"name\", \"VARCHAR\"], [\"campaigns\", \"channel\", \"VARCHAR\"], [\"campaigns\", \"start_date\", \"DATE\"], [\"cities\", \"city\", \"VARCHAR\"], [\"cities\", \"region_id\", \"INTEGER\"], [\"cities\", \"population\", \"INTEGER\"], [\"cities\", \"size_class\", \"VARCHAR\"], [\"customers\", \"region_id\", \"INTEGER\"], [\"customers\", \"name\", \"VARCHAR\"], [\"customers\", \"id\", \"INTEGER\"], [\"customers\", \"city\", \"VARCHAR\"], [\"customers\", \"tier\", \"VARCHAR\"], [\"customers\", \"credit\", \"DOUBLE\"], [\"customers\", \"discount\", \"DOUBLE\"], [\"customers\", \"tags\", \"VARCHAR[]\"], [\"events\", \"id\", \"INTEGER\"], [\"events\", \"amount\", \"DOUBLE\"], [\"events\", \"event_ts\", \"TIMESTAMP\"], [\"order_items\", \"line_amount\", \"DOUBLE\"], [\"order_items\", \"quantity\", \"INTEGER\"], [\"order_items\", \"product_id\", \"INTEGER\"], [\"order_items\", \"order_id\", \"INTEGER\"], [\"order_items\", \"id\", \"INTEGER\"], [\"orders\", \"order_date\", \"DATE\"], [\"orders\", \"customer_id\", \"INTEGER\"], [\"orders\", \"id\", \"INTEGER\"], [\"orders\", \"amount\", \"DOUBLE\"], [\"orders\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"customer_id\", \"INTEGER\"], [\"orders_flat\", \"city\", \"VARCHAR\"], [\"orders_flat\", \"tier\", \"VARCHAR\"], [\"orders_flat\", \"credit\", \"DOUBLE\"], [\"orders_flat\", \"discount\", \"DOUBLE\"], [\"orders_flat\", \"status\", \"VARCHAR\"], [\"orders_flat\", \"id\", \"INTEGER\"], [\"orders_flat\", \"region\", \"VARCHAR\"], [\"orders_flat\", \"order_date\", \"DATE\"], [\"orders_flat\", \"amount\", \"DOUBLE\"], [\"products\", \"id\", \"INTEGER\"], [\"products\", \"name\", \"VARCHAR\"], [\"products\", \"category\", \"VARCHAR\"], [\"products\", \"list_price\", \"DOUBLE\"], [\"products\", \"ratings\", \"INTEGER[]\"], [\"regions\", \"id\", \"INTEGER\"], [\"regions\", \"name\", \"VARCHAR\"], [\"returns\", \"id\", \"INTEGER\"], [\"returns\", \"customer_id\", \"INTEGER\"], [\"returns\", \"amount\", \"DOUBLE\"], [\"returns\", \"return_date\", \"DATE\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -104,6 +104,11 @@
       "customers",
       "discount",
       "DOUBLE"
+     ],
+     [
+      "customers",
+      "tags",
+      "VARCHAR[]"
      ],
      [
       "events",
@@ -241,6 +246,11 @@
       "DOUBLE"
      ],
      [
+      "products",
+      "ratings",
+      "INTEGER[]"
+     ],
+     [
       "regions",
       "id",
       "INTEGER"
@@ -278,32 +288,32 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with x as (select distinct o.status, c.id, c.credit from orders o left join customers c on c.id=o.customer_id)\nselect status, sum(credit), count(*), count(credit), (select sum(c.credit) from orders o join customers c on c.id=o.customer_id where o.status is not distinct from x.status) naive from x group by status"
+    "sql": "select o.status, sum(c.credit) naive, count(*) n, count(distinct o.customer_id) nc,\n(select sum(c2.credit) from customers c2 where c2.id in (select customer_id from orders o2 where o2.status is not distinct from o.status)) dedup\nfrom orders o left join customers c on c.id=o.customer_id group by o.status"
    },
-   "result_text": "{\"columns\": [\"status\", \"sum(credit)\", \"count_star()\", \"count(credit)\", \"naive\"], \"rows\": [[\"ok\", 111230.0, 202, 201, 2381120.0], [\"bad\", 92580.0, 169, 169, 327270.0]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"status\", \"naive\", \"n\", \"nc\", \"dedup\"], \"rows\": [[\"bad\", 327270.0, 606, 169, 92580.0], [\"ok\", 2381120.0, 4410, 201, 111230.0]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "status",
-     "sum(credit)",
-     "count_star()",
-     "count(credit)",
-     "naive"
+     "naive",
+     "n",
+     "nc",
+     "dedup"
     ],
     "rows": [
      [
-      "ok",
-      111230.0,
-      202,
-      201,
-      2381120.0
+      "bad",
+      327270.0,
+      606,
+      169,
+      92580.0
      ],
      [
-      "bad",
-      92580.0,
-      169,
-      169,
-      327270.0
+      "ok",
+      2381120.0,
+      4410,
+      201,
+      111230.0
      ]
     ],
     "warnings": []
@@ -315,19 +325,19 @@
    "args": {
     "columns": [
      "status",
-     "total_credit"
+     "total_credit_limit"
     ],
     "rows": [
      [
-      "ok",
-      111230
-     ],
-     [
       "bad",
       92580
+     ],
+     [
+      "ok",
+      111230
      ]
     ],
-    "message": "Credit limit is stored once per customer, so for each order status I added up the credit limit of each distinct customer who has at least one order with that status. Totals: ok = 111,230 and bad = 92,580. A customer with orders in both statuses is counted under each one, so the two totals overlap and shouldn't be added together. If you instead add the credit limit once for every order, customers get counted many times and the totals become 2,381,120 (ok) and 327,270 (bad). One 'ok' entry, either an order with no matching customer or a customer with no credit value, adds nothing to its total."
+    "message": "Total credit limit of the distinct customers who have at least one order in each status. Each customer's credit is counted once per status, not once per order; summing per order would give inflated totals of 327,270 (bad) and 2,381,120 (ok). A customer with orders in both statuses counts under both, so the two totals overlap."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -337,13 +347,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 283,
-  "cache_read_tokens": 2209,
-  "cache_write_tokens": 1359,
+  "output_tokens": 288,
+  "cache_read_tokens": 1245,
+  "cache_write_tokens": 2362,
   "partial": false
  },
- "cost_usd": 0.012912799999999999,
- "duration_s": 8.82752284000162,
+ "cost_usd": 0.017835,
+ "duration_s": 8.330096818041056,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

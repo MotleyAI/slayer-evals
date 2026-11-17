@@ -33,6 +33,7 @@ MODEL = "claude-opus-5-5"
 SEED_SCRIPT = REPO / "tests" / "fake_seed.py"
 USER_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+MOTLEY_SLAYER = "1.8.2"
 SLAYER_QUERY = {"query": {"source_model": "orders", "measures": [{"formula": "sum(amount)", "name": "v"}]}}
 
 
@@ -122,7 +123,7 @@ def motley_config(
         tasks_dir,
         motley_url=server.url,
         motley_seed_command=seed_cmd(tmp_path / "seeds", *flags),
-        **kw,
+        **{"motley_slayer_version": MOTLEY_SLAYER, **kw},
     )
 
 
@@ -178,6 +179,7 @@ def test_defaults():
     assert c.profiles == list(DEFAULT_PROFILES) == ["slayer", "slayer+python", "sql+python"]
     assert c.motley_url == "http://localhost:8100/api/v1/mcp/"
     assert c.motley_seed_command is None
+    assert c.motley_slayer_version is None
 
 
 @pytest.mark.parametrize("profiles", [["motley"], ["slayer", "motley+python"]])
@@ -190,6 +192,29 @@ def test_motley_profile_without_a_seed_command_refuses(
         run_benchmark(cfg, environ=ENV)
     assert recorded_runs(agent_state) == []
     assert all_results(tmp_path / "runs") == []
+
+
+def test_motley_profile_without_a_slayer_version_refuses(
+    tmp_path: Path, built: BuiltDataset, agent_state: Path, motley: FakeMotley
+):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
+    cfg = motley_config(tmp_path, built, td, motley, motley_slayer_version=None)
+    with pytest.raises(ValueError, match="--motley-slayer-version"):
+        run_benchmark(cfg, environ=ENV)
+    assert recorded_runs(agent_state) == []
+    assert seed_calls(tmp_path / "seeds") == []
+    assert all_results(tmp_path / "runs") == []
+
+
+def test_motley_trials_record_the_backend_slayer_version(
+    tmp_path: Path, built: BuiltDataset, agent_state: Path, motley: FakeMotley
+):
+    td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
+    run_dir = run_benchmark(motley_config(tmp_path, built, td, motley, profiles=["slayer", "motley"]), environ=ENV)
+    md = RunMetadata.model_validate_json((run_dir / "metadata.json").read_text())
+    versions = {r.profile: r.slayer_version for r in results(run_dir)}
+    assert versions == {"slayer": md.slayer_version, "motley": MOTLEY_SLAYER}
+    assert md.slayer_version != MOTLEY_SLAYER
 
 
 # Per-trial seeding
@@ -343,6 +368,7 @@ def test_interrupted_run_stops_the_seed(tmp_path: Path, built: BuiltDataset, mot
     argv += ["--dataset-dir", str(built.dir.parent), "--out", str(tmp_path / "runs"), "--agent", FAKE]
     argv += ["--profiles", "motley"]
     argv += ["--motley-url", motley.url, "--motley-seed-cmd", shlex.join(seed_cmd(seeds, "--hang-from", "2"))]
+    argv += ["--motley-slayer-version", MOTLEY_SLAYER]
     env = {**os.environ, STATE_ENV: str(tmp_path / "state"), "PYTHONPATH": str(REPO)}
     proc = subprocess.Popen([sys.executable, "-m", "slayer_evals.cli", *argv], env=env, cwd=REPO)
     try:
@@ -408,7 +434,7 @@ def test_no_motley_without_a_motley_profile(tmp_path: Path, built: BuiltDataset,
 
 def _refused(tmp_path: Path, built: BuiltDataset, url: str, seed: list[str]) -> MotleyWarmUpError:
     td = tasks_dir_with(tmp_path, task_doc("a", "Q1"))
-    cfg = config(tmp_path, built, td, motley_url=url, motley_seed_command=seed)
+    cfg = config(tmp_path, built, td, motley_url=url, motley_seed_command=seed, motley_slayer_version=MOTLEY_SLAYER)
     start = time.monotonic()
     with pytest.raises(MotleyWarmUpError) as exc:
         run_benchmark(cfg, environ=ENV)
@@ -508,11 +534,13 @@ def test_cli_motley_flags(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     seed = "uv run python 'scripts/seed eval org.py' --verbose"
     url = "http://127.0.0.1:9000/api/v1/mcp/"
     argv = ["run", "--api-key-auth", "--profiles", "motley,slayer", "--motley-url", url, "--motley-seed-cmd", seed]
+    argv += ["--motley-slayer-version", "1.8.2"]
     assert main(argv) == 0
     (cfg,) = seen
     assert cfg.profiles == ["motley", "slayer"]
     assert cfg.motley_url == url
     assert cfg.motley_seed_command == ["uv", "run", "python", "scripts/seed eval org.py", "--verbose"]
+    assert cfg.motley_slayer_version == "1.8.2"
 
 
 def test_cli_motley_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -522,6 +550,7 @@ def test_cli_motley_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert cfg.profiles == ["slayer", "slayer+python", "sql+python"]
     assert cfg.motley_url == "http://localhost:8100/api/v1/mcp/"
     assert cfg.motley_seed_command is None
+    assert cfg.motley_slayer_version is None
 
 
 def test_cli_help_lists_every_profile(capsys: pytest.CaptureFixture[str]):
@@ -532,6 +561,7 @@ def test_cli_help_lists_every_profile(capsys: pytest.CaptureFixture[str]):
         assert profile in help_text, profile
     assert "--motley-url" in help_text
     assert "--motley-seed-cmd" in help_text
+    assert "--motley-slayer-version" in help_text
 
 
 def test_cli_warm_up_failure_exits_2(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
@@ -569,6 +599,7 @@ def test_readme_documents_the_motley_profiles():
         "`motley+python`",
         "--motley-url",
         "--motley-seed-cmd",
+        "--motley-slayer-version",
         "public_base_url",
         "eval_org_seed.md",
     ):

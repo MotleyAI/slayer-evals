@@ -6,7 +6,19 @@
    "args": {
     "question": "product sales by product type jaffle beverage"
    },
-   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.items.line_sales\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.items\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-tweets-limits\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"tweets are templated and all positive: no sentiment analysis; use for volume and product mentions only\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.sales_weighted_aov\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Average order total weighted by subtotal (larger orders weigh more), in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.items.unit_price\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Price of the product on this line, in dollars (products.price is stored in cents). Row-level, so summing it gives sales per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-product-margin\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Unit COGS and gross margin per product come from supplies (bill of materials per sku)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"supplies\",\n        \"measures\": [\n          {\n            \"formula\": \"total_supply_cost\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"sku\",\n            \"model\": null,\n            \"label\": null\n          },\n          {\n            \"name\": \"name\",\n            \"model\": \"products\",\n            \"label\": null\n          },\n          {\n            \"name\": \"price\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.products.type\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Product category.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.items.line_sales\",\n      \"score\": 0.01639344262295082,\n      \"text\": \"\",\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"id\": \"demo_database.items\",\n      \"score\": 0.016129032258064516,\n      \"text\": \"\",\n      \"description\": \"Order line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-tweets-limits\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"tweets are templated and all positive: no sentiment analysis; use for volume and product mentions only\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.items.unit_price\",\n      \"score\": 0.015873015873015872,\n      \"text\": \"\",\n      \"description\": \"Price of the product on this line, in dollars (products.price is stored in cents). Row-level, so summing it gives sales per item sold.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-money-in-cents\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Money columns are integer cents; use the dollars aggregation / dollar measures.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"measure\",\n      \"id\": \"demo_database.orders.sales_weighted_aov\",\n      \"score\": 0.015625,\n      \"text\": \"\",\n      \"description\": \"Average order total weighted by subtotal (larger orders weigh more), in dollars.\",\n      \"matched_entities\": [],\n      \"query\": null\n    },\n    {\n      \"kind\": \"memory\",\n      \"id\": \"jaffle-product-margin\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Unit COGS and gross margin per product come from supplies (bill of materials per sku)\",\n      \"matched_entities\": [],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"supplies\",\n        \"measures\": [\n          {\n            \"formula\": \"total_supply_cost\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"sku\",\n            \"model\": null,\n            \"label\": null\n          },\n          {\n            \"name\": \"name\",\n            \"model\": \"products\",\n            \"label\": null\n          },\n          {\n            \"name\": \"price\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"id\": \"demo_database.products.type\",\n      \"score\": 0.015384615384615385,\n      \"text\": \"\",\n      \"description\": \"Product category.\",\n      \"matched_entities\": [],\n      \"query\": null\n    }\n  ],\n  \"resolved_input_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "reference": "demo_database.items",
+    "entity_type": "model",
+    "compact": false
+   },
+   "result_text": "# Model: `items`\n\nOrder line items. One row per unit sold (no quantity column): units = row count. Join to orders for dates/stores and to products for name, type and price. For any sales-by-product, product-mix or category-share question, use the line_sales measure here. Do NOT use products.price:sum from this model: it sums each distinct product's price once, not once per item sold.\n\n- **data_source:** `demo_database`\n- **sql_table:** `items`\n- **row_count:** 1,742,698\n\n## Columns (4)\n\n| name | type | primary_key | allowed_aggregations | label | description | sampled |\n| --- | --- | --- | --- | --- | --- | --- |\n| id | TEXT | yes | all | — | — | — |\n| order_id | TEXT | — | all | Order | Order this line belongs to. | 001beeac-745f-4a4d-94e4-141874f7a31f, 00334fd3-600c-413f-9f0c-4d379b7cb3eb, 0037c1f1-6646-476c-b366-7700c5b0b30f, 0038c521-04e0-4c92-b3e2-2e4e5020eae1, 0041a2b5-d560-4efa-af18-98fcbdd74e59, 0053806f-c6eb-4c31-9e6c-3b45e191319a, 005925e9-35ed-4f3e-912f-5339a5b2d033, 005ea720-ce0b-4267-9820-a2bbe090e71d, 00698869-f5d1-41cf-b7f9-879f74104af5, 008357e0-782c-46fe-b114-51646e9ce400, 009f7c14-7cac-4b09-a2d7-11922e1a4fb8, 00a2863e-71b8-4fb6-bd13-419571d0b2f4, 00a9cc66-cf49-43df-a836-d7a6aafd5780, 00aa144f-1ff5-4f65-b52d-5bfa87d5cd0a, 00bc5a1c-caa9-490a-9aee-d6c727d1e2bf, 00c2009f-76fb-4211-abe2-25f8cf0948de, 00c843f9-db45-4d17-9950-75aba3e00330, 00d9ba47-e855-4407-bc90-3b4600ee08b6, 00ed7840-4b6a-4a04-bcdc-0300e50f9548, 01050169-be00-45ec-b948-85ee4d4af8e8 ... (50+ distinct) |\n| sku | TEXT | — | all | Product | Product sold on this line. | BEV-003, BEV-005, BEV-001, BEV-002, BEV-004, JAF-001, JAF-002, JAF-004, JAF-005, JAF-003 |\n| unit_price | DOUBLE | — | sum, avg, min, max | Unit Price | Price of the product on this line, in dollars (products.price is stored in cents). Row-level, so summing it gives sales per item sold. | 4.0 .. 14.0 |\n\n## Measures (2)\n\n| name | formula | label | description | meta |\n| --- | --- | --- | --- | --- |\n| units_sold | id:count | Units Sold | Number of item units sold. | {\"format\": {\"precision\": 0, \"symbol\": null, \"type\": \"integer\"}} |\n| line_sales | unit_price:sum | Line Sales | Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type. | {\"format\": {\"precision\": 2, \"symbol\": \"$\", \"type\": \"currency\"}} |\n\n## Joins (2)\n\n| target_model | join_pairs | cardinality |\n| --- | --- | --- |\n| orders | order_id = id | many_to_one |\n| products | sku = sku | many_to_one |\n\n## Data Profile\n\n| order_id | sku | _count | unit_price_avg |\n| --- | --- | --- | --- |\n| 000007a4-e967-4041-ae3e-16ffa3b8aa66 | BEV-003 | 1 | 6.0 |\n| 00003aae-ff27-435e-8abd-e157df09b8f7 | BEV-001 | 1 | 6.0 |\n| 0000447e-a86b-40f8-a975-009f674a09ea | BEV-005 | 1 | 4.0 |",
    "is_error": false,
    "parsed": null,
    "audit": null
@@ -16,54 +28,46 @@
    "args": {
     "query": {
      "source_model": "items",
-     "measures": [
-      {
-       "formula": "line_sales",
-       "name": "sales"
-      },
-      {
-       "formula": "line_sales / unit_price:sum(partition_by=[])",
-       "name": "share"
-      },
-      {
-       "formula": "unit_price:sum(partition_by=[])",
-       "name": "tot"
-      }
-     ],
      "dimensions": [
       {
        "name": "type",
        "model": "products"
       }
      ],
+     "measures": [
+      {
+       "formula": "line_sales",
+       "name": "sales"
+      },
+      {
+       "formula": "unit_price:sum / unit_price:sum(partition_by=[])",
+       "name": "share"
+      }
+     ],
      "filters": [
-      "orders.ordered_at >= '2025-01-01'",
-      "orders.ordered_at < '2026-01-01'"
+      "orders.ordered_at in '2025'"
      ]
     },
     "format": "json"
    },
-   "result_text": "{\"data\": [{\"items.products.type\": \"beverage\", \"items.sales\": 2612975.0, \"items.share\": 0.6081330485887362, \"items.tot\": 4296716.0}, {\"items.products.type\": \"jaffle\", \"items.sales\": 1683741.0, \"items.share\": 0.3918669514112639, \"items.tot\": 4296716.0}], \"attributes\": {\"dimensions\": {\"items.products.type\": {\"label\": \"Category\", \"format\": null}}, \"measures\": {\"items.sales\": {\"label\": \"Unit Price\", \"format\": {\"type\": \"currency\", \"precision\": 2, \"symbol\": \"$\"}}, \"items.tot\": {\"label\": \"Unit Price\", \"format\": {\"type\": \"currency\", \"precision\": 2, \"symbol\": \"$\"}}, \"items.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
+   "result_text": "{\"data\": [{\"items.products.type\": \"beverage\", \"items.sales\": 2612975.0, \"items.share\": 0.6081330485887362}, {\"items.products.type\": \"jaffle\", \"items.sales\": 1683741.0, \"items.share\": 0.3918669514112639}], \"attributes\": {\"dimensions\": {\"items.products.type\": {\"label\": \"Category\", \"format\": null}}, \"measures\": {\"items.sales\": {\"label\": \"Unit Price\", \"format\": {\"type\": \"currency\", \"precision\": 2, \"symbol\": \"$\"}}, \"items.share\": {\"label\": null, \"format\": {\"type\": \"float\", \"precision\": null, \"symbol\": null}}}}}",
    "is_error": false,
    "parsed": {
     "columns": [
      "items.products.type",
      "items.sales",
-     "items.share",
-     "items.tot"
+     "items.share"
     ],
     "rows": [
      [
       "beverage",
       2612975.0,
-      0.6081330485887362,
-      4296716.0
+      0.6081330485887362
      ],
      [
       "jaffle",
       1683741.0,
-      0.3918669514112639,
-      4296716.0
+      0.3918669514112639
      ]
     ],
     "warnings": []
@@ -74,23 +78,23 @@
    "tool": "submit_answer",
    "args": {
     "columns": [
-     "product_type",
-     "sales_dollars",
+     "type",
+     "sales",
      "share"
     ],
     "rows": [
      [
-      "jaffle",
-      1683741,
-      0.3918669514112639
-     ],
-     [
       "beverage",
       2612975,
       0.6081330485887362
+     ],
+     [
+      "jaffle",
+      1683741,
+      0.3918669514112639
      ]
     ],
-    "message": "In 2025, beverages brought in more product sales than jaffles: $2,612,975 (about 60.8%) for beverages versus $1,683,741 (about 39.2%) for jaffles, out of $4,296,716 in total. These are pre-tax sales from individual order items, counting orders placed from January 1, 2025 up to (not including) January 1, 2026."
+    "message": "2025 pre-tax product sales from order lines: beverages $2,612,975 (about 60.8%) and jaffles $1,683,741 (about 39.2%), out of $4,296,716 in total."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -99,15 +103,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 338,
-  "cache_read_tokens": 47023,
-  "cache_write_tokens": 3643,
+  "input_tokens": 6,
+  "output_tokens": 355,
+  "cache_read_tokens": 75467,
+  "cache_write_tokens": 5427,
   "partial": false
  },
- "cost_usd": 0.0343956,
- "duration_s": 12.403543913038447,
- "turns": 5,
+ "cost_usd": 0.049352400000000005,
+ "duration_s": 10.787223322957288,
+ "turns": 6,
  "end_reason": "submitted",
  "error": null
 }

@@ -165,3 +165,67 @@ def test_saved_definition_fine_in_slayer_profiles():
     for profile in ("slayer", "slayer+python"):
         trace = trace_of(query_call(QUERY, COLS, TRUTH.rows), profile=profile)
         assert grade(task, TRUTH, submission_of(TRUTH), trace).passed, profile
+
+
+ERROR_TASK = {
+    "id": "q18-r",
+    "covers": ["Q18"],
+    "compare": {},
+    "expect": {"error": "TimeDimensionColumnError", "message_any": ["monthly"]},
+}
+EMPTY = Table(columns=[], rows=[])
+
+
+@pytest.mark.parametrize("profile", ["slayer", "slayer+python"])
+def test_refusal_without_the_error_passes(profile):
+    sub = submission_of(EMPTY, message="monthly_rev holds whole months, so it has no daily detail.")
+    v = grade(make_task(**ERROR_TASK), EMPTY, sub, trace_of(profile=profile))
+    assert (v.correct, v.single_query) == (True, True), v.correct_reasons
+
+
+def test_refusal_with_rows_fails():
+    sub = submission_of(
+        Table(columns=["day", "rev"], rows=[["2025-01-01", 1.0]]), message="monthly figures split evenly"
+    )
+    v = grade(make_task(**ERROR_TASK), EMPTY, sub, trace_of(profile="slayer"))
+    assert (v.correct, v.single_query) == (False, False)
+
+
+def test_refusal_naming_nothing_fails():
+    sub = submission_of(EMPTY, message="I could not answer this.")
+    v = grade(make_task(**ERROR_TASK), EMPTY, sub, trace_of(profile="slayer"))
+    assert (v.correct, v.single_query) == (False, False)
+
+
+def test_warning_task_still_needs_the_warning():
+    task = make_task(id="q9-w", covers=["Q9"], compare={}, expect={"warning": ["broadcast"], "message_any": ["repeat"]})
+    sub = submission_of(EMPTY, message="Each customer's credit would repeat on every status.")
+    v = grade(task, EMPTY, sub, trace_of(profile="slayer"))
+    assert (v.correct, v.single_query) == (False, False)
+
+
+WARNING_TASK = {
+    "id": "q9-s",
+    "covers": ["Q9"],
+    "compare": {},
+    "expect": {"warning": ["broadcast"], "message_any": ["counted in both"]},
+}
+TOTALS = Table(columns=["status", "total_credit"], rows=[["bad", 92580], ["ok", 111230]])
+
+
+def test_raw_sql_warning_answer_naming_the_problem_passes():
+    sub = submission_of(TOTALS, message="A customer with orders in both statuses is counted in both.")
+    v = grade(make_task(**WARNING_TASK), EMPTY, sub, trace_of(profile="sql+python"))
+    assert (v.correct, v.single_query) == (True, True), v.correct_reasons
+
+
+def test_raw_sql_warning_answer_silent_on_the_problem_fails():
+    sub = submission_of(TOTALS, message="Totals per status.")
+    v = grade(make_task(**WARNING_TASK), EMPTY, sub, trace_of(profile="sql+python"))
+    assert (v.correct, v.single_query) == (False, False)
+
+
+def test_raw_sql_error_refusal_still_needs_an_empty_answer():
+    sub = submission_of(Table(columns=["day", "rev"], rows=[["2025-01-01", 1.0]]), message="monthly figures")
+    v = grade(make_task(**ERROR_TASK), EMPTY, sub, trace_of(profile="sql+python"))
+    assert (v.correct, v.single_query) == (False, False)

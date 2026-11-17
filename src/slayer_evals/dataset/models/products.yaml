@@ -5,3 +5,4 @@ columns:
   - {name: name, type: string}
   - {name: category, type: string}
   - {name: list_price, type: number}
+  - {name: ratings, type: ARRAY, element_type: INT}

@@ -1,0 +1,13 @@
+id: t-vip-per-tier
+covers: [Q27, count_after_unnest]
+prompt: >-
+  For each customer tier, how many customers carry the tag vip?
+truth_sql: |
+  select tier, count(*) as customers from customers where list_contains(list_filter(tags, x -> x is not null), 'vip') group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tier"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["contains(tags, 'vip')"]}}
+naive_sql: |
+  select c.tier, count(*) as customers
+  from customers c, unnest(c.tags) as u(tag)
+  where u.tag = 'vip'
+  group by 1
+compare: {keys: [tier], values: [customers]}

@@ -1,0 +1,12 @@
+id: q27-vip-or-partner
+covers: [Q27]
+prompt: >-
+  For each region, how many customers carry the tag vip, the tag partner, or both? Customers without a known region
+  form their own group.
+truth_sql: |
+  select r.name as region, count(*) as customers
+  from customers c left join regions r on r.id = c.region_id
+  where list_has_any(list_filter(c.tags, x -> x is not null), ['vip', 'partner'])
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["contains_any(tags, ['vip', 'partner'])"]}}
+compare: {keys: [region], values: [customers], extra_zero_rows: true}

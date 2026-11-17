@@ -1,0 +1,14 @@
+id: c-vip-monthly-change
+covers: [Q27, Q4]
+prompt: >-
+  Consider only the orders of customers who carry the tag vip. For each month of 2025, show their revenue (the sum of
+  order amounts) and its change from the previous month (this month's revenue minus the previous month's).
+truth_sql: |
+  with m as (select date_trunc('month', o.order_date)::date as month, sum(o.amount) as revenue
+             from orders o join customers c on c.id = o.customer_id
+             where list_contains(list_filter(c.tags, x -> x is not null), 'vip') group by 1)
+  select month, revenue, revenue_change
+  from (select month, revenue, revenue - lag(revenue) over (order by month) as revenue_change from m)
+  where month >= date '2025-01-01'
+slayer_query: {"query": {"source_model": "orders", "time_dimensions": [{"dimension": "order_date", "granularity": "month", "date_range": "2025"}], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "change(sum(amount))", "name": "revenue_change"}], "filters": ["contains(customers.tags, 'vip')"]}}
+compare: {keys: [month], values: [revenue, revenue_change]}

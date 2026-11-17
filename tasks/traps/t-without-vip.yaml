@@ -1,0 +1,16 @@
+id: t-without-vip
+covers: [Q27, null_element]
+prompt: >-
+  For each region, how many customers whose tags are on record do not carry the tag vip?
+truth_sql: |
+  select r.name as region, count(*) as customers
+  from customers c left join regions r on r.id = c.region_id
+  where c.tags is not null and not list_contains(list_filter(c.tags, x -> x is not null), 'vip')
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["not contains(tags, 'vip')"]}}
+naive_sql: |
+  select r.name as region, count(*) as customers
+  from customers c left join regions r on r.id = c.region_id
+  where 'vip' <> all(c.tags)
+  group by 1
+compare: {keys: [region], values: [customers], extra_zero_rows: true}

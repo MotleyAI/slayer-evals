@@ -33,6 +33,12 @@ PROMPT_DENY_LIST = (
     "to_many_handling",
     "time_dimensions",
     "query-backed",
+    "contains(",
+    "contains_any",
+    "contains_all",
+    "length(",
+    "collect(",
+    "unnest",
     "join",
     "joins",
     "joined",
@@ -71,6 +77,7 @@ ROW_MARKERS: dict[str, tuple[str, ...]] = {
     "Q17": ("aov",),
     "Q23": ("refine",),
     "Q24": ("rank(",),
+    "Q27": ("contains", ".value", "length(", "collect("),
 }
 
 

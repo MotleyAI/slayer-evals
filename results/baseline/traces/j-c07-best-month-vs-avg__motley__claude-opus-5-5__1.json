@@ -1,0 +1,583 @@
+{
+ "profile": "motley",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "store pre-tax sales by month"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"learning\": \"Monthly sales by store: net_sales (pre-tax, dollars) by stores.name over month(ordered_at). Use net_sales rather than total_revenue so stores with different tax rates compare fairly (see jaffle-revenue-definition). Drop the current incomplete month (see jaffle-data-coverage).\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03252247488101534,\n      \"description\": \"Pre-tax sales from item lines, in dollars: sum of product price per unit sold. Reconciles to orders.net_sales for the same period. Use for sales by product, SKU or product type.\",\n      \"id\": \"items.line_sales\",\n      \"source_id\": \"01a1e913-c7fe-7fe2-a512-8c1b704a9ed8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03252247488101534,\n      \"description\": \"Sales before tax, in dollars.\",\n      \"id\": \"orders.net_sales\",\n      \"source_id\": \"01a1e913-c7fe-7fe2-a512-8c1b704a9ed8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"learning\": \"When a user says \\\"revenue\\\", \\\"sales\\\" or \\\"AOV\\\" without qualification, use pre-tax figures: orders.net_sales, and net AOV = net_sales / order_count. total_revenue and the saved avg_order_value include sales tax, which is collected for the state, not earned. Store tax rates run from 4% (Brooklyn, New Orleans) to 8% (Los Angeles), so tax-inclusive figures distort store comparisons (e.g. in 2025 Brooklyn ranks 5th of 6 on tax-inclusive AOV but 2nd on pre-tax AOV). Use total_revenue / avg_order_value only when asked for gross or tax-inclusive numbers, and always state which basis you used.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.net_sales\",\n        \"orders.order_count\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031746031746031744,\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"learning\": \"For sales by product, SKU or product type (product mix, category share), query the items model with the line_sales measure (dollars, pre-tax). It reconciles exactly to orders.net_sales for every year. Do NOT write products.price:sum from items: SLayer aggregates a joined one-side column at its own grain, so it sums each distinct product's price once (e.g. $28 for all beverages in 2025) instead of once per item sold. Share of total: line_sales / unit_price:sum(partition_by=[]).\",\n      \"linked_entities\": [\n        \"items\",\n        \"products.type\",\n        \"items.line_sales\",\n        \"items.unit_price\",\n        \"orders.ordered_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031009615384615385,\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"learning\": \"For any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\",\n        \"stores.opened_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031009615384615385,\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"id\": \"jaffle-data-coverage\",\n      \"learning\": \"Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \\\"this month / this year / YTD\\\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\",\n      \"linked_entities\": [\n        \"orders.ordered_at\",\n        \"stores.opened_at\",\n        \"stores.name\"\n      ]\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03057889822595705,\n      \"description\": \"Pre-tax order amount, in cents.\",\n      \"id\": \"orders.subtotal\",\n      \"source_id\": \"01a1e913-c7fe-7fe2-a512-8c1b704a9ed8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03055037313432836,\n      \"description\": \"Local sales-tax rate.\",\n      \"id\": \"stores.tax_rate\",\n      \"source_id\": \"01a1e913-c7fe-7fe2-a512-8c1b704a9ed8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.030303030303030304,\n      \"description\": null,\n      \"id\": \"orders\",\n      \"source_id\": \"01a1e913-c7fe-7fe2-a512-8c1b704a9ed8\",\n      \"source_name\": \"demo_database\"\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "measures": [
+      "net_sales"
+     ],
+     "dimensions": [
+      "stores.name",
+      "stores.opened_at"
+     ],
+     "time_dimensions": [
+      {
+       "dimension": "ordered_at",
+       "granularity": "month",
+       "date_range": "2025"
+      }
+     ],
+     "limit": 200
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.net_sales\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"Net Sales (pre-tax)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.stores.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Store\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.stores.opened_at\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Opened\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.ordered_at\",\n      \"role\": \"time_dimension\",\n      \"type\": \"TIMESTAMP\",\n      \"title\": \"Order Date\",\n      \"granularity\": \"month\",\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-01-01 00:00:00\",\n      \"orders.net_sales\": 115017.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-02-01 00:00:00\",\n      \"orders.net_sales\": 105156.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-03-01 00:00:00\",\n      \"orders.net_sales\": 117535.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-04-01 00:00:00\",\n      \"orders.net_sales\": 112440.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-05-01 00:00:00\",\n      \"orders.net_sales\": 114013.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-06-01 00:00:00\",\n      \"orders.net_sales\": 108260.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-07-01 00:00:00\",\n      \"orders.net_sales\": 110080.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-08-01 00:00:00\",\n      \"orders.net_sales\": 98302.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-09-01 00:00:00\",\n      \"orders.net_sales\": 83415.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-10-01 00:00:00\",\n      \"orders.net_sales\": 86425.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 97680.0\n    },\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.stores.opened_at\": \"2023-05-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 114853.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-01-01 00:00:00\",\n      \"orders.net_sales\": 80651.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-02-01 00:00:00\",\n      \"orders.net_sales\": 76432.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-03-01 00:00:00\",\n      \"orders.net_sales\": 86826.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-04-01 00:00:00\",\n      \"orders.net_sales\": 89770.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-05-01 00:00:00\",\n      \"orders.net_sales\": 94957.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-06-01 00:00:00\",\n      \"orders.net_sales\": 92638.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-07-01 00:00:00\",\n      \"orders.net_sales\": 93085.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-08-01 00:00:00\",\n      \"orders.net_sales\": 85405.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-09-01 00:00:00\",\n      \"orders.net_sales\": 71736.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-10-01 00:00:00\",\n      \"orders.net_sales\": 74338.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 81428.0\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.stores.opened_at\": \"2024-06-27 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 98881.0\n    },\n    {\n      \"orders.stores.name\": \"Los Angeles\",\n      \"orders.stores.opened_at\": \"2025-11-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 13689.0\n    },\n    {\n      \"orders.stores.name\": \"Los Angeles\",\n      \"orders.stores.opened_at\": \"2025-11-11 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 23584.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-05-01 00:00:00\",\n      \"orders.net_sales\": 17215.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-06-01 00:00:00\",\n      \"orders.net_sales\": 20595.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-07-01 00:00:00\",\n      \"orders.net_sales\": 26109.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-08-01 00:00:00\",\n      \"orders.net_sales\": 29918.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-09-01 00:00:00\",\n      \"orders.net_sales\": 28455.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-10-01 00:00:00\",\n      \"orders.net_sales\": 33684.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 40777.0\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.stores.opened_at\": \"2025-05-08 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 53525.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-01-01 00:00:00\",\n      \"orders.net_sales\": 73597.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-02-01 00:00:00\",\n      \"orders.net_sales\": 66761.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-03-01 00:00:00\",\n      \"orders.net_sales\": 71905.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-04-01 00:00:00\",\n      \"orders.net_sales\": 69885.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-05-01 00:00:00\",\n      \"orders.net_sales\": 73275.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-06-01 00:00:00\",\n      \"orders.net_sales\": 66778.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-07-01 00:00:00\",\n      \"orders.net_sales\": 68824.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-08-01 00:00:00\",\n      \"orders.net_sales\": 62157.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-09-01 00:00:00\",\n      \"orders.net_sales\": 53946.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-10-01 00:00:00\",\n      \"orders.net_sales\": 57363.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 60663.0\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.stores.opened_at\": \"2022-10-31 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 72931.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-01-01 00:00:00\",\n      \"orders.net_sales\": 71027.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-02-01 00:00:00\",\n      \"orders.net_sales\": 68503.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-03-01 00:00:00\",\n      \"orders.net_sales\": 80845.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-04-01 00:00:00\",\n      \"orders.net_sales\": 80251.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-05-01 00:00:00\",\n      \"orders.net_sales\": 83609.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-06-01 00:00:00\",\n      \"orders.net_sales\": 80186.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-07-01 00:00:00\",\n      \"orders.net_sales\": 87681.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-08-01 00:00:00\",\n      \"orders.net_sales\": 77082.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-09-01 00:00:00\",\n      \"orders.net_sales\": 61581.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-10-01 00:00:00\",\n      \"orders.net_sales\": 66054.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-11-01 00:00:00\",\n      \"orders.net_sales\": 73364.0\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.stores.opened_at\": \"2024-07-07 00:00:00\",\n      \"orders.ordered_at\": \"2025-12-01 00:00:00\",\n      \"orders.net_sales\": 91574.0\n    }\n  ],\n  \"row_count\": 58,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e913-f303-79c2-b88a-7e8c5a20be39\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.net_sales",
+     "orders.stores.name",
+     "orders.stores.opened_at",
+     "orders.ordered_at"
+    ],
+    "rows": [
+     [
+      115017.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      105156.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      117535.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      112440.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-04-01 00:00:00"
+     ],
+     [
+      114013.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-05-01 00:00:00"
+     ],
+     [
+      108260.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-06-01 00:00:00"
+     ],
+     [
+      110080.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-07-01 00:00:00"
+     ],
+     [
+      98302.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-08-01 00:00:00"
+     ],
+     [
+      83415.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-09-01 00:00:00"
+     ],
+     [
+      86425.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-10-01 00:00:00"
+     ],
+     [
+      97680.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      114853.0,
+      "Brooklyn",
+      "2023-05-11 00:00:00",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      80651.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      76432.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      86826.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      89770.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-04-01 00:00:00"
+     ],
+     [
+      94957.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-05-01 00:00:00"
+     ],
+     [
+      92638.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-06-01 00:00:00"
+     ],
+     [
+      93085.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-07-01 00:00:00"
+     ],
+     [
+      85405.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-08-01 00:00:00"
+     ],
+     [
+      71736.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-09-01 00:00:00"
+     ],
+     [
+      74338.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-10-01 00:00:00"
+     ],
+     [
+      81428.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      98881.0,
+      "Chicago",
+      "2024-06-27 00:00:00",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      13689.0,
+      "Los Angeles",
+      "2025-11-11 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      23584.0,
+      "Los Angeles",
+      "2025-11-11 00:00:00",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      17215.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-05-01 00:00:00"
+     ],
+     [
+      20595.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-06-01 00:00:00"
+     ],
+     [
+      26109.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-07-01 00:00:00"
+     ],
+     [
+      29918.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-08-01 00:00:00"
+     ],
+     [
+      28455.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-09-01 00:00:00"
+     ],
+     [
+      33684.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-10-01 00:00:00"
+     ],
+     [
+      40777.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      53525.0,
+      "New Orleans",
+      "2025-05-08 00:00:00",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      73597.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      66761.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      71905.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      69885.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-04-01 00:00:00"
+     ],
+     [
+      73275.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-05-01 00:00:00"
+     ],
+     [
+      66778.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-06-01 00:00:00"
+     ],
+     [
+      68824.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-07-01 00:00:00"
+     ],
+     [
+      62157.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-08-01 00:00:00"
+     ],
+     [
+      53946.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-09-01 00:00:00"
+     ],
+     [
+      57363.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-10-01 00:00:00"
+     ],
+     [
+      60663.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      72931.0,
+      "Philadelphia",
+      "2022-10-31 00:00:00",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      71027.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      68503.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      80845.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      80251.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-04-01 00:00:00"
+     ],
+     [
+      83609.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-05-01 00:00:00"
+     ],
+     [
+      80186.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-06-01 00:00:00"
+     ],
+     [
+      87681.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-07-01 00:00:00"
+     ],
+     [
+      77082.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-08-01 00:00:00"
+     ],
+     [
+      61581.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-09-01 00:00:00"
+     ],
+     [
+      66054.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-10-01 00:00:00"
+     ],
+     [
+      73364.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-11-01 00:00:00"
+     ],
+     [
+      91574.0,
+      "San Francisco",
+      "2024-07-07 00:00:00",
+      "2025-12-01 00:00:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": [
+     {
+      "name": "m",
+      "source_model": "orders",
+      "measures": [
+       {
+        "formula": "net_sales",
+        "name": "sales"
+       }
+      ],
+      "dimensions": [
+       "stores.name"
+      ],
+      "time_dimensions": [
+       {
+        "dimension": "ordered_at",
+        "granularity": "month",
+        "date_range": "2025"
+       }
+      ]
+     },
+     {
+      "source_model": "m",
+      "dimensions": [
+       "stores__name",
+       "ordered_at"
+      ],
+      "measures": [
+       {
+        "formula": "sum(sales)",
+        "name": "best_sales"
+       },
+       {
+        "formula": "avg(sales, partition_by=[stores__name])",
+        "name": "avg_sales"
+       },
+       {
+        "formula": "sum(sales) / avg(sales, partition_by=[stores__name]) - 1",
+        "name": "frac"
+       }
+      ],
+      "filters": [
+       "rank(sum(sales), partition_by=stores__name, direction='desc') <= 1"
+      ]
+     }
+    ],
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"m.best_sales\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"best_sales\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"m.avg_sales\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"avg_sales\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"m.frac\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"frac\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"m.stores__name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Store\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"m.ordered_at\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Order Date\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"m.stores__name\": \"Brooklyn\",\n      \"m.ordered_at\": \"2025-03-01 00:00:00\",\n      \"m.best_sales\": 117535.0,\n      \"m.avg_sales\": 105264.66666666667,\n      \"m.frac\": 0.11656649588022572\n    },\n    {\n      \"m.stores__name\": \"Chicago\",\n      \"m.ordered_at\": \"2025-12-01 00:00:00\",\n      \"m.best_sales\": 98881.0,\n      \"m.avg_sales\": 85512.25,\n      \"m.frac\": 0.15633724992618014\n    },\n    {\n      \"m.stores__name\": \"Los Angeles\",\n      \"m.ordered_at\": \"2025-12-01 00:00:00\",\n      \"m.best_sales\": 23584.0,\n      \"m.avg_sales\": 18636.5,\n      \"m.frac\": 0.2654736672658493\n    },\n    {\n      \"m.stores__name\": \"New Orleans\",\n      \"m.ordered_at\": \"2025-12-01 00:00:00\",\n      \"m.best_sales\": 53525.0,\n      \"m.avg_sales\": 31284.75,\n      \"m.frac\": 0.710897482000016\n    },\n    {\n      \"m.stores__name\": \"Philadelphia\",\n      \"m.ordered_at\": \"2025-01-01 00:00:00\",\n      \"m.best_sales\": 73597.0,\n      \"m.avg_sales\": 66507.08333333333,\n      \"m.frac\": 0.10660393316501393\n    },\n    {\n      \"m.stores__name\": \"San Francisco\",\n      \"m.ordered_at\": \"2025-12-01 00:00:00\",\n      \"m.best_sales\": 91574.0,\n      \"m.avg_sales\": 76813.08333333333,\n      \"m.frac\": 0.19216669903239159\n    }\n  ],\n  \"row_count\": 6,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e914-1290-7320-b4cb-ec11c33dc6ee\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "m.best_sales",
+     "m.avg_sales",
+     "m.frac",
+     "m.stores__name",
+     "m.ordered_at"
+    ],
+    "rows": [
+     [
+      117535.0,
+      105264.66666666667,
+      0.11656649588022572,
+      "Brooklyn",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      98881.0,
+      85512.25,
+      0.15633724992618014,
+      "Chicago",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      23584.0,
+      18636.5,
+      0.2654736672658493,
+      "Los Angeles",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      53525.0,
+      31284.75,
+      0.710897482000016,
+      "New Orleans",
+      "2025-12-01 00:00:00"
+     ],
+     [
+      73597.0,
+      66507.08333333333,
+      0.10660393316501393,
+      "Philadelphia",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      91574.0,
+      76813.08333333333,
+      0.19216669903239159,
+      "San Francisco",
+      "2025-12-01 00:00:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "store_name",
+     "best_month",
+     "best_month_sales",
+     "avg_monthly_sales",
+     "frac_above_avg"
+    ],
+    "rows": [
+     [
+      "Brooklyn",
+      "2025-03-01",
+      117535,
+      105264.66666666667,
+      0.11656649588022572
+     ],
+     [
+      "Chicago",
+      "2025-12-01",
+      98881,
+      85512.25,
+      0.15633724992618014
+     ],
+     [
+      "Los Angeles",
+      "2025-12-01",
+      23584,
+      18636.5,
+      0.2654736672658493
+     ],
+     [
+      "New Orleans",
+      "2025-12-01",
+      53525,
+      31284.75,
+      0.710897482000016
+     ],
+     [
+      "Philadelphia",
+      "2025-01-01",
+      73597,
+      66507.08333333333,
+      0.10660393316501393
+     ],
+     [
+      "San Francisco",
+      "2025-12-01",
+      91574,
+      76813.08333333333,
+      0.19216669903239159
+     ]
+    ],
+    "message": "Here is each store's best 2025 month by pre-tax sales (net_sales), compared with its average month. December was the best month for four stores; Brooklyn peaked in March and Philadelphia in January. A store's average counts only months with sales, which are the months it was open. Los Angeles has 2 months (Nov–Dec), New Orleans has 8 (May–Dec) and the others have 12. The averages for those two newer stores include a partial opening month, which pulls them down. That partly explains why their best months sit so far above average: New Orleans was 71% above and Los Angeles 27% above. Los Angeles's figure rests on only two months."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 6,
+  "output_tokens": 1079,
+  "cache_read_tokens": 212259,
+  "cache_write_tokens": 10484,
+  "partial": false
+ },
+ "cost_usd": 0.1164758,
+ "duration_s": 20.333349563006777,
+ "turns": 6,
+ "end_reason": "submitted",
+ "error": null
+}

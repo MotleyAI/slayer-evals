@@ -1,0 +1,17 @@
+id: c-top-customers-per-tag
+covers: [Q27, Q14, Q15]
+prompt: >-
+  For each tag, which two customers carrying it have the highest revenue (the sum of their order amounts)? Show the
+  tag, the customer's id and name, and their revenue.
+truth_sql: |
+  with ct as (select distinct c.id, c.name, u.tag
+              from customers c, unnest(c.tags) as u(tag) where u.tag is not null),
+       rev as (select customer_id, sum(amount) as revenue from orders where customer_id is not null group by 1)
+  select tag, customer_id, name, revenue from (
+    select ct.tag, ct.id as customer_id, ct.name, rev.revenue,
+           rank() over (partition by ct.tag order by rev.revenue desc) as rk
+    from ct join rev on rev.customer_id = ct.id)
+  where rk <= 2
+# One stage once a rank can partition by a list element (DEV-1932).
+slayer_query: {"query": [{"name": "per_tag_customer", "source_model": "orders", "dimensions": ["customers.tags.value", "customers.id", "customers.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}], "to_many_handling": "associate"}, {"source_model": "per_tag_customer", "dimensions": ["customers__tags__value", "customers__id", "customers__name"], "measures": [{"formula": "sum(revenue)", "name": "customer_revenue"}], "filters": ["rank(sum(revenue), partition_by=customers__tags__value, direction='desc') <= 2"]}]}
+compare: {keys: [tag, customer_id, name], values: [revenue]}

@@ -1,0 +1,163 @@
+{
+ "profile": "motley",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "new customers acquired per year"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Definition and recipe: new vs returning customers in a period\",\n      \"id\": \"jaffle-new-customers\",\n      \"learning\": \"A new customer in period P is a customer whose first-ever order (ordered_at:min per orders.customer) falls in P. This takes a two-stage query. Stage 1 (name it first_orders): source orders, dimensions [customer], measures [{name: first_order_at, formula: ordered_at:min}]. Stage 2: source first_orders, measures [*:count], filters first_order_at >= start of P and < end of P. Returning customers in P = unique_customers in P minus new customers in P. To count distinct buyers, always use the unique_customers measure (customer:count_distinct), not order rows.\",\n      \"linked_entities\": [\n        \"orders.customer\",\n        \"orders.ordered_at\",\n        \"orders.unique_customers\",\n        \"customers\"\n      ]\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Number of distinct customers.\",\n      \"id\": \"customers.customer_count\",\n      \"source_id\": \"01a1e918-dec7-7b61-85af-9d79101abbc8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"learning\": \"For any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\",\n        \"stores.opened_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"Distinct customers who ordered.\",\n      \"id\": \"orders.unique_customers\",\n      \"source_id\": \"01a1e918-dec7-7b61-85af-9d79101abbc8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03149801587301587,\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"id\": \"jaffle-data-coverage\",\n      \"learning\": \"Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \\\"this month / this year / YTD\\\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\",\n      \"linked_entities\": [\n        \"orders.ordered_at\",\n        \"stores.opened_at\",\n        \"stores.name\"\n      ]\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.03125763125763126,\n      \"description\": null,\n      \"id\": \"customers\",\n      \"source_id\": \"01a1e918-dec7-7b61-85af-9d79101abbc8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.030798389007344232,\n      \"description\": \"Customer who placed the order. Test description update\",\n      \"id\": \"orders.customer\",\n      \"source_id\": \"01a1e918-dec7-7b61-85af-9d79101abbc8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030536130536130537,\n      \"description\": \"Sales by product/type: use items.line_sales, never products.price:sum from items\",\n      \"id\": \"jaffle-sales-by-product\",\n      \"learning\": \"For sales by product, SKU or product type (product mix, category share), query the items model with the line_sales measure (dollars, pre-tax). It reconciles exactly to orders.net_sales for every year. Do NOT write products.price:sum from items: SLayer aggregates a joined one-side column at its own grain, so it sums each distinct product's price once (e.g. $28 for all beverages in 2025) instead of once per item sold. Share of total: line_sales / unit_price:sum(partition_by=[]).\",\n      \"linked_entities\": [\n        \"items\",\n        \"products.type\",\n        \"items.line_sales\",\n        \"items.unit_price\",\n        \"orders.ordered_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"items\",\n        \"measures\": [\n          {\n            \"formula\": \"line_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"line_sales / unit_price:sum(partition_by=[])\",\n            \"name\": \"share\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"type\",\n            \"model\": \"products\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"orders.ordered_at >= '2025-01-01'\",\n          \"orders.ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.030536130536130537,\n      \"description\": null,\n      \"id\": \"orders\",\n      \"source_id\": \"01a1e918-dec7-7b61-85af-9d79101abbc8\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.02976190476190476,\n      \"description\": \"Time dimensions, granularities, and time-ordered formula resolution.\",\n      \"id\": \"help.time\",\n      \"learning\": \"# Time\\n\\nTime is the most load-bearing dimension in most analytical queries. Motley\\ntreats it specially in a few places.\\n\\n## time_dimensions vs plain dimensions on the same column\\n\\n- `time_dimensions: [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]`\\n  \\u2192 grouped by the **truncated** value. One row per month.\\n- `dimensions: [\\\"created_at\\\"]` \\u2192 grouped by the **raw** timestamp. One row per\\n  distinct timestamp.\\n\\nYou can use both forms of the same column in one query.\\n\\n## Granularities\\n\\n`second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`. Always\\nsupplied alongside a time dimension, and also used as an argument by\\n`time_shift(x, n, 'year')`.\\n\\n## date_range\\n\\nA time dimension may carry a `date_range: [start, end]` (ISO dates):\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\",\\n    \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\nThis becomes a WHERE filter. It does **not** itself snap to bucket edges (the\\nfirst/last bucket may be partial) \\u2014 use `whole_periods_only` for that.\\n\\n## whole_periods_only\\n\\nWhen `true`, Motley snaps the `date_range` to the granularity's bucket edges\\nand drops the current incomplete bucket. Useful when a dashboard should not\\nshow \\\"this month is half-done, the bar looks tiny\\\":\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}],\\n  \\\"whole_periods_only\\\": true\\n}\\n```\\n\\n## Which time dimension wins for transforms\\n\\nAll time-ordered transforms require an explicit `time_dimensions` entry.\\nWhen resolving which one to use:\\n\\n1. Single `time_dimensions` entry \\u2014 used directly.\\n2. Two or more time dimensions \\u2014 `main_time_dimension` disambiguates\\n   (or the model's `default_time_dimension`, if it is among the query's\\n   time dims).\\n\\nWithout any `time_dimensions` entry, transforms will error. Set\\n`main_time_dimension` whenever you have two or more time dimensions.\\n\\n## The three meanings of \\\"last\\\" \\u2014 don't mix them up\\n\\nMotley has **three** distinct things named `last`:\\n\\n1. `:last(time_col)` \\u2014 the **aggregation**. Per group, returns the value from\\n   the record with the latest `time_col`. See `memory:help.aggregations`.\\n\\n2. `last(x)` \\u2014 the **transform**. Broadcasts the aggregated value from the\\n   most recent time bucket to every row. See `memory:help.transforms`.\\n\\n3. `last(\\u2026)` inside a `filters` string (e.g. `\\\"last(change(revenue:sum)) < 0\\\"`)\\n   \\u2014 a post-filter on the transform output. See `memory:help.filters`.\\n\\nThey all concern \\\"latest something\\\" but operate on different levels: record /\\nbucket / filter. Pick the one that matches your question.\\n\\n## Year-over-year with time_shift\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"time_shift(revenue:sum, -1, 'year')\\\", \\\"name\\\": \\\"prev_year\\\"},\\n    {\\\"formula\\\": \\\"revenue:sum / time_shift(revenue:sum, -1, 'year') - 1\\\", \\\"name\\\": \\\"yoy_growth\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\n`change_pct(x)` takes a single argument and compares against the *previous period\\nat the query's granularity* \\u2014 here that is month-over-month, not YoY. For\\nyear-over-year, shift by a year explicitly with `time_shift(revenue:sum, -1, 'year')`\\nand take the ratio, as above.\\n\\n## See also\\n\\n- `memory:help.transforms` \\u2014 the transform family.\\n- `memory:help.aggregations` \\u2014 `:first` and `:last` aggregations.\\n- `memory:help.queries` \\u2014 where `time_dimensions` and `main_time_dimension` sit.\\n\",\n      \"linked_entities\": []\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": [
+     {
+      "name": "first_orders",
+      "source_model": "orders",
+      "dimensions": [
+       "customer"
+      ],
+      "measures": [
+       {
+        "name": "first_order_at",
+        "formula": "ordered_at:min"
+       }
+      ]
+     },
+     {
+      "source_model": "first_orders",
+      "measures": [
+       "count(*)"
+      ],
+      "dimensions": [
+       {
+        "expression": "year(first_order_at)",
+        "name": "year"
+       }
+      ],
+      "order": [
+       {
+        "column": "year",
+        "direction": "asc"
+       }
+      ]
+     }
+    ],
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"first_orders.count(*)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"count(*)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"first_orders.year\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"year\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"first_orders.year\": \"2022-01-01 00:00:00\",\n      \"first_orders.count(*)\": 177\n    },\n    {\n      \"first_orders.year\": \"2023-01-01 00:00:00\",\n      \"first_orders.count(*)\": 866\n    },\n    {\n      \"first_orders.year\": \"2024-01-01 00:00:00\",\n      \"first_orders.count(*)\": 983\n    },\n    {\n      \"first_orders.year\": \"2025-01-01 00:00:00\",\n      \"first_orders.count(*)\": 764\n    },\n    {\n      \"first_orders.year\": \"2026-01-01 00:00:00\",\n      \"first_orders.count(*)\": 300\n    }\n  ],\n  \"row_count\": 5,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e919-0636-7641-a47b-174131797151\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "first_orders.count(*)",
+     "first_orders.year"
+    ],
+    "rows": [
+     [
+      177,
+      "2022-01-01 00:00:00"
+     ],
+     [
+      866,
+      "2023-01-01 00:00:00"
+     ],
+     [
+      983,
+      "2024-01-01 00:00:00"
+     ],
+     [
+      764,
+      "2025-01-01 00:00:00"
+     ],
+     [
+      300,
+      "2026-01-01 00:00:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "measures": [
+      "count(*)"
+     ],
+     "filters": [
+      "customer is null"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.count(*)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"count(*)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.count(*)\": 0\n    }\n  ],\n  \"row_count\": 1,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e919-140e-73f3-b6f9-84837fa02920\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.count(*)"
+    ],
+    "rows": [
+     [
+      0
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "year",
+     "new_customers"
+    ],
+    "rows": [
+     [
+      2022,
+      177
+     ],
+     [
+      2023,
+      866
+     ],
+     [
+      2024,
+      983
+     ],
+     [
+      2025,
+      764
+     ],
+     [
+      2026,
+      300
+     ]
+    ],
+    "message": "New customers per year: 177 in 2022, 866 in 2023, 983 in 2024, 764 in 2025 and 300 in 2026. A customer counts as new in the year of their first-ever order. Two years are partial: order data starts on 2022-09-19, and 2026 only runs up to today. No orders were missing a customer."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 6,
+  "output_tokens": 452,
+  "cache_read_tokens": 212852,
+  "cache_write_tokens": 5721,
+  "partial": false
+ },
+ "cost_usd": 0.0802394,
+ "duration_s": 12.243336378014646,
+ "turns": 6,
+ "end_reason": "submitted",
+ "error": null
+}

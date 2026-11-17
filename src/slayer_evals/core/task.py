@@ -7,7 +7,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validat
 from slayer_evals.core.datasets import Dataset
 from slayer_evals.core.profiles import Profile
 
-ALL_ROWS = tuple(f"Q{i}" for i in range(1, 26))
+ALL_ROWS = tuple(f"Q{i}" for i in range(1, 28))
 UNCOVERED_ROWS = ("Q19", "Q22")
 COVERED_ROWS = tuple(r for r in ALL_ROWS if r not in UNCOVERED_ROWS)
 Pitfall = Literal[
@@ -27,6 +27,10 @@ Pitfall = Literal[
     "timestamp_bounds",
     "avg_of_avgs",
     "bucket_reaggregation",
+    "count_after_unnest",
+    "unnest_fan_out",
+    "null_element",
+    "same_element_and",
 ]
 PITFALLS: tuple[str, ...] = get_args(Pitfall)
 Suite = Literal["capability", "combo", "trap", "jaffle"]
@@ -60,6 +64,8 @@ class Compare(Strict):
     columns_exact: bool = False
     # NULL equals 0 in value columns (an empty period or a zero count).
     null_as_zero: bool = False
+    # Extra result rows with a key the truth lacks and only 0 or NULL values (an empty group) are ignored.
+    extra_zero_rows: bool = False
 
 
 class Expectation(Strict):

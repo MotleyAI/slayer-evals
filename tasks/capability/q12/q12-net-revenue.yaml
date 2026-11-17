@@ -6,4 +6,4 @@ prompt: >-
 truth_sql: |
   select region, sum(amount - discount) as net_revenue from orders_flat group by 1
 slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount - customers.discount)", "name": "net_revenue"}]}}
-compare: {keys: [region], values: [net_revenue]}
+compare: {keys: [region], values: [net_revenue], extra_zero_rows: true}

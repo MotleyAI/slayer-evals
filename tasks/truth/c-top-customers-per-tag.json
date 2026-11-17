@@ -1,0 +1,106 @@
+{
+ "columns": [
+  "tag",
+  "customer_id",
+  "name",
+  "revenue"
+ ],
+ "rows": [
+  [
+   "alpine",
+   119,
+   "Ben Kovac",
+   3129.5699999999993
+  ],
+  [
+   "alpine",
+   171,
+   "Gia Costa",
+   2786.24
+  ],
+  [
+   "eu",
+   93,
+   "Finn Jansen",
+   3734.670000000001
+  ],
+  [
+   "eu",
+   111,
+   "Finn Fischer",
+   3631.2900000000013
+  ],
+  [
+   "newsletter",
+   53,
+   "Ada Jansen",
+   3417.670000000001
+  ],
+  [
+   "newsletter",
+   129,
+   "Dan Berg",
+   3611.540000000001
+  ],
+  [
+   "nordic",
+   129,
+   "Dan Berg",
+   3611.540000000001
+  ],
+  [
+   "nordic",
+   138,
+   "Ines Ito",
+   3528.23
+  ],
+  [
+   "partner",
+   130,
+   "Finn Ek",
+   3868.4699999999993
+  ],
+  [
+   "partner",
+   138,
+   "Ines Ito",
+   3528.23
+  ],
+  [
+   "trial",
+   64,
+   "Kai Ito",
+   3107.32
+  ],
+  [
+   "trial",
+   116,
+   "Jon Jansen",
+   2651.1900000000005
+  ],
+  [
+   "vip",
+   111,
+   "Finn Fischer",
+   3631.2900000000013
+  ],
+  [
+   "vip",
+   129,
+   "Dan Berg",
+   3611.540000000001
+  ],
+  [
+   "wholesale",
+   153,
+   "Ella Costa",
+   3007.8400000000006
+  ],
+  [
+   "wholesale",
+   171,
+   "Gia Costa",
+   2786.24
+  ]
+ ]
+}

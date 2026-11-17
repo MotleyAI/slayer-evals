@@ -90,7 +90,7 @@
       300
      ]
     ],
-    "message": "New customers per year, counting each customer in the year of their first-ever order: 2022: 177, 2023: 866, 2024: 983, 2025: 764, 2026: 300. Two years are incomplete. 2022 only starts on 2022-09-19, when the order data begins. 2026 runs through 2026-10-29, the latest order in the data."
+    "message": "New customers per year: 2022: 177, 2023: 866, 2024: 983, 2025: 764, 2026: 300. A customer counts as new in the year of their first-ever order. Two years are incomplete, so they shouldn't be compared directly with the full years. 2022 only covers 19 Sep to 31 Dec, because order data starts on 19 Sep 2022. 2026 is year-to-date, with the latest order on 29 Oct 2026."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -101,12 +101,12 @@
  "usage": {
   "input_tokens": 4,
   "output_tokens": 369,
-  "cache_read_tokens": 5812,
-  "cache_write_tokens": 623,
+  "cache_read_tokens": 5811,
+  "cache_write_tokens": 622,
   "partial": false
  },
- "cost_usd": 0.0116734,
- "duration_s": 7.509790461976081,
+ "cost_usd": 0.0116682,
+ "duration_s": 8.28512931597652,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

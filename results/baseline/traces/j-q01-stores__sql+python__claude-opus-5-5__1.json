@@ -4,7 +4,7 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "SELECT * FROM stores ORDER BY opened_at"
+    "sql": "select * from stores order by opened_at"
    },
    "result_text": "{\"columns\": [\"id\", \"name\", \"opened_at\", \"tax_rate\"], \"rows\": [[\"eeb7c29c-44cf-4585-b3ae-c486c2c5c1fe\", \"Philadelphia\", \"2022-10-31T00:00:00\", 0.06], [\"6d39b5a4-283b-4cb3-88df-be4641b2f2d1\", \"Brooklyn\", \"2023-05-11T00:00:00\", 0.04], [\"3a7988ca-388b-4279-a803-1d5ccdc486e3\", \"Chicago\", \"2024-06-27T00:00:00\", 0.0625], [\"f17aa111-2c09-45f2-8b11-6651c243c077\", \"San Francisco\", \"2024-07-07T00:00:00\", 0.075], [\"26167078-a9ea-47cd-8a54-09d4ac37aa6f\", \"New Orleans\", \"2025-05-08T00:00:00\", 0.04], [\"7326f660-e458-4f3a-91ef-16a05a18b498\", \"Los Angeles\", \"2025-11-11T00:00:00\", 0.08]], \"truncated\": false}",
    "is_error": false,
@@ -60,39 +60,46 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "SELECT s.name, MIN(o.ordered_at) first_order FROM orders o JOIN stores s ON o.store_id=s.id GROUP BY 1 ORDER BY 2"
+    "sql": "select s.name, min(o.ordered_at), count(*) from orders o join stores s on o.store_id=s.id group by 1 order by 2"
    },
-   "result_text": "{\"columns\": [\"name\", \"first_order\"], \"rows\": [[\"Philadelphia\", \"2022-10-31T09:52:00\"], [\"Brooklyn\", \"2023-05-11T07:00:00\"], [\"Chicago\", \"2024-06-27T07:00:00\"], [\"San Francisco\", \"2024-07-07T07:07:00\"], [\"New Orleans\", \"2025-05-08T07:00:00\"], [\"Los Angeles\", \"2025-11-11T08:39:00\"]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"name\", \"min(o.ordered_at)\", \"count_star()\"], \"rows\": [[\"Philadelphia\", \"2022-10-31T09:52:00\", 266470], [\"Brooklyn\", \"2023-05-11T07:00:00\", 376911], [\"Chicago\", \"2024-06-27T07:00:00\", 214024], [\"San Francisco\", \"2024-07-07T07:07:00\", 183583], [\"New Orleans\", \"2025-05-08T07:00:00\", 85656], [\"Los Angeles\", \"2025-11-11T08:39:00\", 46238]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
-     "first_order"
+     "min(o.ordered_at)",
+     "count_star()"
     ],
     "rows": [
      [
       "Philadelphia",
-      "2022-10-31T09:52:00"
+      "2022-10-31T09:52:00",
+      266470
      ],
      [
       "Brooklyn",
-      "2023-05-11T07:00:00"
+      "2023-05-11T07:00:00",
+      376911
      ],
      [
       "Chicago",
-      "2024-06-27T07:00:00"
+      "2024-06-27T07:00:00",
+      214024
      ],
      [
       "San Francisco",
-      "2024-07-07T07:07:00"
+      "2024-07-07T07:07:00",
+      183583
      ],
      [
       "New Orleans",
-      "2025-05-08T07:00:00"
+      "2025-05-08T07:00:00",
+      85656
      ],
      [
       "Los Angeles",
-      "2025-11-11T08:39:00"
+      "2025-11-11T08:39:00",
+      46238
      ]
     ],
     "warnings": []
@@ -132,7 +139,7 @@
       "2025-11-11"
      ]
     ],
-    "message": "We have 6 stores. The opening dates come from stores.opened_at, and each one matches that store's first order in the data. These dates are about a month later than the ones in our documentation, which lists Philadelphia as opening in Sep 2022, Brooklyn in Apr 2023, Chicago in May 2024, San Francisco in Jun 2024, New Orleans in Apr 2025 and Los Angeles in Oct 2025. The table shows what's in the data."
+    "message": "There are 6 stores. Opening dates come from stores.opened_at, and each one matches the date of that store's first order in the orders table. Note: these dates don't match the business-rules notes, which put Philadelphia in Sep 2022, Brooklyn in Apr 2023, Chicago in May 2024, San Francisco in Jun 2024, New Orleans in Apr 2025 and Los Angeles in Oct 2025. The database dates are about one month later in every case, so the reference notes may be out of date."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -142,13 +149,13 @@
  ],
  "usage": {
   "input_tokens": 4,
-  "output_tokens": 243,
+  "output_tokens": 213,
   "cache_read_tokens": 5797,
-  "cache_write_tokens": 771,
+  "cache_write_tokens": 762,
   "partial": false
  },
- "cost_usd": 0.0098904,
- "duration_s": 8.558618118986487,
+ "cost_usd": 0.0092454,
+ "duration_s": 8.392121663026046,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

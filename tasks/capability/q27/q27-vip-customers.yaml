@@ -1,0 +1,8 @@
+id: q27-vip-customers
+covers: [Q27]
+prompt: >-
+  How many customers carry the tag vip?
+truth_sql: |
+  select count(*) as customers from customers where list_contains(list_filter(tags, x -> x is not null), 'vip')
+slayer_query: {"query": {"source_model": "customers", "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["contains(tags, 'vip')"]}}
+compare: {values: [customers]}

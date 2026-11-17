@@ -41,6 +41,8 @@ class RunConfig(BaseModel):
     motley_url: str = DEFAULT_MOTLEY_URL
     # Seeds one Motley org; called with `--user-id U --store S --db D` appended.
     motley_seed_command: list[str] | None = None
+    # The SLayer version the Motley backend runs; Motley trials record it.
+    motley_slayer_version: str | None = None
 
 
 def select_tasks(tasks: list[Task], cfg: RunConfig) -> list[Task]:

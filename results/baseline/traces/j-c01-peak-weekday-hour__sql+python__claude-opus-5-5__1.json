@@ -4,9 +4,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH t AS (SELECT dayname(ordered_at) d, hour(ordered_at) h, SUM(subtotal)/100.0 s FROM orders WHERE ordered_at>='2025-01-01' AND ordered_at<'2026-01-01' GROUP BY 1,2)\nSELECT d,h,s, s/(SELECT SUM(s) FROM t) share, (SELECT count(*) FROM t) n FROM t ORDER BY s DESC LIMIT 3"
+    "sql": "WITH t AS (SELECT dayname(ordered_at) d, hour(ordered_at) h, SUM(subtotal)/100.0 s FROM orders WHERE ordered_at>='2025-01-01' AND ordered_at<'2026-01-01' GROUP BY 1,2)\nSELECT d,h,s, s/SUM(s) OVER () share, (SELECT max(ordered_at) FROM orders) mx FROM t ORDER BY s DESC LIMIT 3"
    },
-   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 2: SELECT d,h,s, s/(SELECT SUM(s) FROM t) share, (SELECT count(*) FROM t) n FROM t ORDER BY s DESC...\n                                               ^",
+   "result_text": "Parser Error: syntax error at or near \"share\"\n\nLINE 2: SELECT d,h,s, s/SUM(s) OVER () share, (SELECT max(ordered_at) FROM orders) mx FROM t ORDER...\n                                       ^",
    "is_error": true,
    "parsed": null,
    "audit": null
@@ -14,9 +14,9 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "WITH t AS (SELECT dayname(ordered_at) d, hour(ordered_at) h, SUM(subtotal)/100.0 s FROM orders WHERE ordered_at>='2025-01-01' AND ordered_at<'2026-01-01' GROUP BY 1,2)\nSELECT d,h,s, s/(SELECT SUM(s) FROM t) AS shr, (SELECT count(*) FROM t) n FROM t ORDER BY s DESC LIMIT 3"
+    "sql": "WITH t AS (SELECT dayname(ordered_at) d, hour(ordered_at) h, SUM(subtotal)/100.0 s FROM orders WHERE ordered_at>='2025-01-01' AND ordered_at<'2026-01-01' GROUP BY 1,2)\nSELECT d,h,s, s/SUM(s) OVER () AS shr, (SELECT max(ordered_at) FROM orders) mx FROM t ORDER BY s DESC LIMIT 3"
    },
-   "result_text": "{\"columns\": [\"d\", \"h\", \"s\", \"shr\", \"n\"], \"rows\": [[\"Monday\", 13, 125011.0, 0.02909454569489815, 79], [\"Tuesday\", 13, 122009.0, 0.02839587256872458, 79], [\"Tuesday\", 14, 115240.0, 0.026820483364504426, 79]], \"truncated\": false}",
+   "result_text": "{\"columns\": [\"d\", \"h\", \"s\", \"shr\", \"mx\"], \"rows\": [[\"Monday\", 13, 125011.0, 0.02909454569489815, \"2026-10-29T19:52:00\"], [\"Tuesday\", 13, 122009.0, 0.02839587256872458, \"2026-10-29T19:52:00\"], [\"Tuesday\", 14, 115240.0, 0.026820483364504426, \"2026-10-29T19:52:00\"]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
@@ -24,7 +24,7 @@
      "h",
      "s",
      "shr",
-     "n"
+     "mx"
     ],
     "rows": [
      [
@@ -32,21 +32,21 @@
       13,
       125011.0,
       0.02909454569489815,
-      79
+      "2026-10-29T19:52:00"
      ],
      [
       "Tuesday",
       13,
       122009.0,
       0.02839587256872458,
-      79
+      "2026-10-29T19:52:00"
      ],
      [
       "Tuesday",
       14,
       115240.0,
       0.026820483364504426,
-      79
+      "2026-10-29T19:52:00"
      ]
     ],
     "warnings": []
@@ -70,7 +70,7 @@
       0.02909454569489815
      ]
     ],
-    "message": "Pre-tax sales (SUM(subtotal)/100) for 2025, grouped by weekday and hour of ordered_at. Monday 13:00 ranked first with $125,011.00, 2.91% of the 2025 total. Tuesday 13:00 was second with $122,009.00."
+    "message": "Basis: pre-tax sales (SUM(subtotal)/100) for 2025, grouped by weekday and hour of ordered_at. Monday 13:00 was the top slot at $125,011.00, or about 2.91% of 2025's pre-tax sales. Tuesday 13:00 was second at $122,009.00."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -82,11 +82,11 @@
   "input_tokens": 4,
   "output_tokens": 441,
   "cache_read_tokens": 3960,
-  "cache_write_tokens": 2619,
+  "cache_write_tokens": 2613,
   "partial": false
  },
- "cost_usd": 0.022723,
- "duration_s": 9.87412646197481,
+ "cost_usd": 0.022693,
+ "duration_s": 10.824874925019685,
  "turns": 5,
  "end_reason": "submitted",
  "error": null

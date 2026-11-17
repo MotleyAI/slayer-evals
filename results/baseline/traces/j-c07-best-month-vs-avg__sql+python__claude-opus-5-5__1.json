@@ -82,67 +82,98 @@
   {
    "tool": "sql",
    "args": {
-    "sql": "with m as (select s.name, date_trunc('month', o.ordered_at)::date mo, sum(o.subtotal)/100.0 sales\nfrom orders o join stores s on o.store_id=s.id where year(o.ordered_at)=2025 group by 1,2),\na as (select name, avg(sales) av, count(*) n from m group by 1),\nb as (select name, mo, sales, row_number() over (partition by name order by sales desc) r from m)\nselect b.name, b.mo, b.sales, a.av, b.sales/a.av-1 frac, a.n from b join a using(name) where r=1 order by name"
+    "sql": "with m as (select s.name, s.opened_at, date_trunc('month', o.ordered_at) mon, sum(o.subtotal)/100.0 sales, count(*) n\nfrom orders o join stores s on o.store_id=s.id where year(o.ordered_at)=2025 group by all)\nselect name, opened_at, count(*) months, min(mon), max(mon), avg(sales), max(sales), arg_max(mon, sales) best, max(sales)/avg(sales)-1 frac from m group by all order by name"
    },
-   "result_text": "{\"columns\": [\"name\", \"mo\", \"sales\", \"av\", \"frac\", \"n\"], \"rows\": [[\"Brooklyn\", \"2025-03-01\", 117535.0, 105264.66666666667, 0.11656649588022572, 12], [\"Chicago\", \"2025-12-01\", 98881.0, 85512.25, 0.15633724992618014, 12], [\"Los Angeles\", \"2025-12-01\", 23584.0, 18636.5, 0.2654736672658493, 2], [\"New Orleans\", \"2025-12-01\", 53525.0, 31284.75, 0.710897482000016, 8], [\"Philadelphia\", \"2025-01-01\", 73597.0, 66507.08333333333, 0.10660393316501393, 12], [\"San Francisco\", \"2025-12-01\", 91574.0, 76813.08333333333, 0.19216669903239159, 12]], \"truncated\": false}",
+   "result_text": "Parser Error: syntax error at or near \"months\"\n\nLINE 3: select name, opened_at, count(*) months, min(mon), max(mon), avg(sales), max(sales), arg_max...\n                                         ^",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "sql",
+   "args": {
+    "sql": "with m as (select s.name, s.opened_at, date_trunc('month', o.ordered_at) mon, sum(o.subtotal)/100.0 sales, count(*) n\nfrom orders o join stores s on o.store_id=s.id where year(o.ordered_at)=2025 group by all)\nselect name, opened_at, count(*) nmonths, min(mon), max(mon), avg(sales) avg_sales, max(sales) best_sales, arg_max(mon, sales) best, max(sales)/avg(sales)-1 frac from m group by all order by name"
+   },
+   "result_text": "{\"columns\": [\"name\", \"opened_at\", \"nmonths\", \"min(mon)\", \"max(mon)\", \"avg_sales\", \"best_sales\", \"best\", \"frac\"], \"rows\": [[\"Brooklyn\", \"2023-05-11T00:00:00\", 12, \"2025-01-01T00:00:00\", \"2025-12-01T00:00:00\", 105264.66666666667, 117535.0, \"2025-03-01T00:00:00\", 0.11656649588022572], [\"Chicago\", \"2024-06-27T00:00:00\", 12, \"2025-01-01T00:00:00\", \"2025-12-01T00:00:00\", 85512.25, 98881.0, \"2025-12-01T00:00:00\", 0.15633724992618014], [\"Los Angeles\", \"2025-11-11T00:00:00\", 2, \"2025-11-01T00:00:00\", \"2025-12-01T00:00:00\", 18636.5, 23584.0, \"2025-12-01T00:00:00\", 0.2654736672658493], [\"New Orleans\", \"2025-05-08T00:00:00\", 8, \"2025-05-01T00:00:00\", \"2025-12-01T00:00:00\", 31284.75, 53525.0, \"2025-12-01T00:00:00\", 0.710897482000016], [\"Philadelphia\", \"2022-10-31T00:00:00\", 12, \"2025-01-01T00:00:00\", \"2025-12-01T00:00:00\", 66507.08333333333, 73597.0, \"2025-01-01T00:00:00\", 0.10660393316501393], [\"San Francisco\", \"2024-07-07T00:00:00\", 12, \"2025-01-01T00:00:00\", \"2025-12-01T00:00:00\", 76813.08333333333, 91574.0, \"2025-12-01T00:00:00\", 0.19216669903239159]], \"truncated\": false}",
    "is_error": false,
    "parsed": {
     "columns": [
      "name",
-     "mo",
-     "sales",
-     "av",
-     "frac",
-     "n"
+     "opened_at",
+     "nmonths",
+     "min(mon)",
+     "max(mon)",
+     "avg_sales",
+     "best_sales",
+     "best",
+     "frac"
     ],
     "rows": [
      [
       "Brooklyn",
-      "2025-03-01",
-      117535.0,
+      "2023-05-11T00:00:00",
+      12,
+      "2025-01-01T00:00:00",
+      "2025-12-01T00:00:00",
       105264.66666666667,
-      0.11656649588022572,
-      12
+      117535.0,
+      "2025-03-01T00:00:00",
+      0.11656649588022572
      ],
      [
       "Chicago",
-      "2025-12-01",
-      98881.0,
+      "2024-06-27T00:00:00",
+      12,
+      "2025-01-01T00:00:00",
+      "2025-12-01T00:00:00",
       85512.25,
-      0.15633724992618014,
-      12
+      98881.0,
+      "2025-12-01T00:00:00",
+      0.15633724992618014
      ],
      [
       "Los Angeles",
-      "2025-12-01",
-      23584.0,
+      "2025-11-11T00:00:00",
+      2,
+      "2025-11-01T00:00:00",
+      "2025-12-01T00:00:00",
       18636.5,
-      0.2654736672658493,
-      2
+      23584.0,
+      "2025-12-01T00:00:00",
+      0.2654736672658493
      ],
      [
       "New Orleans",
-      "2025-12-01",
-      53525.0,
+      "2025-05-08T00:00:00",
+      8,
+      "2025-05-01T00:00:00",
+      "2025-12-01T00:00:00",
       31284.75,
-      0.710897482000016,
-      8
+      53525.0,
+      "2025-12-01T00:00:00",
+      0.710897482000016
      ],
      [
       "Philadelphia",
-      "2025-01-01",
-      73597.0,
+      "2022-10-31T00:00:00",
+      12,
+      "2025-01-01T00:00:00",
+      "2025-12-01T00:00:00",
       66507.08333333333,
-      0.10660393316501393,
-      12
+      73597.0,
+      "2025-01-01T00:00:00",
+      0.10660393316501393
      ],
      [
       "San Francisco",
-      "2025-12-01",
-      91574.0,
+      "2024-07-07T00:00:00",
+      12,
+      "2025-01-01T00:00:00",
+      "2025-12-01T00:00:00",
       76813.08333333333,
-      0.19216669903239159,
-      12
+      91574.0,
+      "2025-12-01T00:00:00",
+      0.19216669903239159
      ]
     ],
     "warnings": []
@@ -157,7 +188,7 @@
      "best_month",
      "best_month_sales",
      "avg_monthly_sales",
-     "fraction_above_avg"
+     "above_avg_fraction"
     ],
     "rows": [
      [
@@ -203,7 +234,7 @@
       0.19216669903239159
      ]
     ],
-    "message": "Pre-tax sales (SUM(subtotal)/100). Each store's average covers only the 2025 months in which it had orders: 12 months for most stores, 8 for New Orleans (opened 8 May 2025) and 2 for Los Angeles (opened 11 Nov 2025). Each store's opening month is partial, which pulls down its average and inflates its gap; Los Angeles in particular has a very small sample."
+    "message": "Here is each store's best 2025 month by pre-tax sales (subtotal ÷ 100), compared with its average month. All of 2025 is in the data, which runs to 29 Oct 2026, so no month was left out as incomplete.\n\n| Store | Best month | Best-month sales | Average month | Above average |\n|---|---|---|---|---|\n| Brooklyn | Mar 2025 | $117,535 | $105,264.67 | 0.1166 |\n| Chicago | Dec 2025 | $98,881 | $85,512.25 | 0.1563 |\n| Los Angeles | Dec 2025 | $23,584 | $18,636.50 | 0.2655 |\n| New Orleans | Dec 2025 | $53,525 | $31,284.75 | 0.7109 |\n| Philadelphia | Jan 2025 | $73,597 | $66,507.08 | 0.1066 |\n| San Francisco | Dec 2025 | $91,574 | $76,813.08 | 0.1922 |\n\n- **Which months were averaged:** for each store, I averaged the 2025 months that had sales. Brooklyn, Chicago, Philadelphia and San Francisco were open all 12 months. New Orleans opened 8 May 2025, so it's averaged over May–Dec (8 months). Los Angeles opened 11 Nov 2025, so it's averaged over Nov–Dec (2 months).\n- **Opening months count as full months:** each store's opening month is included even though it was open only part of that month. This pulls the average down for New Orleans (opened in May) and Los Angeles (opened in November).\n- **Small samples:** Los Angeles and New Orleans have the largest gaps above average, but both rest on few months that include a partial first month. Their figures mostly show sales growing after opening, so they don't compare fairly with the stores open all year.\n- **Opening dates differ from the business notes:** the dates above come from the stores table and don't match the notes (which say, for example, Los Angeles opened in October 2025). I used the dates in the data."
    },
    "result_text": "Answer submitted.",
    "is_error": false,
@@ -212,15 +243,15 @@
   }
  ],
  "usage": {
-  "input_tokens": 4,
-  "output_tokens": 467,
-  "cache_read_tokens": 5879,
-  "cache_write_tokens": 1073,
+  "input_tokens": 6,
+  "output_tokens": 699,
+  "cache_read_tokens": 9705,
+  "cache_write_tokens": 1478,
   "partial": false
  },
- "cost_usd": 0.015896800000000003,
- "duration_s": 15.961830232001375,
- "turns": 6,
+ "cost_usd": 0.023335,
+ "duration_s": 17.445099839998875,
+ "turns": 7,
  "end_reason": "submitted",
  "error": null
 }

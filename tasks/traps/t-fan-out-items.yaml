@@ -18,4 +18,4 @@ naive_sql:
     select o.region, sum(distinct o.amount) as revenue, count(*) as lines
     from orders_flat o join order_items i on i.order_id = o.id
     group by 1
-compare: {keys: [region], values: [revenue, lines]}
+compare: {keys: [region], values: [revenue, lines], extra_zero_rows: true}

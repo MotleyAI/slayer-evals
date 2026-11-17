@@ -42,7 +42,7 @@ SCHEMA = """
 CREATE TABLE regions (id INTEGER PRIMARY KEY, name VARCHAR);
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY, name VARCHAR, region_id INTEGER REFERENCES regions (id), city VARCHAR,
-  tier VARCHAR, credit DOUBLE, discount DOUBLE
+  tier VARCHAR, credit DOUBLE, discount DOUBLE, tags VARCHAR[]
 );
 CREATE TABLE orders (
   id INTEGER PRIMARY KEY, customer_id INTEGER REFERENCES customers (id), amount DOUBLE, status VARCHAR,
@@ -61,7 +61,9 @@ LEFT JOIN regions r ON c.region_id = r.id;
 """
 # The benchmark's own tables, created after the probe tables so those stay exactly as before.
 EXTRA_SCHEMA = """
-CREATE TABLE products (id INTEGER PRIMARY KEY, name VARCHAR, category VARCHAR, list_price DOUBLE);
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY, name VARCHAR, category VARCHAR, list_price DOUBLE, ratings INTEGER[]
+);
 CREATE TABLE order_items (
   id INTEGER PRIMARY KEY, order_id INTEGER REFERENCES orders (id), product_id INTEGER REFERENCES products (id),
   quantity INTEGER, line_amount DOUBLE
@@ -109,6 +111,22 @@ PLANTED_CUSTOMERS = [
     (NO_ORDERS_CUSTOMER, "Frank Moreau", 1, "Oslo", "gold", 600.0, 0.0),
     (NULL_REGION_CUSTOMER, "Eve Lund", None, "Paris", "silver", 500.0, 5.0),
 ]
+# Tag pools: shared, plus extras by region and tier, so groups differ in their tag sets.
+BASE_TAGS = ["vip", "eu", "partner", "newsletter"]
+REGION_TAGS = {1: ["nordic"], 3: ["alpine"]}
+TIER_TAGS = {"gold": ["wholesale"], "bronze": ["trial"]}
+TAG_COUNTS = ([0, 1, 2, 3, 4], [0.1, 0.3, 0.3, 0.2, 0.1])
+NULL_LIST_RATE = 0.06
+# List witnesses on fixed ids: a repeated element, a NULL element next to others, an empty list, a NULL list.
+TAG_WITNESSES: dict[int, list[str | None] | None] = {
+    1: ["vip", "eu", "vip"],
+    2: ["newsletter", None],
+    3: [],
+    4: None,
+    NO_ORDERS_CUSTOMER: ["vip", "nordic"],
+    NULL_REGION_CUSTOMER: ["vip", "eu"],
+}
+RATING_WITNESSES: dict[int, list[int | None] | None] = {1: [5, 4, 5], 2: [3, None, 4], 3: [], 4: None}
 PLANTED_EVENTS = [
     (9001, 1.0, _naive(2025, 3, 1, 9, 2, 0)),
     (9002, 2.0, _naive(2025, 3, 1, 9, 14, 59)),
@@ -138,6 +156,17 @@ def _customers(seed: int) -> list[tuple[Any, ...]]:
         discount = float(rng.choice([0, 0, 1, 2, 3, 5, 10]))
         rows.append((cid, name, region, rng.choice(CITIES[region]), tier, credit, discount))
     return rows + PLANTED_CUSTOMERS
+
+
+def _tags(seed: int, customers: list[tuple[Any, ...]]) -> dict[int, list[str | None] | None]:
+    rng = _rng(seed, "customer_tags")
+    tags: dict[int, list[str | None] | None] = {}
+    for cid, _, region, _, tier, _, _ in customers:
+        pool = BASE_TAGS + REGION_TAGS.get(region, []) + TIER_TAGS.get(tier, [])
+        n = rng.choices(TAG_COUNTS[0], weights=TAG_COUNTS[1])[0]
+        drawn: list[str | None] = list(rng.sample(pool, n))
+        tags[cid] = None if rng.random() < NULL_LIST_RATE else drawn
+    return tags | TAG_WITNESSES
 
 
 def _orders(seed: int) -> list[tuple[Any, ...]]:
@@ -192,7 +221,12 @@ def _products(seed: int) -> list[tuple[Any, ...]]:
     for pid in range(1, N_PRODUCTS + 1):
         category = CATEGORIES[(pid - 1) % len(CATEGORIES)]
         rows.append((pid, f"{category} item {pid}", category, round(rng.uniform(5, 120), 2)))
-    return rows
+    ratings_rng = _rng(seed, "product_ratings")
+    ratings: dict[int, list[int | None] | None] = {
+        pid: [ratings_rng.randint(1, 5) for _ in range(ratings_rng.randint(1, 8))] for pid, *_ in rows
+    }
+    ratings |= RATING_WITNESSES
+    return [(*row, ratings[row[0]]) for row in rows]
 
 
 def _split_cents(rng: random.Random, cents: int, parts: int) -> list[int]:
@@ -241,11 +275,13 @@ def build_database(path: Path, seed: int = DEFAULT_SEED) -> Path:
             if stmt:
                 con.execute(stmt)
         con.executemany("INSERT INTO regions VALUES (?, ?)", REGIONS)
-        con.executemany("INSERT INTO customers VALUES (?, ?, ?, ?, ?, ?, ?)", _customers(seed))
+        customers = _customers(seed)
+        tags = _tags(seed, customers)
+        con.executemany("INSERT INTO customers VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [(*c, tags[c[0]]) for c in customers])
         con.executemany("INSERT INTO orders VALUES (?, ?, ?, ?, ?)", orders)
         con.executemany("INSERT INTO returns VALUES (?, ?, ?, ?)", _returns(seed, orders))
         con.executemany("INSERT INTO events VALUES (?, ?, ?)", _events(seed))
-        con.executemany("INSERT INTO products VALUES (?, ?, ?, ?)", _products(seed))
+        con.executemany("INSERT INTO products VALUES (?, ?, ?, ?, ?)", _products(seed))
         con.executemany("INSERT INTO order_items VALUES (?, ?, ?, ?, ?)", _order_items(seed, orders))
         con.executemany("INSERT INTO campaigns VALUES (?, ?, ?, ?)", CAMPAIGNS)
         con.executemany("INSERT INTO campaign_members VALUES (?, ?, ?)", _campaign_members(seed))

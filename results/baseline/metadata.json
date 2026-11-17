@@ -1,5 +1,5 @@
 {
- "slayer_version": "1.1.0",
+ "slayer_version": "1.8.5",
  "sdk_version": "0.2.163",
  "models": [
   "claude-opus-5-5"
@@ -7,14 +7,16 @@
  "profiles": [
   "slayer",
   "slayer+python",
-  "sql+python"
+  "sql+python",
+  "motley",
+  "motley+python"
  ],
  "mode": "repeat",
  "n": 1,
  "max_turns": 60,
  "timeout_s": 900.0,
  "auth_mode": "subscription",
- "started_at": "2026-11-16T14:57:33Z",
- "motley_url": null,
- "motley_server_info": null
+ "started_at": "2026-11-17T10:22:57Z",
+ "motley_url": "http://localhost:8100/api/v1/mcp/",
+ "motley_server_info": "motley 1.30.0"
 }

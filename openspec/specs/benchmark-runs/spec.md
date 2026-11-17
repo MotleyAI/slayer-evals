@@ -85,11 +85,13 @@ It SHALL record the SLayer version, the agent SDK version, the model id, budgets
 
 ### Requirement: Run output
 A run SHALL write, under a timestamped run directory: one results line per trial (task, dataset, covers, profile,
-model, trial index, verdict with reasons, end reason, usage, cost, duration), the normalized trace and the raw
-transcript per trial, the run metadata, and the report. Results SHALL be written as each trial completes, so an
-interrupted run keeps completed trials. A results line without a dataset SHALL read as dataset `bench`. A trial whose
-task is marked `xfail` for the trial's profile SHALL run and be reported separately from the pass rate; a trial in a
-profile the task's `xfail` does not name SHALL count normally.
+model, trial index, SLayer version, verdict with reasons, end reason, usage, cost, duration), the normalized trace and
+the raw transcript per trial, the run metadata, and the report. A results line's SLayer version SHALL be the version of
+the SLayer that answered the trial: the version the run recorded for the local SLayer, or, for a Motley trial, the
+Motley backend's SLayer version the run was given. Results SHALL be written as each trial completes, so an interrupted
+run keeps completed trials. A results line without a dataset SHALL read as dataset `bench`. A trial whose task is
+marked `xfail` for the trial's profile SHALL run and be reported separately from the pass rate; a trial in a profile
+the task's `xfail` does not name SHALL count normally.
 
 #### Scenario: Interrupted run keeps results
 - **WHEN** a run is interrupted after some trials completed
@@ -103,6 +105,14 @@ profile the task's `xfail` does not name SHALL count normally.
 - **WHEN** a task's `xfail` names only `motley` and `motley+python`, and the task runs in `slayer` and `motley`
 - **THEN** the `motley` trial's results line carries the xfail issue and the `slayer` trial's does not
 
+#### Scenario: Results line names its SLayer version
+- **WHEN** a run with the Motley backend's SLayer version `1.8.2` completes a trial in `slayer` and one in `motley`
+- **THEN** the `slayer` line carries the SLayer version recorded in the run metadata and the `motley` line carries `1.8.2`
+
+#### Scenario: Results line without a version rejected
+- **WHEN** a report is generated from a results file whose line lacks the SLayer version
+- **THEN** loading fails naming the missing field
+
 ### Requirement: Auto-failed trials
 A trial of a task with `uses_saved` in profile `sql+python` SHALL NOT start an agent: it SHALL be recorded as a trial
 with end reason `auto_fail`, a trace holding only the profile, and the verdict grading gives it, and it counts in every
@@ -113,23 +123,28 @@ total like any other trial. In `until-pass` mode such a combination SHALL have e
 - **THEN** its results line has end reason `auto_fail`, a failed verdict naming `monthly_rev`, and no transcript, and no agent process was started
 
 ### Requirement: Motley under test
-A run that selects a Motley profile SHALL take the Motley MCP URL (default `http://localhost:8100/api/v1/mcp/`) and a
-seed command, and MUST refuse to start, naming the missing option, when no seed command is given. Before each Motley
-trial it SHALL run the seed command with `--user-id <id> --store <the trial's store copy> --db <the run's database
-file of the trial's dataset, as an absolute path>`, with the run's environment minus the Claude and Anthropic
-credentials, within the trial's concurrency slot, under a timeout, and SHALL stop the command and every process it
-started when the timeout passes or the run is interrupted. The user id SHALL match `[A-Za-z0-9_-]{1,64}`, SHALL be
-derived from the run directory and the trial, and SHALL differ between any two trials and between any two runs. A seed
-that fails or times out SHALL end that trial with end reason `error` and an error carrying the end of the seed's error
-output, without starting an agent. Before the first trial the run SHALL, for each dataset that the run's Motley trials
-use, seed one warm-up organization from that dataset's store and database under a user id of its own, and SHALL
-complete an MCP `initialize` with a warm-up user's id; any failure of either MUST stop the run before any trial,
-naming the cause. The run metadata SHALL record the Motley URL and the server name and version that `initialize`
-reports, and SHALL record neither when no Motley profile is selected.
+A run that selects a Motley profile SHALL take the Motley MCP URL (default `http://localhost:8100/api/v1/mcp/`), a
+seed command and the SLayer version the Motley backend runs, and MUST refuse to start, naming the missing option, when
+no seed command or no backend SLayer version is given. Before each Motley trial it SHALL run the seed command with
+`--user-id <id> --store <the trial's store copy> --db <the run's database file of the trial's dataset, as an absolute
+path>`, with the run's environment minus the Claude and Anthropic credentials, within the trial's concurrency slot,
+under a timeout, and SHALL stop the command and every process it started when the timeout passes or the run is
+interrupted. The user id SHALL match `[A-Za-z0-9_-]{1,64}`, SHALL be derived from the run directory and the trial, and
+SHALL differ between any two trials and between any two runs. A seed that fails or times out SHALL end that trial with
+end reason `error` and an error carrying the end of the seed's error output, without starting an agent. Before the
+first trial the run SHALL, for each dataset that the run's Motley trials use, seed one warm-up organization from that
+dataset's store and database under a user id of its own, and SHALL complete an MCP `initialize` with a warm-up user's
+id; any failure of either MUST stop the run before any trial, naming the cause. The run metadata SHALL record the
+Motley URL and the server name and version that `initialize` reports, and SHALL record neither when no Motley profile
+is selected.
 
 #### Scenario: Motley profile without a seed command
 - **WHEN** a run selects `motley` and gives no seed command
 - **THEN** it refuses to start and names the missing option
+
+#### Scenario: Motley profile without the backend's SLayer version
+- **WHEN** a run selects `motley` with a seed command but no backend SLayer version
+- **THEN** it refuses to start, names the missing option, and seeds nothing
 
 #### Scenario: Seed before each Motley trial
 - **WHEN** a Motley trial runs

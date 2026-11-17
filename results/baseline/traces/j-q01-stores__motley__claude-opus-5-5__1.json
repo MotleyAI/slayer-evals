@@ -1,0 +1,203 @@
+{
+ "profile": "motley",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "stores opening date"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"Partial periods: 2022 and the current month/year are incomplete; compare YTD like-for-like\",\n      \"id\": \"jaffle-data-coverage\",\n      \"learning\": \"Order data starts on 2022-09-19 (Philadelphia opened 2022-09-26), so 2022 is a partial year. The latest data is usually mid-month: check ordered_at:max before any \\\"this month / this year / YTD\\\" question. Treat the current month as incomplete (whole_periods_only: true). Compare year-to-date against the same calendar cut-off in the prior year, never against the full prior year. Stores that opened mid-period (e.g. Los Angeles, Oct 2025) have small samples; flag this when they top a ranking.\",\n      \"linked_entities\": [\n        \"orders.ordered_at\",\n        \"stores.opened_at\",\n        \"stores.name\"\n      ]\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03278688524590164,\n      \"description\": \"When the store opened.\",\n      \"id\": \"stores.opened_at\",\n      \"source_id\": \"01a1e915-edbf-71a1-9f08-f55e794d8afe\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03225806451612903,\n      \"description\": \"Growth / YoY: always report headline AND same-store growth (stores open for both full periods)\",\n      \"id\": \"jaffle-same-store-growth\",\n      \"learning\": \"For any growth or year-over-year question at company level, report two numbers: the headline growth, and same-store growth. Same-store growth counts only stores open for the whole of both periods: filter stores.opened_at < the start of the earlier period. Store openings: Philadelphia Sep 2022, Brooklyn Apr 2023, Chicago May 2024, San Francisco Jun 2024, New Orleans Apr 2025, Los Angeles Oct 2025. Headline growth is driven mostly by new stores; same-store growth is the underlying health of the business. Example: 2025 vs 2024 net sales grew +69% headline but only about +4% same-store (Philadelphia + Brooklyn). Explain the gap by naming which stores opened or had their first full year.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\",\n        \"stores.opened_at\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": null,\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"year\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": [\n          \"stores.opened_at < '2024-01-01'\",\n          \"ordered_at >= '2024-01-01'\",\n          \"ordered_at < '2026-01-01'\"\n        ],\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"model\",\n      \"score\": 0.03225806451612903,\n      \"description\": null,\n      \"id\": \"stores\",\n      \"source_id\": \"01a1e915-edbf-71a1-9f08-f55e794d8afe\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03149801587301587,\n      \"description\": \"Example query: monthly pre-tax net sales by store\",\n      \"id\": \"jaffle-monthly-store-revenue\",\n      \"learning\": \"Monthly sales by store: net_sales (pre-tax, dollars) by stores.name over month(ordered_at). Use net_sales rather than total_revenue so stores with different tax rates compare fairly (see jaffle-revenue-definition). Drop the current incomplete month (see jaffle-data-coverage).\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.ordered_at\",\n        \"orders.net_sales\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": [\n          {\n            \"dimension\": {\n              \"name\": \"ordered_at\",\n              \"model\": null,\n              \"label\": null\n            },\n            \"granularity\": \"month\",\n            \"date_range\": null,\n            \"label\": null\n          }\n        ],\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": true,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.030798389007344232,\n      \"description\": \"Store where the order was placed.\",\n      \"id\": \"orders.store_id\",\n      \"source_id\": \"01a1e915-edbf-71a1-9f08-f55e794d8afe\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03055037313432836,\n      \"description\": \"\\\"Revenue\\\", \\\"sales\\\" and \\\"AOV\\\" mean pre-tax (net_sales) unless the user asks for gross\",\n      \"id\": \"jaffle-revenue-definition\",\n      \"learning\": \"When a user says \\\"revenue\\\", \\\"sales\\\" or \\\"AOV\\\" without qualification, use pre-tax figures: orders.net_sales, and net AOV = net_sales / order_count. total_revenue and the saved avg_order_value include sales tax, which is collected for the state, not earned. Store tax rates run from 4% (Brooklyn, New Orleans) to 8% (Los Angeles), so tax-inclusive figures distort store comparisons (e.g. in 2025 Brooklyn ranks 5th of 6 on tax-inclusive AOV but 2nd on pre-tax AOV). Use total_revenue / avg_order_value only when asked for gross or tax-inclusive numbers, and always state which basis you used.\",\n      \"linked_entities\": [\n        \"orders\",\n        \"stores.name\",\n        \"orders.net_sales\",\n        \"orders.order_count\"\n      ],\n      \"query\": {\n        \"version\": 6,\n        \"name\": null,\n        \"source_model\": \"orders\",\n        \"measures\": [\n          {\n            \"formula\": \"net_sales\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"net_sales / order_count\",\n            \"name\": \"net_aov\",\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          },\n          {\n            \"formula\": \"order_count\",\n            \"name\": null,\n            \"label\": null,\n            \"description\": null,\n            \"type\": null,\n            \"meta\": null\n          }\n        ],\n        \"dimensions\": [\n          {\n            \"name\": \"name\",\n            \"model\": \"stores\",\n            \"label\": null\n          }\n        ],\n        \"time_dimensions\": null,\n        \"main_time_dimension\": null,\n        \"filters\": null,\n        \"variables\": null,\n        \"order\": null,\n        \"limit\": null,\n        \"offset\": null,\n        \"whole_periods_only\": false,\n        \"distinct_dimension_values\": true,\n        \"to_many_handling\": \"broadcast\"\n      }\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03055037313432836,\n      \"description\": \"When the order was placed.\",\n      \"id\": \"orders.ordered_at\",\n      \"source_id\": \"01a1e915-edbf-71a1-9f08-f55e794d8afe\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"measure\",\n      \"score\": 0.030536130536130537,\n      \"description\": \"Number of stores.\",\n      \"id\": \"stores.store_count\",\n      \"source_id\": \"01a1e915-edbf-71a1-9f08-f55e794d8afe\",\n      \"source_name\": \"demo_database\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030158730158730156,\n      \"description\": \"Time dimensions, granularities, and time-ordered formula resolution.\",\n      \"id\": \"help.time\",\n      \"learning\": \"# Time\\n\\nTime is the most load-bearing dimension in most analytical queries. Motley\\ntreats it specially in a few places.\\n\\n## time_dimensions vs plain dimensions on the same column\\n\\n- `time_dimensions: [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]`\\n  \\u2192 grouped by the **truncated** value. One row per month.\\n- `dimensions: [\\\"created_at\\\"]` \\u2192 grouped by the **raw** timestamp. One row per\\n  distinct timestamp.\\n\\nYou can use both forms of the same column in one query.\\n\\n## Granularities\\n\\n`second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`. Always\\nsupplied alongside a time dimension, and also used as an argument by\\n`time_shift(x, n, 'year')`.\\n\\n## date_range\\n\\nA time dimension may carry a `date_range: [start, end]` (ISO dates):\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\",\\n    \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\nThis becomes a WHERE filter. It does **not** itself snap to bucket edges (the\\nfirst/last bucket may be partial) \\u2014 use `whole_periods_only` for that.\\n\\n## whole_periods_only\\n\\nWhen `true`, Motley snaps the `date_range` to the granularity's bucket edges\\nand drops the current incomplete bucket. Useful when a dashboard should not\\nshow \\\"this month is half-done, the bar looks tiny\\\":\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}],\\n  \\\"whole_periods_only\\\": true\\n}\\n```\\n\\n## Which time dimension wins for transforms\\n\\nAll time-ordered transforms require an explicit `time_dimensions` entry.\\nWhen resolving which one to use:\\n\\n1. Single `time_dimensions` entry \\u2014 used directly.\\n2. Two or more time dimensions \\u2014 `main_time_dimension` disambiguates\\n   (or the model's `default_time_dimension`, if it is among the query's\\n   time dims).\\n\\nWithout any `time_dimensions` entry, transforms will error. Set\\n`main_time_dimension` whenever you have two or more time dimensions.\\n\\n## The three meanings of \\\"last\\\" \\u2014 don't mix them up\\n\\nMotley has **three** distinct things named `last`:\\n\\n1. `:last(time_col)` \\u2014 the **aggregation**. Per group, returns the value from\\n   the record with the latest `time_col`. See `memory:help.aggregations`.\\n\\n2. `last(x)` \\u2014 the **transform**. Broadcasts the aggregated value from the\\n   most recent time bucket to every row. See `memory:help.transforms`.\\n\\n3. `last(\\u2026)` inside a `filters` string (e.g. `\\\"last(change(revenue:sum)) < 0\\\"`)\\n   \\u2014 a post-filter on the transform output. See `memory:help.filters`.\\n\\nThey all concern \\\"latest something\\\" but operate on different levels: record /\\nbucket / filter. Pick the one that matches your question.\\n\\n## Year-over-year with time_shift\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"time_shift(revenue:sum, -1, 'year')\\\", \\\"name\\\": \\\"prev_year\\\"},\\n    {\\\"formula\\\": \\\"revenue:sum / time_shift(revenue:sum, -1, 'year') - 1\\\", \\\"name\\\": \\\"yoy_growth\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\n`change_pct(x)` takes a single argument and compares against the *previous period\\nat the query's granularity* \\u2014 here that is month-over-month, not YoY. For\\nyear-over-year, shift by a year explicitly with `time_shift(revenue:sum, -1, 'year')`\\nand take the ratio, as above.\\n\\n## See also\\n\\n- `memory:help.transforms` \\u2014 the transform family.\\n- `memory:help.aggregations` \\u2014 `:first` and `:last` aggregations.\\n- `memory:help.queries` \\u2014 where `time_dimensions` and `main_time_dimension` sit.\\n\",\n      \"linked_entities\": []\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "stores",
+     "dimensions": [
+      "name",
+      "opened_at"
+     ],
+     "distinct_dimension_values": false,
+     "order": [
+      {
+       "column": "opened_at",
+       "direction": "asc"
+      }
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"stores.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Store\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"stores.opened_at\",\n      \"role\": \"dimension\",\n      \"type\": \"TIMESTAMP\",\n      \"title\": \"Opened\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"stores.name\": \"Philadelphia\",\n      \"stores.opened_at\": \"2022-10-31 00:00:00\"\n    },\n    {\n      \"stores.name\": \"Brooklyn\",\n      \"stores.opened_at\": \"2023-05-11 00:00:00\"\n    },\n    {\n      \"stores.name\": \"Chicago\",\n      \"stores.opened_at\": \"2024-06-27 00:00:00\"\n    },\n    {\n      \"stores.name\": \"San Francisco\",\n      \"stores.opened_at\": \"2024-07-07 00:00:00\"\n    },\n    {\n      \"stores.name\": \"New Orleans\",\n      \"stores.opened_at\": \"2025-05-08 00:00:00\"\n    },\n    {\n      \"stores.name\": \"Los Angeles\",\n      \"stores.opened_at\": \"2025-11-11 00:00:00\"\n    }\n  ],\n  \"row_count\": 6,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e916-3212-7fd0-8fe1-bf5653addd45\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "stores.name",
+     "stores.opened_at"
+    ],
+    "rows": [
+     [
+      "Philadelphia",
+      "2022-10-31 00:00:00"
+     ],
+     [
+      "Brooklyn",
+      "2023-05-11 00:00:00"
+     ],
+     [
+      "Chicago",
+      "2024-06-27 00:00:00"
+     ],
+     [
+      "San Francisco",
+      "2024-07-07 00:00:00"
+     ],
+     [
+      "New Orleans",
+      "2025-05-08 00:00:00"
+     ],
+     [
+      "Los Angeles",
+      "2025-11-11 00:00:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "dimensions": [
+      "stores.name"
+     ],
+     "measures": [
+      "ordered_at:min"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.ordered_at:min\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"ordered_at:min\",\n      \"granularity\": null,\n      \"aggregation\": \"min\"\n    },\n    {\n      \"name\": \"orders.stores.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"Store\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.stores.name\": \"Brooklyn\",\n      \"orders.ordered_at:min\": \"2023-05-11 07:00:00\"\n    },\n    {\n      \"orders.stores.name\": \"Chicago\",\n      \"orders.ordered_at:min\": \"2024-06-27 07:00:00\"\n    },\n    {\n      \"orders.stores.name\": \"Los Angeles\",\n      \"orders.ordered_at:min\": \"2025-11-11 08:39:00\"\n    },\n    {\n      \"orders.stores.name\": \"New Orleans\",\n      \"orders.ordered_at:min\": \"2025-05-08 07:00:00\"\n    },\n    {\n      \"orders.stores.name\": \"Philadelphia\",\n      \"orders.ordered_at:min\": \"2022-10-31 09:52:00\"\n    },\n    {\n      \"orders.stores.name\": \"San Francisco\",\n      \"orders.ordered_at:min\": \"2024-07-07 07:07:00\"\n    }\n  ],\n  \"row_count\": 6,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e916-403a-75b1-a675-16079e19682b\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.ordered_at:min",
+     "orders.stores.name"
+    ],
+    "rows": [
+     [
+      "2023-05-11 07:00:00",
+      "Brooklyn"
+     ],
+     [
+      "2024-06-27 07:00:00",
+      "Chicago"
+     ],
+     [
+      "2025-11-11 08:39:00",
+      "Los Angeles"
+     ],
+     [
+      "2025-05-08 07:00:00",
+      "New Orleans"
+     ],
+     [
+      "2022-10-31 09:52:00",
+      "Philadelphia"
+     ],
+     [
+      "2024-07-07 07:07:00",
+      "San Francisco"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "report_feedback",
+   "args": {
+    "user_question": "How many stores do we have and when did each open?",
+    "category": "unclear_docs",
+    "body": "stores.opened_at (matches each store's first order) gives Philadelphia 2022-10-31, Brooklyn 2023-05-11, Chicago 2024-06-27, SF 2024-07-07, New Orleans 2025-05-08, LA 2025-11-11. Memories jaffle-same-store-growth and jaffle-data-coverage state Sep 2022/Apr 2023/May 2024/Jun 2024/Apr 2025/Oct 2025 and orders starting 2022-09-19 — these look outdated.",
+    "related_entities": [
+     "stores.opened_at",
+     "memory:jaffle-same-store-growth",
+     "memory:jaffle-data-coverage"
+    ]
+   },
+   "result_text": "{\n  \"recorded\": true,\n  \"feedback_id\": \"01a1e916-52a5-74f1-925d-5860319d8db2\",\n  \"feedback\": {\n    \"id\": \"01a1e916-52a5-74f1-925d-5860319d8db2\",\n    \"created_at\": \"2026-11-17T10:38:36.708160Z\",\n    \"category\": \"unclear_docs\",\n    \"status\": \"open\",\n    \"user_question\": \"How many stores do we have and when did each open?\",\n    \"body\": \"stores.opened_at (matches each store's first order) gives Philadelphia 2022-10-31, Brooklyn 2023-05-11, Chicago 2024-06-27, SF 2024-07-07, New Orleans 2025-05-08, LA 2025-11-11. Memories jaffle-same-store-growth and jaffle-data-coverage state Sep 2022/Apr 2023/May 2024/Jun 2024/Apr 2025/Oct 2025 and orders starting 2022-09-19 \\u2014 these look outdated.\",\n    \"related_entities\": [\n      \"stores.opened_at\",\n      \"memory:jaffle-same-store-growth\",\n      \"memory:jaffle-data-coverage\"\n    ],\n    \"session_id\": \"01a1e916-28ed-7192-952e-3a2aa027b102\",\n    \"tool_call_id\": \"01a1e916-526c-7961-8c72-5edf5d70aa33\",\n    \"mcp_session_id\": \"d465578b8cfc42cc8cb8a798e27d36d8\",\n    \"reported_by\": null,\n    \"resolved_by\": null,\n    \"resolved_at\": null,\n    \"resolution_note\": null,\n    \"session_url\": \"http://localhost:8100/usage/sessions/01a1e916-28ed-7192-952e-3a2aa027b102\",\n    \"call_url\": \"http://localhost:8100/usage/calls/01a1e916-526c-7961-8c72-5edf5d70aa33\"\n  },\n  \"message\": \"Reported to the admins of this semantic layer. If the data cannot answer the question reliably, tell the user so rather than guessing. inspect(reference='memory:help.intro', entity_type='memory') lists the help topics, and search(question='...') finds models and saved learnings.\"\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": "[\"store_name\", \"opened_at\"]",
+    "rows": "[[\"Philadelphia\", \"2022-10-31\"], [\"Brooklyn\", \"2023-05-11\"], [\"Chicago\", \"2024-06-27\"], [\"San Francisco\", \"2024-07-07\"], [\"New Orleans\", \"2025-05-08\"], [\"Los Angeles\", \"2025-11-11\"]]",
+    "message": "We have 6 stores. Opening dates come from stores.opened_at, and each one matches the day of that store's first order. Saved notes in the semantic layer give earlier opening months (e.g. Philadelphia Sep 2022); those notes look out of date, and I've reported this to the admins."
+   },
+   "result_text": "<tool_use_error>Error: No such tool available: mcp__motley__submit_answer</tool_use_error>",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "store_name",
+     "opened_at"
+    ],
+    "rows": [
+     [
+      "Philadelphia",
+      "2022-10-31"
+     ],
+     [
+      "Brooklyn",
+      "2023-05-11"
+     ],
+     [
+      "Chicago",
+      "2024-06-27"
+     ],
+     [
+      "San Francisco",
+      "2024-07-07"
+     ],
+     [
+      "New Orleans",
+      "2025-05-08"
+     ],
+     [
+      "Los Angeles",
+      "2025-11-11"
+     ]
+    ],
+    "message": "We have 6 stores. Opening dates come from stores.opened_at, and each one matches the day of that store's first order. Saved notes in the semantic layer give earlier opening months (e.g. Philadelphia Sep 2022); those notes look out of date, and I've reported this to the admins."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 10,
+  "output_tokens": 1104,
+  "cache_read_tokens": 364185,
+  "cache_write_tokens": 7973,
+  "partial": false
+ },
+ "cost_usd": 0.134822,
+ "duration_s": 23.858862016990315,
+ "turns": 8,
+ "end_reason": "submitted",
+ "error": null
+}

@@ -1,0 +1,13 @@
+id: q27-region-tag-set
+covers: [Q27]
+prompt: >-
+  For every region, including any region without customers, show the set of tags its customers carry, as one list of
+  distinct tags per region.
+truth_sql: |
+  select r.name as region,
+         coalesce(list_sort(list_distinct(list_filter(flatten(list(c.tags) filter (where c.tags is not null)),
+                                                      x -> x is not null))), []::varchar[]) as tag_set
+  from regions r left join customers c on c.region_id = r.id
+  group by 1
+slayer_query: {"query": {"source_model": "regions", "dimensions": ["name"], "measures": [{"formula": "collect(customers.tags.value)", "name": "tag_set"}]}}
+compare: {keys: [region], values: [tag_set]}

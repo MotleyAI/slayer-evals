@@ -1,0 +1,11 @@
+id: q27-customers-per-tag
+covers: [Q27]
+prompt: >-
+  For each tag, how many customers carry it?
+truth_sql: |
+  select u.tag, count(distinct c.id) as customers
+  from customers c, unnest(c.tags) as u(tag)
+  where u.tag is not null
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tags.value"], "measures": [{"formula": "count(*)", "name": "customers"}], "to_many_handling": "associate"}}
+compare: {keys: [tag], values: [customers]}

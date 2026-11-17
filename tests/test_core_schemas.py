@@ -74,7 +74,7 @@ def _trace() -> Trace:
 
 
 def test_rows():
-    assert ALL_ROWS == tuple(f"Q{i}" for i in range(1, 26))
+    assert ALL_ROWS == tuple(f"Q{i}" for i in range(1, 28))
     assert set(COVERED_ROWS) == set(ALL_ROWS) - {"Q19", "Q22"}
 
 
@@ -96,6 +96,10 @@ def test_pitfalls_are_the_closed_list():
         "timestamp_bounds",
         "avg_of_avgs",
         "bucket_reaggregation",
+        "count_after_unnest",
+        "unnest_fan_out",
+        "null_element",
+        "same_element_and",
     )
     assert not set(PITFALLS) & set(ALL_ROWS)
 
@@ -150,6 +154,7 @@ def test_trial_result_round_trip():
         profile="sql+python",
         model="claude-opus-5-5",
         trial=2,
+        slayer_version="1.7.0",
         verdict=Verdict(
             correct=True,
             single_query=False,
@@ -163,6 +168,21 @@ def test_trial_result_round_trip():
         xfail=None,
     )
     assert TrialResult.model_validate_json(tr.model_dump_json()) == tr
+
+
+def test_trial_result_requires_slayer_version():
+    line = {
+        "task_id": "q1",
+        "covers": ["Q1"],
+        "profile": "slayer",
+        "model": "m",
+        "trial": 1,
+        "verdict": None,
+        "end_reason": "submitted",
+    }
+    with pytest.raises(ValidationError, match="slayer_version"):
+        TrialResult.model_validate(line)
+    assert TrialResult.model_validate({**line, "slayer_version": "1.7.0"}).slayer_version == "1.7.0"
 
 
 def test_flags_renamed():
@@ -192,7 +212,14 @@ def test_dataset_registry():
 
 def test_result_line_without_dataset_reads_as_bench():
     line = TrialResult(
-        task_id="q1", covers=["Q1"], profile="slayer", model="m", trial=1, verdict=None, end_reason="submitted"
+        task_id="q1",
+        covers=["Q1"],
+        profile="slayer",
+        model="m",
+        trial=1,
+        slayer_version="1.8.5",
+        verdict=None,
+        end_reason="submitted",
     ).model_dump(exclude={"dataset"})
     assert "dataset" not in line
     assert TrialResult.model_validate(line).dataset == "bench"
@@ -206,6 +233,7 @@ def test_jaffle_result_round_trip():
         profile="sql+python",
         model="claude-opus-5-5",
         trial=1,
+        slayer_version="1.8.5",
         verdict=None,
         end_reason="submitted",
     )

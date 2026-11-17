@@ -8,14 +8,17 @@ from pathlib import Path
 import duckdb
 import pytest
 
+from slayer_evals.core import Table
 from slayer_evals.dataset import DEFAULT_SEED, BuiltDataset, build_database
-from tests.helpers import REPO
+from slayer_evals.tasks import run_references
+from tests.helpers import REPO, make_task
 
 PROBE_TABLES = ("regions", "customers", "orders", "returns", "events", "orders_flat")
 NEW_TABLES = ("products", "order_items", "campaigns", "campaign_members", "cities")
 TABLES = PROBE_TABLES + NEW_TABLES
 PROBE_HASHES = REPO / "tests" / "fixtures" / "probe_table_hashes.json"
 
+# The probe dataset's columns; the benchmark adds `ADDED_COLUMNS` after them.
 SCHEMA = {
     "regions": [("id", "INTEGER"), ("name", "VARCHAR")],
     "customers": [
@@ -49,15 +52,21 @@ SCHEMA = {
         ("discount", "DOUBLE"),
     ],
 }
+ADDED_COLUMNS = {"customers": [("tags", "VARCHAR[]")]}
 
 
-def table_hash(db: Path, table: str) -> str:
+def table_hash(db: Path, table: str, columns: str = "*") -> str:
     con = duckdb.connect(str(db), read_only=True)
     try:
-        rows = con.execute(f"select * from {table} order by all").fetchall()
+        rows = con.execute(f"select {columns} from {table} order by all").fetchall()
     finally:
         con.close()
     return hashlib.sha256(repr(rows).encode()).hexdigest()
+
+
+def probe_hash(db: Path, table: str) -> str:
+    """The canonical hash of `table`'s probe columns."""
+    return table_hash(db, table, ", ".join(c for c, _ in SCHEMA[table]))
 
 
 def scalar(db: Path, sql: str):
@@ -83,11 +92,18 @@ def test_different_seed_different_orders(tmp_path: Path):
     assert table_hash(a, "orders") != table_hash(b, "orders")
 
 
+def test_different_seed_different_lists(tmp_path: Path):
+    a = build_database(tmp_path / "a.duckdb", seed=DEFAULT_SEED)
+    b = build_database(tmp_path / "b.duckdb", seed=DEFAULT_SEED + 1)
+    assert table_hash(a, "customers", "id, tags") != table_hash(b, "customers", "id, tags")
+    assert table_hash(a, "products", "id, ratings") != table_hash(b, "products", "id, ratings")
+
+
 def test_probe_tables_unchanged(built: BuiltDataset):
     committed = json.loads(PROBE_HASHES.read_text())
     assert sorted(committed) == sorted(PROBE_TABLES)
     for table in PROBE_TABLES:
-        assert table_hash(built.db_path, table) == committed[table], table
+        assert probe_hash(built.db_path, table) == committed[table], table
 
 
 def test_new_tables_are_deterministic_and_seeded(tmp_path: Path):
@@ -105,7 +121,7 @@ def test_schema_matches_probe_layout(built: BuiltDataset):
                 "where table_name = ? order by ordinal_position",
                 [table],
             ).fetchall()
-            assert [tuple(r) for r in got] == cols, table
+            assert [tuple(r) for r in got] == cols + ADDED_COLUMNS.get(table, []), table
         fks = con.execute(
             "select table_name, constraint_column_names from duckdb_constraints() where constraint_type = 'FOREIGN KEY'"
         ).fetchall()
@@ -150,6 +166,22 @@ def test_new_tables_have_keys(built: BuiltDataset):
     assert {"order_id", "product_id", "line_amount"} <= columns["order_items"]
     assert {"campaign_id", "customer_id"} <= columns["campaign_members"]
     assert {"city", "region_id"} <= columns["cities"]
+
+
+def test_products_ratings_column(built: BuiltDataset):
+    con = duckdb.connect(str(built.db_path), read_only=True)
+    try:
+        got = con.execute(
+            "select data_type from information_schema.columns where table_name = 'products' and column_name = 'ratings'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert got == [("INTEGER[]",)]
+    assert (
+        scalar(built.db_path, "select count(*) from products p, unnest(p.ratings) u(r) where r not between 1 and 5")
+        == 0
+    )
+    assert scalar(built.db_path, "select count(*) from products p, unnest(p.ratings) u(r) where r is not null") > 0
 
 
 def test_orders_flat_left_joins(built: BuiltDataset):
@@ -229,6 +261,24 @@ EDGE_CASES = {
 }
 
 
+def _list_cases(table: str, column: str) -> dict[str, str]:
+    return {
+        f"{table}.{column}: repeated element": (
+            f"select count(*) from {table} where len(list_filter({column}, x -> x is not null)) > len(list_distinct({column}))"
+        ),
+        f"{table}.{column}: NULL element next to non-NULL ones": (
+            f"select count(*) from {table} where len(list_filter({column}, x -> x is null)) >= 1 "
+            f"and len(list_filter({column}, x -> x is not null)) >= 1"
+        ),
+        f"{table}.{column}: empty list": f"select count(*) from {table} where len({column}) = 0",
+        f"{table}.{column}: NULL list": f"select count(*) from {table} where {column} is null",
+    }
+
+
+EDGE_CASES |= _list_cases("customers", "tags") | _list_cases("products", "ratings")
+EDGE_CASES["customer tagged both vip and eu"] = "select count(*) from customers where list_has_all(tags, ['vip', 'eu'])"
+
+
 @pytest.mark.parametrize("name", sorted(EDGE_CASES))
 def test_planted_edge_case_present(built: BuiltDataset, name: str):
     assert scalar(built.db_path, EDGE_CASES[name]) >= 1, name
@@ -242,3 +292,48 @@ def test_month_gap_inside_order_range(built: BuiltDataset):
         "where not exists (select 1 from orders o where date_trunc('month', o.order_date) = s.m)",
     )
     assert gaps >= 1
+
+
+def test_store_list_columns_usable(built: BuiltDataset):
+    vip = make_task(
+        id="vip",
+        covers=["Q27"],
+        slayer_query={
+            "query": {
+                "source_model": "customers",
+                "measures": [{"formula": "count(*)", "name": "n"}],
+                "filters": ["contains(tags, 'vip')"],
+            }
+        },
+    )
+    ratings = make_task(
+        id="ratings",
+        covers=["Q27"],
+        slayer_query={
+            "query": {"source_model": "products", "measures": [{"formula": "avg(ratings.value)", "name": "avg_rating"}]}
+        },
+    )
+    refs = run_references([vip, ratings], built.store_dir, built.db_path)
+    for tid in ("vip", "ratings"):
+        table = refs[tid].table
+        assert refs[tid].error is None, (tid, refs[tid].error)
+        assert isinstance(table, Table)
+        assert len(table.rows) == 1, tid
+        assert table.rows[0][0] is not None, tid
+
+
+TAG_SET = "list_sort(list_distinct(list_filter(flatten(list(coalesce(c.tags, []))), x -> x is not null)))"
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [
+        f"select r.name, {TAG_SET} as s from customers c join regions r on r.id = c.region_id group by 1",
+        f"select c.tier, {TAG_SET} as s from customers c group by 1",
+    ],
+    ids=["region", "tier"],
+)
+def test_tag_spread_differs_between_groups(built: BuiltDataset, groups: str):
+    # Per-group tag tasks only discriminate when groups carry different tags and different numbers of them.
+    assert scalar(built.db_path, f"select count(distinct s) from ({groups})") >= 2
+    assert scalar(built.db_path, f"select count(distinct len(s)) from ({groups})") >= 2

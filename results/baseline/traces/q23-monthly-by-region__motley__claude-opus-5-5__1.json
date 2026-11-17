@@ -1,0 +1,348 @@
+{
+ "profile": "motley",
+ "calls": [
+  {
+   "tool": "search",
+   "args": {
+    "question": "monthly_rev saved monthly revenue query"
+   },
+   "result_text": "{\n  \"results\": [\n    {\n      \"kind\": \"model\",\n      \"score\": 0.03278688524590164,\n      \"description\": null,\n      \"id\": \"monthly_rev\",\n      \"source_id\": \"01a1e91d-adfe-7360-b62c-0bdf50117f11\",\n      \"source_name\": \"bench\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.032266458495966696,\n      \"description\": \"Time dimensions, granularities, and time-ordered formula resolution.\",\n      \"id\": \"help.time\",\n      \"learning\": \"# Time\\n\\nTime is the most load-bearing dimension in most analytical queries. Motley\\ntreats it specially in a few places.\\n\\n## time_dimensions vs plain dimensions on the same column\\n\\n- `time_dimensions: [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]`\\n  \\u2192 grouped by the **truncated** value. One row per month.\\n- `dimensions: [\\\"created_at\\\"]` \\u2192 grouped by the **raw** timestamp. One row per\\n  distinct timestamp.\\n\\nYou can use both forms of the same column in one query.\\n\\n## Granularities\\n\\n`second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`. Always\\nsupplied alongside a time dimension, and also used as an argument by\\n`time_shift(x, n, 'year')`.\\n\\n## date_range\\n\\nA time dimension may carry a `date_range: [start, end]` (ISO dates):\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\",\\n    \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\nThis becomes a WHERE filter. It does **not** itself snap to bucket edges (the\\nfirst/last bucket may be partial) \\u2014 use `whole_periods_only` for that.\\n\\n## whole_periods_only\\n\\nWhen `true`, Motley snaps the `date_range` to the granularity's bucket edges\\nand drops the current incomplete bucket. Useful when a dashboard should not\\nshow \\\"this month is half-done, the bar looks tiny\\\":\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}],\\n  \\\"whole_periods_only\\\": true\\n}\\n```\\n\\n## Which time dimension wins for transforms\\n\\nAll time-ordered transforms require an explicit `time_dimensions` entry.\\nWhen resolving which one to use:\\n\\n1. Single `time_dimensions` entry \\u2014 used directly.\\n2. Two or more time dimensions \\u2014 `main_time_dimension` disambiguates\\n   (or the model's `default_time_dimension`, if it is among the query's\\n   time dims).\\n\\nWithout any `time_dimensions` entry, transforms will error. Set\\n`main_time_dimension` whenever you have two or more time dimensions.\\n\\n## The three meanings of \\\"last\\\" \\u2014 don't mix them up\\n\\nMotley has **three** distinct things named `last`:\\n\\n1. `:last(time_col)` \\u2014 the **aggregation**. Per group, returns the value from\\n   the record with the latest `time_col`. See `memory:help.aggregations`.\\n\\n2. `last(x)` \\u2014 the **transform**. Broadcasts the aggregated value from the\\n   most recent time bucket to every row. See `memory:help.transforms`.\\n\\n3. `last(\\u2026)` inside a `filters` string (e.g. `\\\"last(change(revenue:sum)) < 0\\\"`)\\n   \\u2014 a post-filter on the transform output. See `memory:help.filters`.\\n\\nThey all concern \\\"latest something\\\" but operate on different levels: record /\\nbucket / filter. Pick the one that matches your question.\\n\\n## Year-over-year with time_shift\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"time_shift(revenue:sum, -1, 'year')\\\", \\\"name\\\": \\\"prev_year\\\"},\\n    {\\\"formula\\\": \\\"revenue:sum / time_shift(revenue:sum, -1, 'year') - 1\\\", \\\"name\\\": \\\"yoy_growth\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\n    \\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\",\\n    \\\"date_range\\\": [\\\"2025-01-01\\\", \\\"2025-12-31\\\"]\\n  }]\\n}\\n```\\n\\n`change_pct(x)` takes a single argument and compares against the *previous period\\nat the query's granularity* \\u2014 here that is month-over-month, not YoY. For\\nyear-over-year, shift by a year explicitly with `time_shift(revenue:sum, -1, 'year')`\\nand take the ratio, as above.\\n\\n## See also\\n\\n- `memory:help.transforms` \\u2014 the transform family.\\n- `memory:help.aggregations` \\u2014 `:first` and `:last` aggregations.\\n- `memory:help.queries` \\u2014 where `time_dimensions` and `main_time_dimension` sit.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.03225806451612903,\n      \"description\": null,\n      \"id\": \"monthly_rev.rev\",\n      \"source_id\": \"01a1e91d-adfe-7360-b62c-0bdf50117f11\",\n      \"source_name\": \"bench\"\n    },\n    {\n      \"kind\": \"column\",\n      \"score\": 0.031746031746031744,\n      \"description\": null,\n      \"id\": \"monthly_rev.order_date\",\n      \"source_id\": \"01a1e91d-adfe-7360-b62c-0bdf50117f11\",\n      \"source_name\": \"bench\"\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03125763125763126,\n      \"description\": \"cumsum, time_shift, change, the rank family, lag/lead, and their wrapping rules.\",\n      \"id\": \"help.transforms\",\n      \"learning\": \"# Transforms\\n\\nTransforms are functions applied to aggregated measures, producing computed\\nmeasures: `cumsum(revenue:sum)`, `change(revenue:sum)`, etc. Each transform\\nbecomes an extra CTE in the generated SQL.\\n\\n## The transform family\\n\\n| Transform | Purpose | SQL strategy |\\n|-----------|---------|--------------|\\n| `cumsum(x)` | Running total over time | Window: `SUM(x) OVER (PARTITION BY dims ORDER BY time)` |\\n| `time_shift(x, n)` | Value N time buckets back/ahead (calendar-aware) | Self-join CTE with INTERVAL offset |\\n| `time_shift(x, n, 'year')` | Value at a different granularity offset (e.g. YoY) | Self-join CTE with INTERVAL offset |\\n| `change(x)` | Period-over-period difference (partition-safe, resets per group) | Desugars to `x \\u2212 time_shift(x, -1)` |\\n| `change_pct(x)` | Period-over-period % change, e.g. month-over-month growth (partition-safe; NULL when the prior period's value is 0 or missing) | Desugars to `CASE WHEN ts != 0 THEN (x \\u2212 ts) / ts END` where `ts = time_shift(x, -1)` |\\n| `lag(x, n)` / `lead(x, n)` | N rows back / ahead | `LAG` / `LEAD` window fn, partitioned by dimensions |\\n| `consecutive_periods(predicate)` | Current trailing run length where predicate is true | Staged window CTEs with reset groups |\\n| `rank(x, direction='desc'[, partition_by=...])` | Rank by x in the given direction; ties skip ranks | `RANK() OVER ([PARTITION BY ...] ORDER BY x DESC)` (`ASC` for `'asc'`) |\\n| `percent_rank(x[, partition_by=...])` | Relative rank in `[0, 1]`, ascending (lowest is 0) | `PERCENT_RANK() OVER ([PARTITION BY ...] ORDER BY x ASC)` |\\n| `dense_rank(x, direction='desc'[, partition_by=...])` | Rank by x in the given direction; ties don't skip ranks | `DENSE_RANK() OVER ([PARTITION BY ...] ORDER BY x DESC)` (`ASC` for `'asc'`) |\\n| `ntile(x, n=N[, partition_by=...])` | Bucket rows into N equal groups, ascending (bucket 1 holds the lowest) | `NTILE(N) OVER ([PARTITION BY ...] ORDER BY x ASC)` |\\n| `first(x)` | Broadcast earliest bucket's value to every row | Window |\\n| `last(x)` | Broadcast latest bucket's value to every row | Window |\\n\\n## Self-join vs window-function \\u2014 important trade-off\\n\\n`time_shift` (and `change`/`change_pct` which desugar into it) uses a\\n**self-join CTE** with an INTERVAL-shifted time column. The shifted sub-query\\napplies the time offset to every occurrence of the time dimension (WHERE,\\nGROUP BY, SELECT), so it can reach outside the current result set to fetch\\nthe previous/next value. Consequences:\\n\\n- No NULLs at the first / last rows when the database actually has the data.\\n- Handles **gaps** in the time series correctly \\u2014 shifts by calendar, not by row.\\n- **Partition-safe**: the join matches on all non-time dimensions as well as the\\n  shifted time column (`ON base.month = shifted.month AND base.store =\\n  shifted.store`), so each group's series is compared only against itself and\\n  resets cleanly per group.\\n- Slightly heavier SQL.\\n\\n`lag` and `lead` use SQL `LAG` / `LEAD`:\\n\\n- NULLs at the first / last N rows (the window can't see beyond the result set).\\n- Shift by **row position**, not by period \\u2014 skips produce wrong \\\"previous\\\".\\n- Faster, simpler SQL.\\n\\nUse `time_shift`, `change`, `change_pct` unless you have a specific reason to\\nprefer `lag` / `lead`.\\n\\n**Intent recipes:**\\n\\n- Month-over-month / period-over-period growth \\u2192 `change_pct(revenue:sum)`\\n  with a `time_dimensions` entry at the desired granularity. Prefer this over\\n  hand-building the ratio from `time_shift` \\u2014 same partition-safe self-join,\\n  cleaner SQL.\\n- Absolute period-over-period delta \\u2192 `change(revenue:sum)`.\\n- Comparing against a *different* grain than the query's (e.g. year-over-year\\n  on a monthly series), or using the shifted value as a term in custom\\n  arithmetic \\u2192 `time_shift(revenue:sum, -1, 'year')`.\\n\\n## Time dimension requirement\\n\\nAll time-ordered transforms (`cumsum`, `time_shift`, `change`, `change_pct`,\\n`first`, `last`, `lag`, `lead`, `consecutive_periods`) require an explicit\\n`time_dimensions` entry in the query. With a single entry it's used\\nautomatically; with 2+ entries, `main_time_dimension` disambiguates (or\\n`default_time_dimension` if among query's time dims). The rank-family\\ntransforms (`rank`, `percent_rank`, `dense_rank`, `ntile`) do **not** need a\\ntime dimension.\\n\\nTime-ordered window transforms partition by the query's non-time dimensions.\\nA `cumsum(revenue:sum)` grouped by `status` computes one running total per\\nstatus. The rank-family transforms default to **no `PARTITION BY`** \\u2014 they\\nrank across the entire result set unless `partition_by=` is passed.\\n\\n## consecutive_periods\\n\\n`consecutive_periods(predicate)` returns an integer count of how many\\nconsecutive output periods, ending at the current row, have `predicate` true.\\nFalse or NULL breaks the run and returns 0 for that row.\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    {\\\"formula\\\": \\\"consecutive_periods(revenue:sum > 0)\\\", \\\"name\\\": \\\"positive_run\\\"},\\n    {\\\"formula\\\": \\\"consecutive_periods(revenue:sum > 0) >= 3\\\", \\\"name\\\": \\\"positive_3_periods\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\n## Nesting\\n\\nWindow transforms can wrap self-join transforms: `cumsum(change(x))` works\\n(the identity `cumsum(change(x)) == x \\u2212 x[0]` holds for rows after the first).\\nSelf-join transforms cannot wrap other self-join or change transforms.\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"cumsum(change(revenue:sum))\\\", \\\"name\\\": \\\"cumsum_delta\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\n## Rank-family transforms\\n\\n`rank`, `percent_rank`, `dense_rank`, and `ntile` are all timeless ranking\\ntransforms. They order rows by the inner measure and emit a per-row rank value.\\n`rank` and `dense_rank` need a `direction`: `'desc'` ranks the highest value 1,\\n`'asc'` the lowest. `percent_rank` and `ntile` always order ascending. By\\ndefault they do **not** partition \\u2014 every row is ranked against every other row\\nin the result set:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"dimensions\\\": [\\\"customer_name\\\"],\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"rank(sum(revenue), direction='desc')\\\", \\\"name\\\": \\\"rnk\\\"}\\n  ],\\n  \\\"filters\\\": [\\\"rank(sum(revenue), direction='desc') <= 10\\\"]\\n}\\n```\\n\\nChoosing the right one:\\n\\n- `rank` \\u2014 standard SQL `RANK`; ties share a rank, skip the next (`1, 1, 3`).\\n- `dense_rank` \\u2014 ties share a rank, no gaps (`1, 1, 2`). Use for \\\"top N tiers\\\".\\n- `percent_rank` \\u2014 relative rank in `[0, 1]`, ascending (the lowest value is 0). Use for cross-query-comparable rankings.\\n- `ntile(x, n=N)` \\u2014 required `n=` kwarg, must be a positive integer; bucket all rows into `N` equal-sized groups in ascending order (bucket `1` holds the lowest values).\\n\\nTo rank within partitions, pass `partition_by=` referencing one or more query\\ndimensions or time dimensions. Columns must already be grouped on \\u2014 partitioning\\nby a non-dimension column errors at enrichment time:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"dimensions\\\": [\\\"region\\\", \\\"customer_name\\\"],\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"dense_rank(sum(revenue), direction='desc', partition_by=region)\\\", \\\"name\\\": \\\"rnk_in_region\\\"},\\n    {\\\"formula\\\": \\\"ntile(sum(revenue), n=4, partition_by=region)\\\", \\\"name\\\": \\\"quartile_in_region\\\"}\\n  ]\\n}\\n```\\n\\nMultiple partition columns: `partition_by=[region, channel]`. Cross-model\\ndotted paths work too: `partition_by=customers.region`.\\n\\nRaw `OVER (...)` SQL inside a `ModelMeasure.formula` or filter string is\\nrejected with an actionable error pointing at the rank-family / `first()` /\\n`last()` / `lag()` / `lead()` transforms. As an advanced escape hatch for a\\nnon-standard window expression, define a `Column` whose `sql` is that window\\nexpression and filter on the column \\u2014 Motley auto-promotes the predicate to a\\npost-aggregation outer `WHERE`. This is the one documented exception to the\\nrow-level `Column.sql` rule (see `memory:help.models`); prefer the built-in\\ntransforms whenever they cover the need.\\n\\n## first() and last() \\u2014 broadcast transforms\\n\\n`first(x)` projects the **earliest** bucket's aggregated value onto every row.\\n`last(x)` projects the **most recent** bucket's aggregated value onto every row.\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"first(revenue:sum)\\\", \\\"name\\\": \\\"initial_revenue\\\"},\\n    {\\\"formula\\\": \\\"last(revenue:sum)\\\", \\\"name\\\": \\\"latest_revenue\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\nUseful for filtering on trend: `\\\"filters\\\": [\\\"last(change(revenue:sum)) < 0\\\"]`.\\n\\n## See also\\n\\n- `memory:help.time` \\u2014 granularity, whole_periods_only, main_time_dimension.\\n- `memory:help.filters` \\u2014 filtering on transform outputs.\\n- `memory:help.aggregations` \\u2014 `:first`/`:last` aggregation vs `first()`/`last()` transform.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031099324975891997,\n      \"description\": \"Ad hoc columns/measures/joins, and saving a query as a model.\",\n      \"id\": \"help.extending\",\n      \"learning\": \"# Extending\\n\\nThree mechanisms let you reshape a query's world at query time without\\nediting the stored model.\\n\\n## ModelExtension \\u2014 inline tweaks to source_model\\n\\n`source_model` can be a plain string (model name) **or** an object that extends\\na named model for the lifetime of this query:\\n\\n```json\\n{\\n  \\\"source_model\\\": {\\n    \\\"source_name\\\": \\\"orders\\\",\\n    \\\"columns\\\": [{\\n      \\\"name\\\": \\\"tier\\\",\\n      \\\"sql\\\": \\\"CASE WHEN amount > 100 THEN 'high' ELSE 'low' END\\\",\\n      \\\"type\\\": \\\"string\\\"\\n    }],\\n    \\\"joins\\\": [{\\\"target_model\\\": \\\"customer_scores\\\", \\\"join_pairs\\\": [[\\\"customer_id\\\", \\\"id\\\"]]}]\\n  },\\n  \\\"measures\\\": [\\\"*:count\\\", \\\"revenue:sum\\\"],\\n  \\\"dimensions\\\": [\\\"tier\\\"]\\n}\\n```\\n\\nFields allowed on `ModelExtension`: `columns`, `measures` (named formulas),\\n`joins`. All optional. The stored `orders` model is not modified. A column\\nmay carry a `filter` condition \\u2014 aggregating it gives a filtered measure.\\n\\nUse this when the concept is one-off \\u2014 don't clutter the persisted model with\\nit.\\n\\n## Query lists \\u2014 named sub-queries\\n\\nPass a **list** of queries to `query`. Every earlier query\\ngets a `name`; later queries reference that name as if it were a stored model.\\nThe **last** query is the main one whose results are returned.\\n\\n```json\\n[\\n  {\\n    \\\"name\\\": \\\"monthly_store_revenue\\\",\\n    \\\"source_model\\\": \\\"orders\\\",\\n    \\\"measures\\\": [\\\"revenue:sum\\\"],\\n    \\\"dimensions\\\": [\\\"stores.name\\\"],\\n    \\\"time_dimensions\\\": [{\\\"column\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n  },\\n  {\\n    \\\"source_model\\\": \\\"monthly_store_revenue\\\",\\n    \\\"measures\\\": [\\\"revenue_sum:avg\\\"],\\n    \\\"dimensions\\\": [\\\"stores__name\\\"]\\n  }\\n]\\n```\\n\\nNamed queries **shadow** stored models if they share a name. To join a stored\\nmodel to a named query, use `ModelExtension` (`source_model` object) on the\\nouter query to declare the join explicitly.\\n\\nColumns of the inner query become measures and dimensions of the outer. Any\\ndotted name in the inner (`stores.name`) is rewritten to `__`\\n(`stores__name`) \\u2014 there is no join in the virtual model to walk.\\n\\n## create_model with a query \\u2014 persist as a real model\\n\\nIf the sub-query is useful beyond one call, persist it: call\\n`create_model` with a `query` parameter. The saved model becomes\\n**query-backed**: its `source_queries` field stores the query stages, and a\\nsave-time dry-run populates `columns` as a cache. It\\nthen behaves like any other model \\u2014 queryable by name via `query` or usable\\nas `source_model` in another query \\u2014 and is\\neditable. Variable defaults can live in `query_variables`. The cache is\\nrefreshed only when you save the model again, never during execution.\\n\\n## When to use which\\n\\n| Need | Use |\\n|------|-----|\\n| One-off expression column | `ModelExtension.columns` |\\n| One-off filtered measure | `ModelExtension.columns` with a `filter` |\\n| Re-aggregate an aggregate | Query list (two queries) |\\n| Persist a multi-stage result | `create_model` with a `query` |\\n| Join a named sub-query into the main query | `ModelExtension.joins` + query list |\\n\\n## See also\\n\\n- `memory:help.models` \\u2014 permanent model shape; `hidden: true` for internal ones.\\n- `memory:help.joins` \\u2014 the `__` vs dot convention for joined paths.\\n- `memory:help.workflow` \\u2014 when to extend inline vs edit the stored model.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.031054405392392875,\n      \"description\": \"Writing measure formulas: colon aggregations, arithmetic, and saved measures.\",\n      \"id\": \"help.formulas\",\n      \"learning\": \"# Formulas\\n\\nFormulas are the mini-language used inside `measures` (what to compute) and\\n`filters` (conditions). Parsed with Python's `ast` module \\u2014 so operator\\nprecedence matches Python.\\n\\n## Colon syntax\\n\\n`measure_name:aggregation` is how every aggregated value is expressed.\\n\\n| Form | Meaning |\\n|------|---------|\\n| `revenue:sum` | `SUM(revenue_measure_sql)` |\\n| `*:count` | `COUNT(*)` \\u2014 always available, no measure definition |\\n| `col:count` | `COUNT(col)` \\u2014 counts non-nulls |\\n| `col:count_distinct` | `COUNT(DISTINCT col)` |\\n| `price:weighted_avg(weight=quantity)` | custom-arg aggregation |\\n| `customers.score:avg` | cross-model \\u2014 measure from a joined model |\\n| `customers.regions.population:sum` | multi-hop cross-model |\\n\\n`*` can **only** combine with `count`. `*:sum`, `*:avg`, etc. are errors.\\n\\n## Arithmetic\\n\\nPython-style arithmetic over aggregated measures and literals:\\n\\n| Operator | Example |\\n|----------|---------|\\n| `+` `-` `*` `/` `**` | `\\\"revenue:sum / *:count\\\"` |\\n| parentheses | `\\\"(revenue:sum - cost:sum) / *:count\\\"` |\\n\\nInside a field, use a dict to name the result:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"*:count\\\",\\n    {\\\"formula\\\": \\\"revenue:sum / *:count\\\", \\\"name\\\": \\\"aov\\\", \\\"label\\\": \\\"AOV\\\"}\\n  ]\\n}\\n```\\n\\n## Nesting\\n\\nTransforms (see `memory:help.transforms`) can wrap measures, arithmetic, or\\neach other, but they follow compatibility rules. In particular `change`,\\n`change_pct`, and `time_shift` must wrap an aggregated measure directly; window\\ntransforms such as `cumsum` can wrap those (the reverse is rejected):\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    {\\\"formula\\\": \\\"cumsum(change(revenue:sum))\\\", \\\"name\\\": \\\"cumulative_change\\\"},\\n    {\\\"formula\\\": \\\"cumsum(revenue:sum / *:count)\\\", \\\"name\\\": \\\"running_aov\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\nEach level of nesting becomes an additional CTE in the generated SQL. Turn on\\n`show_sql=true` if you need to see the shape.\\n\\n## Saved formulas (named measures)\\n\\nA model's `measures` list is a library of named formulas. Queries reference\\nthem by **bare name** in any formula position \\u2014 root, inside transforms,\\ninside arithmetic:\\n\\n```yaml\\n# model\\nmeasures:\\n  - {name: aov, formula: \\\"revenue:sum / *:count\\\"}\\n  - {name: aov_pct, formula: \\\"change_pct(aov)\\\"}\\n```\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    {\\\"formula\\\": \\\"aov\\\"},\\n    {\\\"formula\\\": \\\"cumsum(aov)\\\"},\\n    {\\\"formula\\\": \\\"aov * 1.1\\\", \\\"name\\\": \\\"aov_with_markup\\\"}\\n  ],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\nBare references are inline-expanded at parse time. Saved formulas can\\nreference other saved formulas; cycles raise. Names matching built-in\\ntransforms (`cumsum`, `change`, `time_shift`, \\u2026) are rejected at model save.\\n\\n## Filter formulas\\n\\nThe same parser powers `filters`. Left and right of an operator can be a\\ndimension, a measure with `:agg`, or a transform expression. See\\n`memory:help.filters` for operators and routing.\\n\\n## Gotchas\\n\\n- Bare measure renames (`{\\\"formula\\\": \\\"*:count\\\", \\\"name\\\": \\\"n\\\"}`) can be\\n  referenced by either `n` or `*:count` in `filters`.\\n- Formulas validate measure names against the source model at query time.\\n  If you get \\\"measure not found\\\", call `inspect(reference=\\\"<model>\\\", entity_type=\\\"model\\\")`\\n  and check the actual measure list.\\n\\n## See also\\n\\n- `memory:help.aggregations` \\u2014 the full list of `:agg` options.\\n- `memory:help.transforms` \\u2014 `cumsum`, `change`, `time_shift`, etc.\\n- `memory:help.joins` \\u2014 dotted paths like `customers.score`.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030776515151515152,\n      \"description\": \"What a model is: columns, measures, source modes, and model-level filters.\",\n      \"id\": \"help.models\",\n      \"learning\": \"# Models\\n\\nA model maps a data table (or SQL subquery) to queryable columns and measures. This page\\ncovers the concepts; for the schema of `create_model` / `edit_model`, see\\nthose tools' own documentation.\\n\\n## Source: sql_table vs sql\\n\\nExactly one of:\\n\\n- `sql_table: \\\"public.orders\\\"` \\u2014 a named table in the underlying source.\\n- `sql: \\\"SELECT id, created_at, amount * quantity AS revenue FROM raw_orders\\\"`\\n  \\u2014 an inline SQL subquery. Useful for transforming or flattening before the\\n  semantic layer sees the data.\\n\\nEither becomes the FROM clause at query time. A model always belongs to an\\napp-managed source; you attach it by passing the source's `source_id` or\\n`source_name` to `create_model`.\\n\\n## Columns\\n\\nA model has a single `columns` list. Each column is a row-level SQL expression\\nthat can be used as a group-by key, an aggregation source, or both \\u2014 the role\\nis decided per query.\\n\\n```yaml\\ncolumns:\\n  - {name: id, sql: id, type: number, primary_key: true}\\n  - {name: status, sql: status, type: string}\\n  - {name: created_at, sql: created_at, type: time}\\n  - {name: revenue, sql: amount, type: number}\\n  - {name: quantity, sql: qty, type: number, allowed_aggregations: [sum, avg, min, max]}\\n```\\n\\nTypes: `string`, `number`, `boolean`, `time`, `date`. `label` is optional and\\npropagates to query result metadata. A column's `sql` is normally a\\n**row-level** expression, not an aggregate (the one exception is the advanced\\nwindow-expression escape hatch in `memory:help.transforms`). Plain column names\\nare fine; for complex expressions prefix with the model name:\\n\\n```yaml\\ncolumns:\\n  - {name: line_total, sql: \\\"orders.amount * orders.quantity\\\", type: number}\\n```\\n\\n`primary_key: true` restricts the column to `count`/`count_distinct`\\naggregations regardless of its type. `allowed_aggregations` further narrows\\nthe type-default whitelist (validated at model construction).\\n\\n## Named-formula measures\\n\\n`measures` is an optional library of saved formulas \\u2014 same shape as a\\nquery's inline `measures` entries. Queries reference them by bare name.\\n\\n```yaml\\nmeasures:\\n  - name: aov\\n    formula: \\\"revenue:sum / *:count\\\"\\n    label: \\\"Average Order Value\\\"\\n```\\n\\n## default_time_dimension\\n\\nAn optional model-level field naming the \\\"canonical\\\" time dimension. Used to\\ndisambiguate when a query has 2+ `time_dimensions` entries (and no\\n`main_time_dimension` is set). Also used by `:first` / `:last` aggregations\\nfor time column resolution. Transforms still require an explicit\\n`time_dimensions` entry in the query.\\n\\n```yaml\\nname: orders\\nsql_table: public.orders\\ndefault_time_dimension: created_at\\n```\\n\\n## hidden models\\n\\n`hidden: true` removes the model from discovery surfaces (`search` and the\\n`inspect` collection listing) but it remains queryable by name \\u2014 useful for\\ninternal building blocks that shouldn't clutter an agent's picture of the schema.\\n\\n## Result column naming\\n\\nMotley returns columns as `{model}.{col}`:\\n\\n| Query field | Result column |\\n|-------------|--------------|\\n| `*:count` on `orders` | `orders._count` |\\n| `revenue:sum` on `orders` | `orders.revenue_sum` |\\n| `customers.name` dimension | `orders.customers.name` |\\n| `customers.regions.name` multi-hop | `orders.customers.regions.name` |\\n\\nColon becomes underscore; `*:count` keeps a leading `_` so the alias never\\ncollides with a user-defined column literally named `count`. When writing\\n`order` clauses, use the short canonical name (`revenue_sum`, `count`) \\u2014 not\\nthe colon form. Example: `{\\\"column\\\": \\\"revenue_sum\\\", \\\"direction\\\": \\\"desc\\\"}` or\\n`{\\\"column\\\": \\\"count\\\", \\\"direction\\\": \\\"desc\\\"}`.\\n\\n## Saving a query as a model\\n\\nAny query can be persisted as a model via the `create_model` tool with a\\n`query` parameter. Column names in the new\\nmodel use `__` to encode the original join path:\\n\\n| Inner query field | New model column |\\n|-------------------|------------------|\\n| `stores.name` | `stores__name` |\\n| `customers.regions.name` | `customers__regions__name` |\\n| `revenue:sum` | `revenue_sum` |\\n\\nSee `memory:help.extending` for multi-stage queries using this.\\n\\n## See also\\n\\n- `memory:help.joins` \\u2014 `joins` list and the `__` SQL alias convention.\\n- `memory:help.extending` \\u2014 inline model extension for one-off dims/filters.\\n- `memory:help.filters` \\u2014 model-level `filters` and filtered measures.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.03055037313432836,\n      \"description\": \"WHERE vs HAVING routing, filters on measures/transforms, and {variable} placeholders.\",\n      \"id\": \"help.filters\",\n      \"learning\": \"# Filters\\n\\nFilters are formula strings. They go in the query's `filters` list and/or on\\na model's `filters` list. Motley routes them to the right SQL stage\\nautomatically \\u2014 there is no explicit HAVING keyword.\\n\\n## Operators\\n\\n| Operator | Example |\\n|----------|---------|\\n| `=` | `\\\"status = 'active'\\\"` |\\n| `<>` | `\\\"status <> 'cancelled'\\\"` |\\n| `>` `>=` `<` `<=` | `\\\"amount >= 100\\\"` |\\n| `in` | `\\\"status in ('a', 'b')\\\"` |\\n| `IS NULL` / `IS NOT NULL` | `\\\"discount IS NULL\\\"` |\\n| `like` / `not like` | `\\\"name like '%acme%'\\\"` |\\n\\n## Boolean logic\\n\\nCombine with `and`, `or`, `not` inside a **single** string:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"*:count\\\"],\\n  \\\"filters\\\": [\\\"status = 'completed' or status = 'pending'\\\"]\\n}\\n```\\n\\nMultiple entries in the `filters` list are AND-ed:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"*:count\\\"],\\n  \\\"filters\\\": [\\\"status = 'completed'\\\", \\\"amount > 100\\\"]\\n}\\n```\\n\\n## Auto-routing (where does each filter land?)\\n\\n- Filter references only dimensions / raw columns \\u2192 **WHERE** (inner query).\\n- Filter references an aggregated measure (e.g. `revenue:sum > 1000`) \\u2192\\n  **HAVING**.\\n- Filter references a transform or computed field (e.g.\\n  `change(revenue:sum) > 0`) \\u2192 **post-filter** on an outer wrapper.\\n\\nInner and outer filters can mix in one query \\u2014 Motley splits them.\\n\\n## Filtering on computed measures\\n\\nReference a named measure from `measures` by its `name`:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\n    \\\"revenue:sum\\\",\\n    {\\\"formula\\\": \\\"change(revenue:sum)\\\", \\\"name\\\": \\\"rev_change\\\"}\\n  ],\\n  \\\"filters\\\": [\\\"rev_change < 0\\\"],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\nOr write the transform **inline** in the filter \\u2014 no need to add it to `measures`:\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"revenue:sum\\\"],\\n  \\\"filters\\\": [\\\"last(change(revenue:sum)) < 0\\\"],\\n  \\\"time_dimensions\\\": [{\\\"dimension\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}]\\n}\\n```\\n\\nRenamed measures may be filtered by EITHER the user alias OR the raw colon\\nformula \\u2014 both resolve to the user alias. With\\n`{\\\"formula\\\": \\\"*:count\\\", \\\"name\\\": \\\"n\\\"}`, either `filters: [\\\"n > 5\\\"]` or\\n`filters: [\\\"*:count > 5\\\"]` produces the same HAVING clause. Two\\nenrichment-time validations apply to renamed measures: a `name` that\\ncollides with a source column on the source model is rejected (alias-form\\nfilters would otherwise bind to the source column); a rename whose\\ncanonical alias literally shadows a source column on the same model is\\nalso rejected (the colon-form filter would otherwise be ambiguous).\\nCross-model agg-ref filters with rename (`customers.revenue:sum >= 100`)\\nare NOT yet auto-resolved in any form \\u2014 neither the colon syntax nor the\\nuser alias resolves. As a workaround, restructure as a multi-stage\\n`source_queries` model so the cross-model measure becomes local in the\\ndownstream stage.\\n\\n## Filtered columns \\u2014 CASE WHEN inside an aggregate\\n\\nA **column** can carry a `filter` that restricts which rows participate when\\nthat column is used as an aggregation source. It becomes CASE WHEN inside the\\naggregate, so other measures in the same query are not affected:\\n\\n```yaml\\ncolumns:\\n  - name: active_revenue\\n    sql: amount\\n    type: number\\n    filter: \\\"status = 'active'\\\"\\n```\\n\\n`active_revenue:sum` \\u2192 `SUM(CASE WHEN status = 'active' THEN amount END)`.\\nCombine arithmetically: `{\\\"formula\\\": \\\"active_revenue:sum / revenue:sum\\\", \\\"name\\\": \\\"active_share\\\"}`.\\n\\n## Model-level filters\\n\\nAlways-applied WHERE conditions on the underlying table:\\n\\n```yaml\\nname: active_orders\\nsql_table: public.orders\\nfilters:\\n  - \\\"deleted_at IS NULL\\\"\\n  - \\\"status <> 'test'\\\"\\n```\\n\\nThese are WHERE-only. They do not reference measures or transforms.\\n\\n## See also\\n\\n- `memory:help.formulas` \\u2014 parsing rules shared with `measures`.\\n- `memory:help.transforms` \\u2014 the transforms you can wrap in a filter.\\n- `memory:help.queries` \\u2014 where filters sit in the evaluation order.\\n\",\n      \"linked_entities\": []\n    },\n    {\n      \"kind\": \"memory\",\n      \"score\": 0.030536130536130537,\n      \"description\": \"What Motley's semantic layer is, the core entities, the query shape, and the biggest gotchas.\",\n      \"id\": \"help.intro\",\n      \"learning\": \"# Motley semantic layer \\u2014 conceptual help\\n\\nMotley is a lightweight semantic layer for AI agents. Instead of writing raw SQL,\\nyou describe what data you want \\u2014 **measures**, **dimensions**, **filters** \\u2014 and\\nMotley generates and executes the query against your data.\\n\\n## Core entities\\n\\n- **source** \\u2014 an app-managed connection to your data. You address a source by its\\n  `source_id` or `source_name`; the app provisions and configures sources for you.\\n- **model** \\u2014 a named mapping from a table (or SQL subquery) to queryable columns and measures.\\n- **dimension** \\u2014 a column to group/filter by (e.g. `status`, `created_at`).\\n- **column** \\u2014 a row-level SQL expression on a model (e.g. `{\\\"name\\\": \\\"amount\\\", \\\"sql\\\": \\\"amount\\\", \\\"type\\\": \\\"number\\\"}`).\\n  Used either as a group-by dimension or as the input to an aggregation; not an aggregate itself.\\n- **aggregation** \\u2014 how a column is rolled up: `sum`, `avg`, `count`, `weighted_avg`, \\u2026\\n  Applied via colon syntax: `revenue:sum`.\\n- **measure** \\u2014 one output value of a query. A formula over aggregated columns and arithmetic;\\n  e.g. `\\\"revenue:sum / *:count\\\"`. Models can also store named measures for reuse \\u2014\\n  queries reference them by bare name (`{\\\"formula\\\": \\\"aov\\\"}`).\\n  It's fine to have a query with just dimensions and no measures.\\n- **filter** \\u2014 a condition that restricts rows (WHERE or HAVING, routed automatically).\\n- **join** \\u2014 a LEFT-JOIN relationship between two models. Joins let you reach\\n  another model's dimensions/measures via dotted paths like `customers.regions.name`.\\n- **time dimension** \\u2014 a time column queried with a granularity\\n  (`day`/`week`/`month`/\\u2026), producing one row per time bucket.\\n\\n## The query shape\\n\\n```json\\n{\\n  \\\"source_model\\\": \\\"orders\\\",\\n  \\\"measures\\\": [\\\"*:count\\\", \\\"revenue:sum / amount:sum\\\"],\\n  \\\"dimensions\\\": [\\\"status\\\"],\\n  \\\"filters\\\": [\\\"status <> 'cancelled'\\\", \\\"customers.regions.name='Asia'\\\"],\\n  \\\"time_dimensions\\\": [{\\\"column\\\": \\\"created_at\\\", \\\"granularity\\\": \\\"month\\\"}],\\n  \\\"order\\\": [{\\\"column\\\": \\\"customers.revenue:sum\\\", \\\"direction\\\": \\\"desc\\\"}],\\n  \\\"limit\\\": 10\\n}\\n```\\n\\nYou hand this query to the `query` tool, which generates the SQL and returns\\nthe rows. You can add ad hoc columns, formulas, joins, or filters to the source_model\\ninline via `ModelExtension`. Row-level SQL goes in `columns`; named formulas go\\nin `measures`:\\n```json\\n{\\n  \\\"source_model\\\": {\\n    \\\"source_name\\\": \\\"orders\\\",\\n    \\\"columns\\\": [{\\\"name\\\": \\\"adams_revenue\\\", \\\"sql\\\": \\\"amount\\\", \\\"type\\\": \\\"number\\\", \\\"filter\\\": \\\"customers.name='Adam'\\\"}],\\n    ...\\n  }\\n...\\n}\\n```\\n\\n## Things that are easy to get wrong\\n\\n1. **Measures are not aggregates.** A measure is just a named SQL expression.\\n   Pick the aggregation at query time with colon syntax: `revenue:sum`,\\n   `revenue:avg`, `price:weighted_avg(weight=quantity)`.\\n\\n2. **Use `*:count` for counting rows.** `*:count` is `COUNT(*)` and is always\\n   available without a measure definition. When you just need to count records,\\n   use `*:count` \\u2014 not a primary-key column. Only add that to queries when you actually need it.\\n   You can also aggregate dimensions directly: `customer_id:count_distinct` for `COUNT(DISTINCT customer_id)`.\\n\\n3. **Joined data is reached via DOTTED paths, not by JOINing manually.**\\n   `customers.regions.name` on a query of `orders` auto-walks the join graph\\n   (`orders \\u2192 customers \\u2192 regions`). Don't try to add SQL joins yourself.\\n\\n4. **Filters on measures or computed measures route themselves.** `\\\"amount > 100\\\"`\\n   becomes WHERE; `\\\"revenue:sum > 1000\\\"` becomes HAVING; `\\\"change(revenue:sum) > 0\\\"`\\n   becomes a post-filter on an outer wrapper query. Write the condition; Motley\\n   decides where it lands.\\n\\n5. It's critically important to choose the right source_model for a query. Put EXTRA THOUGHT into that.\\n\\n6. When picking a measure for a query, MAKE SURE to consider the underlying values range \\n   shown under \\\"values\\\" in `inspect(reference=\\\"<model>\\\", entity_type=\\\"model\\\")`. If that's all\\n   NULL, maybe that's not the measure you want.\\n\\n7. **`time_shift`, `change`, `change_pct` can only wrap aggregated measures** \\u2014\\n   e.g. `time_shift(revenue:sum, -1)`, `change(amount:avg)`. They cannot wrap\\n   other transforms or arithmetic expressions (`change(cumsum(x))` won't work).\\n   The reverse direction is fine: `cumsum(change(x))` works because window\\n   transforms *can* wrap self-join transforms.\\n\\n## Feedback\\n\\n`report_feedback` tells the admins who configure this semantic layer how a\\nquestion went. Category `ok` holds the question, the answer, and the query that\\nproduced it. A problem category says what went wrong: the data is missing, a\\nmodel's docs contradict what you see, or a result looks wrong. Name the models,\\ncolumns, and memories involved (a memory as `memory:<id>`), and the admins fix\\nthe setup. A tool error is recorded automatically and needs no report. If the\\ndata cannot answer the question reliably, tell the user so rather than guessing.\\n\\n## Deep dives\\n\\nEach subject below is its own help memory. Read one with\\n`inspect(reference=\\\"memory:help.<topic>\\\", entity_type=\\\"memory\\\")`, e.g.\\n`inspect(reference=\\\"memory:help.queries\\\", entity_type=\\\"memory\\\")`. Available topics:\\n`memory:help.queries`, `memory:help.formulas`, `memory:help.aggregations`,\\n`memory:help.transforms`, `memory:help.time`, `memory:help.filters`,\\n`memory:help.joins`, `memory:help.models`, `memory:help.extending`,\\n`memory:help.workflow`.\\n\\nRecommended starting order for an unfamiliar agent: `memory:help.workflow` for\\ntool-chaining, then `memory:help.queries` for the query model.\\n\",\n      \"linked_entities\": []\n    }\n  ],\n  \"result_count\": 10,\n  \"resolved_entities\": [],\n  \"warnings\": []\n}",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "monthly_rev",
+    "show_sql": true,
+    "num_rows": 5
+   },
+   "result_text": "# Model: `monthly_rev`\n\n- **data_source:** `bench`\n- **row_count:** 35\n\n## Backing Query\n\n**1. final**\n- source_model: `orders`\n- time_dimensions: order_date\n- measures: rev\n\n## Columns (2)\n\n| name | type | unique | sql | allowed_aggregations | sampled |\n| --- | --- | --- | --- | --- | --- |\n| order_date | TIMESTAMP | yes | order_date | all | 2023-01-01 00:00:00 .. 2025-12-01 00:00:00 |\n| rev | DOUBLE | — | rev | all | 7270.0 .. 11804.920000000002 |\n\n## Measures (0)\n\n_(none)_\n\n## Joins (0)\n\n_(none)_\n\n## Data Profile SQL\n\n```sql\nWITH monthly_rev AS (\n  SELECT\n    _stage_inner.\"orders.order_date\" AS \"order_date\",\n    _stage_inner.\"orders.rev\" AS \"rev\"\n  FROM (\n    SELECT\n      DATE_TRUNC('MONTH', orders.order_date) AS \"orders.order_date\",\n      CAST(SUM(orders.amount) AS DOUBLE) AS \"orders.rev\"\n    FROM orders AS orders\n    GROUP BY\n      DATE_TRUNC('MONTH', orders.order_date)\n  ) AS _stage_inner\n)\nSELECT\n  COUNT(*) AS \"monthly_rev._count\",\n  COUNT(DISTINCT monthly_rev.order_date) AS \"monthly_rev.order_date_count_distinct\",\n  CAST(AVG(monthly_rev.rev) AS DOUBLE) AS \"monthly_rev.rev_avg\"\nFROM monthly_rev AS monthly_rev\nLIMIT 5\n```\n\n## Data Profile\n\n| _count | order_date_count_distinct | rev_avg |\n| --- | --- | --- |\n| 35 | 35 | 9505.384285714286 |",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "orders"
+   },
+   "result_text": "# `orders`\nColumns: id, customer_id, amount, status, order_date\nMeasures: aov\nAggregations: _(none)_\nJoins to: customers\nSaved queries: monthly_rev",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "inspect",
+   "args": {
+    "entity_type": "model",
+    "reference": "customers"
+   },
+   "result_text": "# `customers`\nColumns: id, name, region_id, city, tier, credit, discount, tags\nMeasures: _(none)_\nAggregations: _(none)_\nJoins to: cities, regions",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "measures": [
+      {
+       "formula": "sum(amount)",
+       "name": "rev"
+      }
+     ],
+     "dimensions": [
+      "customers.regions.name"
+     ],
+     "time_dimensions": [
+      {
+       "dimension": "order_date",
+       "granularity": "month",
+       "date_range": [
+        "2025-01-01",
+        "2025-03-31"
+       ]
+      }
+     ],
+     "order": [
+      {
+       "column": "order_date",
+       "direction": "asc"
+      },
+      {
+       "column": "customers.regions.name",
+       "direction": "asc"
+      }
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.rev\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"rev\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.customers.regions.name\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"name\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.order_date\",\n      \"role\": \"time_dimension\",\n      \"type\": \"DATE\",\n      \"title\": \"order_date\",\n      \"granularity\": \"month\",\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.customers.regions.name\": \"East\",\n      \"orders.order_date\": \"2025-01-01 00:00:00\",\n      \"orders.rev\": 2326.7500000000005\n    },\n    {\n      \"orders.customers.regions.name\": \"North\",\n      \"orders.order_date\": \"2025-01-01 00:00:00\",\n      \"orders.rev\": 2803.43\n    },\n    {\n      \"orders.customers.regions.name\": \"South\",\n      \"orders.order_date\": \"2025-01-01 00:00:00\",\n      \"orders.rev\": 3274.1200000000003\n    },\n    {\n      \"orders.customers.regions.name\": \"West\",\n      \"orders.order_date\": \"2025-01-01 00:00:00\",\n      \"orders.rev\": 1665.82\n    },\n    {\n      \"orders.customers.regions.name\": \"East\",\n      \"orders.order_date\": \"2025-02-01 00:00:00\",\n      \"orders.rev\": 2466.8099999999995\n    },\n    {\n      \"orders.customers.regions.name\": \"North\",\n      \"orders.order_date\": \"2025-02-01 00:00:00\",\n      \"orders.rev\": 2404.82\n    },\n    {\n      \"orders.customers.regions.name\": \"South\",\n      \"orders.order_date\": \"2025-02-01 00:00:00\",\n      \"orders.rev\": 2941.11\n    },\n    {\n      \"orders.customers.regions.name\": \"West\",\n      \"orders.order_date\": \"2025-02-01 00:00:00\",\n      \"orders.rev\": 1108.2000000000003\n    },\n    {\n      \"orders.customers.regions.name\": \"East\",\n      \"orders.order_date\": \"2025-03-01 00:00:00\",\n      \"orders.rev\": 1799.7000000000003\n    },\n    {\n      \"orders.customers.regions.name\": \"North\",\n      \"orders.order_date\": \"2025-03-01 00:00:00\",\n      \"orders.rev\": 3225.16\n    },\n    {\n      \"orders.customers.regions.name\": \"South\",\n      \"orders.order_date\": \"2025-03-01 00:00:00\",\n      \"orders.rev\": 3794.38\n    },\n    {\n      \"orders.customers.regions.name\": \"West\",\n      \"orders.order_date\": \"2025-03-01 00:00:00\",\n      \"orders.rev\": 996.96\n    }\n  ],\n  \"row_count\": 12,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e91d-f6ce-7f90-ad5b-570644d1d304\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.rev",
+     "orders.customers.regions.name",
+     "orders.order_date"
+    ],
+    "rows": [
+     [
+      2326.7500000000005,
+      "East",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      2803.43,
+      "North",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      3274.1200000000003,
+      "South",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      1665.82,
+      "West",
+      "2025-01-01 00:00:00"
+     ],
+     [
+      2466.8099999999995,
+      "East",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      2404.82,
+      "North",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      2941.11,
+      "South",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      1108.2000000000003,
+      "West",
+      "2025-02-01 00:00:00"
+     ],
+     [
+      1799.7000000000003,
+      "East",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      3225.16,
+      "North",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      3794.38,
+      "South",
+      "2025-03-01 00:00:00"
+     ],
+     [
+      996.96,
+      "West",
+      "2025-03-01 00:00:00"
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "monthly_rev",
+     "dimensions": [
+      "order_date",
+      "rev"
+     ],
+     "filters": [
+      "order_date in '2025-Q1'"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"monthly_rev.order_date\",\n      \"role\": \"dimension\",\n      \"type\": \"TIMESTAMP\",\n      \"title\": \"order_date\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"monthly_rev.rev\",\n      \"role\": \"dimension\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"rev\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"monthly_rev.order_date\": \"2025-01-01 00:00:00\",\n      \"monthly_rev.rev\": 10070.12\n    },\n    {\n      \"monthly_rev.order_date\": \"2025-02-01 00:00:00\",\n      \"monthly_rev.rev\": 8920.94\n    },\n    {\n      \"monthly_rev.order_date\": \"2025-03-01 00:00:00\",\n      \"monthly_rev.rev\": 9816.199999999999\n    }\n  ],\n  \"row_count\": 3,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e91e-00b8-7852-8575-d9d2fd56bc7a\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "monthly_rev.order_date",
+     "monthly_rev.rev"
+    ],
+    "rows": [
+     [
+      "2025-01-01 00:00:00",
+      10070.12
+     ],
+     [
+      "2025-02-01 00:00:00",
+      8920.94
+     ],
+     [
+      "2025-03-01 00:00:00",
+      9816.199999999999
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "query",
+   "args": {
+    "query": {
+     "source_model": "orders",
+     "measures": [
+      "count(*)",
+      "sum(amount)"
+     ],
+     "dimensions": [
+      "customers.region_id",
+      "customers.id"
+     ],
+     "filters": [
+      "customers.regions.name is null"
+     ]
+    },
+    "format": "json"
+   },
+   "result_text": "{\n  \"columns\": [\n    {\n      \"name\": \"orders.count(*)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"count(*)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.sum(amount)\",\n      \"role\": \"measure\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"sum(amount)\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.customers.region_id\",\n      \"role\": \"dimension\",\n      \"type\": \"TEXT\",\n      \"title\": \"region_id\",\n      \"granularity\": null,\n      \"aggregation\": null\n    },\n    {\n      \"name\": \"orders.customers.id\",\n      \"role\": \"dimension\",\n      \"type\": \"DOUBLE\",\n      \"title\": \"id\",\n      \"granularity\": null,\n      \"aggregation\": null\n    }\n  ],\n  \"rows\": [\n    {\n      \"orders.customers.region_id\": null,\n      \"orders.customers.id\": 9002,\n      \"orders.count(*)\": 10,\n      \"orders.sum(amount)\": 677.83\n    },\n    {\n      \"orders.customers.region_id\": null,\n      \"orders.customers.id\": null,\n      \"orders.count(*)\": 6,\n      \"orders.sum(amount)\": 515.47\n    }\n  ],\n  \"row_count\": 2,\n  \"truncated\": false,\n  \"history_url\": \"http://localhost:8100/usage/calls/01a1e91e-043f-7d03-9056-0839c9e87ada\"\n}",
+   "is_error": false,
+   "parsed": {
+    "columns": [
+     "orders.count(*)",
+     "orders.sum(amount)",
+     "orders.customers.region_id",
+     "orders.customers.id"
+    ],
+    "rows": [
+     [
+      10,
+      677.83,
+      null,
+      9002
+     ],
+     [
+      6,
+      515.47,
+      null,
+      null
+     ]
+    ],
+    "warnings": []
+   },
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": "[\"month\", \"region\", \"rev\"]",
+    "rows": "[[\"2025-01-01\", \"East\", 2326.7500000000005], [\"2025-01-01\", \"North\", 2803.43], [\"2025-01-01\", \"South\", 3274.1200000000003], [\"2025-01-01\", \"West\", 1665.82], [\"2025-02-01\", \"East\", 2466.8099999999995], [\"2025-02-01\", \"North\", 2404.82], [\"2025-02-01\", \"South\", 2941.11], [\"2025-02-01\", \"West\", 1108.2000000000003], [\"2025-03-01\", \"East\", 1799.7000000000003], [\"2025-03-01\", \"North\", 3225.16], [\"2025-03-01\", \"South\", 3794.38], [\"2025-03-01\", \"West\", 996.96]]",
+    "message": "Q1 2025 revenue from monthly_rev, split by region. Revenue is the sum of order amounts, the same calculation monthly_rev uses. In each month the regions add up exactly to the monthly_rev total: Jan 10,070.12, Feb 8,920.94, Mar 9,816.20. There is no unknown-region row because every Q1 2025 order belongs to a customer with a known region. The 16 orders with no known region all fall outside this quarter."
+   },
+   "result_text": "<tool_use_error>Error: No such tool available: mcp__motley__submit_answer</tool_use_error>",
+   "is_error": true,
+   "parsed": null,
+   "audit": null
+  },
+  {
+   "tool": "submit_answer",
+   "args": {
+    "columns": [
+     "month",
+     "region",
+     "rev"
+    ],
+    "rows": [
+     [
+      "2025-01-01",
+      "East",
+      2326.7500000000005
+     ],
+     [
+      "2025-01-01",
+      "North",
+      2803.43
+     ],
+     [
+      "2025-01-01",
+      "South",
+      3274.1200000000003
+     ],
+     [
+      "2025-01-01",
+      "West",
+      1665.82
+     ],
+     [
+      "2025-02-01",
+      "East",
+      2466.8099999999995
+     ],
+     [
+      "2025-02-01",
+      "North",
+      2404.82
+     ],
+     [
+      "2025-02-01",
+      "South",
+      2941.11
+     ],
+     [
+      "2025-02-01",
+      "West",
+      1108.2000000000003
+     ],
+     [
+      "2025-03-01",
+      "East",
+      1799.7000000000003
+     ],
+     [
+      "2025-03-01",
+      "North",
+      3225.16
+     ],
+     [
+      "2025-03-01",
+      "South",
+      3794.38
+     ],
+     [
+      "2025-03-01",
+      "West",
+      996.96
+     ]
+    ],
+    "message": "Q1 2025 revenue from monthly_rev, split by region. Revenue is the sum of order amounts, the same calculation monthly_rev uses. In each month the regions add up exactly to the monthly_rev total: Jan 10,070.12, Feb 8,920.94, Mar 9,816.20. There is no unknown-region row because every Q1 2025 order belongs to a customer with a known region. The 16 orders with no known region all fall outside this quarter."
+   },
+   "result_text": "Answer submitted.",
+   "is_error": false,
+   "parsed": null,
+   "audit": null
+  }
+ ],
+ "usage": {
+  "input_tokens": 12,
+  "output_tokens": 1644,
+  "cache_read_tokens": 486834,
+  "cache_write_tokens": 20708,
+  "partial": false
+ },
+ "cost_usd": 0.2338348,
+ "duration_s": 26.862089592963457,
+ "turns": 11,
+ "end_reason": "submitted",
+ "error": null
+}

@@ -23,7 +23,7 @@ Every trial gets two verdicts:
 
 | Verdict | True when |
 | --- | --- |
-| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning; in `sql+python`, an empty answer whose message names the problem) |
+| **correct** | the submitted table matches the truth (for a refusal task: the answer surfaces SLayer's error or warning; for an expected error, an empty answer whose message names the problem also counts, and in `sql+python`, for an expected warning, a message naming the problem counts whatever the answer) |
 | **single query** | the own result of one successful SLayer `query` call or one `sql` statement matches the truth — no combining queries, no post-processing |
 
 A trial passes when both hold. **Correct is the comparison across profiles**: one raw SQL statement can express
@@ -37,10 +37,10 @@ columns by name first and by values second, so agents may name their columns fre
 
 Tasks fall into four suites. Three run on the benchmark's own database and follow from what they cover:
 
-* **capability** — one row of the feature matrix below each (`tasks/capability/`, 25 tasks).
-* **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 11 tasks).
+* **capability** — one row of the feature matrix below each (`tasks/capability/`, 34 tasks).
+* **combo** — two or three rows at once, with a simple SLayer query still answering them (`tasks/combo/`, 15 tasks).
 * **trap** — a row plus a *pitfall*: a question whose straightforward SQL silently returns wrong numbers
-  (`tasks/traps/`, 17 tasks).
+  (`tasks/traps/`, 21 tasks).
 
 | Pitfall | The naive SQL… | Task(s) |
 | --- | --- | --- |
@@ -59,6 +59,10 @@ Tasks fall into four suites. Three run on the benchmark's own database and follo
 | `rows_window_gap` | uses a row-count window over a series with a missing month | `t-rolling-gap` |
 | `timestamp_bounds` | bounds a timestamp with `BETWEEN` two dates, losing the last day | `t-march-events` |
 | `avg_of_avgs` | averages per-group averages instead of the rows | `t-overall-aov` |
+| `count_after_unnest` | unnests a list, then counts rows, so an entity counts once per matching element | `t-vip-per-tier` |
+| `unnest_fan_out` | sums an entity-level amount after unnesting its list | `t-tagged-credit` |
+| `null_element` | uses `<> ALL` / `NOT IN` over a list holding a NULL element, which drops the row | `t-without-vip` |
+| `same_element_and` | requires two values of one unnested element (`tag = 'x' AND tag = 'y'`), which matches nothing | `t-vip-and-eu-region` |
 
 Prompts state what the answer should contain but never the pitfall's mechanism.
 
@@ -95,6 +99,8 @@ capabilities](https://motley.ai/blog-posts/four-open-source-semantic-layers-54-c
 | Q23 | Saved queries & refinement | `q23-monthly-by-region` |
 | Q24 | Nested results (flattened) | `q24-top-two-per-region` |
 | Q25 | Explicit aggregate locality | `q25-credit-per-order` |
+| Q26 | Metrics without a join path | `q26-events-per-customer` |
+| Q27 | List columns | `q27-vip-customers`, `q27-vip-and-eu`, `q27-vip-or-partner`, `q27-customers-per-tag`, `q27-region-distinct-tags`, `q27-region-tag-set`, `q27-tag-count-groups`, `q27-category-ratings` |
 
 Most rows are also covered by combo and trap tasks; the report counts a task under every row it covers. Two rows
 are deliberately left out: **Q19** (the agent and API surface — every task already exercises it) and **Q22**
@@ -198,7 +204,7 @@ Motley and raw SQL side by side:
 ```bash
 poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset-dir data \
   --profiles slayer,motley,motley+python \
-  --motley-seed-cmd "/path/to/storyline/backend/scripts/eval_backend.sh seed"
+  --motley-seed-cmd "/path/to/storyline/backend/scripts/eval_backend.sh seed" --motley-slayer-version 1.8.2
 ```
 
 * `--motley-seed-cmd` seeds one Motley org; it is required with a Motley profile. Storyline's `eval_backend.sh seed`
@@ -206,6 +212,9 @@ poetry run slayer-evals run --subscription-auth --env-file .env.agents --dataset
   with `--user-id <id> --store <the trial's store copy> --db <the build's database file of the task's dataset>`, so
   every trial gets its own org, and the agent sends that id as `X-Storyline-Dev-User-Id`. A seed that fails or times
   out (600 s) ends that trial with `error`.
+* `--motley-slayer-version` is the SLayer version the Motley backend runs (storyline's `motley-slayer` pin); it is
+  required with a Motley profile, and each Motley trial's results line records it, while the other profiles record the
+  local SLayer's version.
 * `--motley-url` is the backend's MCP endpoint (default `http://localhost:8100/api/v1/mcp/`, the eval backend's). Its
   host must match the backend's `public_base_url`, or the backend answers 421.
 * Storyline's `docs/eval_org_seed.md` describes the eval backend and the seed.
@@ -220,7 +229,7 @@ until Motley's `query` returns result warnings, and Motley's `query` cannot yet 
 ## Reading the report
 
 `report.md` starts with the run's metadata and a headline table of suite by profile and model, then a table of trap
-pitfall by profile, then one section per profile and model: a table of rows Q1–Q25 with trial counts for each
+pitfall by profile, then one section per profile and model: a table of rows Q1–Q27 with trial counts for each
 criterion (a multi-row task counts under each of its rows), and a per-task table (pass rate k/N and pass^N for `repeat`; first-try pass, eventual
 pass and attempts for `until-pass`). Expected failures, totals (tokens, cost, time) and a digest of every failed
 trial follow: which criteria failed, why, and one line per SLayer or `sql` call the agent made. Regenerate a report offline
@@ -228,39 +237,48 @@ with `poetry run slayer-evals report runs/<timestamp>`.
 
 ## Baseline
 
-`results/baseline/` holds a committed run of every task of every suite in all three profiles with Claude Opus 5.5 —
-its [report](results/baseline/report.md), results and normalized traces. It is a **single-trial snapshot**: each task
-ran once per profile, so individual rates are noisy; use `--trials` for stable numbers. SLayer is pinned to commit
-`1653a91` of its main branch (reported as 1.1.0).
+`results/baseline/` holds a committed run of every task of every suite in all five profiles with Claude Opus 5.5,
+run on 17 Nov 2026: its [report](results/baseline/report.md), results and normalized traces. It is a **single-trial
+snapshot**: each task ran once per profile, so individual rates are noisy; use `--trials` for stable numbers. The SLayer
+and SQL profiles ran on SLayer 1.8.5, the version the benchmark pins; the Motley profiles ran against a local Motley
+backend (`motley 1.30.0`, from storyline's `main`) whose SLayer is 1.8.2. Each results line records the SLayer
+version that answered it.
 
 | Suite | Profile | Trials | Correct | Single query | Passed |
 | --- | --- | --- | --- | --- | --- |
-| capability | `slayer` | 24 | 23 | 19 | 18 |
-| capability | `slayer+python` | 24 | 24 | 15 | 15 |
-| capability | `sql+python` | 24 (2 auto-failed) | 19 | 14 | 14 |
-| combo | `slayer` | 11 | 11 | 7 | 7 |
-| combo | `slayer+python` | 11 | 11 | 5 | 5 |
-| combo | `sql+python` | 11 (1 auto-failed) | 10 | 5 | 5 |
-| trap | `slayer` | 17 | 17 | 11 | 11 |
-| trap | `slayer+python` | 17 | 17 | 8 | 8 |
-| trap | `sql+python` | 17 | 16 | 15 | 14 |
-| jaffle | `slayer` | 24 | 22 | 10 | 10 |
-| jaffle | `slayer+python` | 24 | 21 | 9 | 9 |
-| jaffle | `sql+python` | 24 | 23 | 18 | 18 |
+| capability | `slayer` | 32 | 31 | 30 | 30 |
+| capability | `slayer+python` | 32 | 31 | 30 | 30 |
+| capability | `motley` | 31 | 30 | 27 | 27 |
+| capability | `motley+python` | 31 | 30 | 26 | 26 |
+| capability | `sql+python` | 33 (2 auto-failed) | 29 | 25 | 25 |
+| combo | `slayer` | 15 | 15 | 14 | 14 |
+| combo | `slayer+python` | 15 | 15 | 13 | 13 |
+| combo | `motley` | 15 | 15 | 12 | 12 |
+| combo | `motley+python` | 15 | 15 | 10 | 10 |
+| combo | `sql+python` | 15 (1 auto-failed) | 13 | 7 | 7 |
+| trap | `slayer` | 21 | 21 | 21 | 21 |
+| trap | `slayer+python` | 21 | 21 | 21 | 21 |
+| trap | `motley` | 21 | 21 | 19 | 19 |
+| trap | `motley+python` | 21 | 21 | 18 | 18 |
+| trap | `sql+python` | 21 | 21 | 20 | 20 |
+| jaffle | `slayer` | 24 | 23 | 19 | 18 |
+| jaffle | `slayer+python` | 24 | 22 | 17 | 16 |
+| jaffle | `motley` | 24 | 23 | 14 | 14 |
+| jaffle | `motley+python` | 24 | 23 | 12 | 12 |
+| jaffle | `sql+python` | 24 | 23 | 17 | 17 |
 
-(The relative-date task is xfail and not counted.) **Correct** is the comparison: both SLayer agents answered every
-trap correctly, and the raw-SQL agent missed one, by adding an empty row; Opus 5.5 avoids these pitfalls in SQL too.
-The SLayer agents' gap on the bench suites is single query: they often assembled the right answer from several queries
-instead of one, most persistently when ordering by an unshown measure (Q13), with transforms over a date range (Q4,
-Q7, Q11) and on combos.
+Expected failures are not counted: the relative-date task in every profile, `q9-credit-by-status` in the Motley
+profiles (their `query` drops result warnings) and `q27-tag-count-groups` in the four SLayer-backed profiles (SLayer's
+`length` counts repeated list elements). **Correct** is the comparison: the four semantic-layer profiles miss at most
+one task per bench suite, and every profile answered every trap correctly. The profiles separate on single query: of
+the bench tasks, `slayer` and `slayer+python` lack a single-query answer on 3 and 4, `motley` and `motley+python` on 9
+and 13, and `sql+python` on 17, 8 of them combos.
 
-On the **jaffle** suite the raw-SQL agent, with the business rules in its system prompt, was correct on 23 of 24
-questions; the SLayer agents, which have to find the rules with `search`, on 22 and 21. Their wrong answers are
-mostly a rule they never looked up: they called `search` on only 13 (`slayer`) and 7 (`slayer+python`) of the 24
-questions, and reported tax-inclusive revenue where the rule says pre-tax. Single query is where the Jaffle suite
-separates the profiles most: 10 and 9 passes for SLayer against 18 for SQL, on questions that need multi-stage queries
-or joins to a computed stage. [docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by
-profile and pitfall, and the Jaffle suite by business rule; the report lists each one with its SLayer and `sql` calls.
+On the **jaffle** suite every profile but `slayer+python` was correct on 23 of 24 questions. The SLayer and Motley
+agents now `search` the business-rule memories on nearly every question, so the pre-tax revenue rule is found and
+used. Single query separates the profiles: 18 and 16 passes for SLayer, 17 for SQL, 14 and 12 for Motley.
+[docs/baseline-failures.md](docs/baseline-failures.md) breaks every failure down by profile and pitfall, and the
+Jaffle suite by business rule; the report lists each one with its SLayer, Motley and `sql` calls.
 
 ## Plugging in your own agent
 
@@ -300,11 +318,12 @@ naive_sql: |
 compare: {keys: [region], values: [ordered, returned]}
 ```
 
-`covers` lists the rows (Q1–Q25 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
+`covers` lists the rows (Q1–Q27 except Q19 and Q22) and pitfall kinds the task exercises; the suite follows from it.
 A Jaffle Shop task instead says `dataset: jaffle` and has no `covers`.
 `slayer_query` is the intended SLayer query, in the arguments of SLayer's MCP `query` tool; `naive_sql` (one statement
 or a list) is required on traps and forbidden elsewhere. `compare` sets the key and value columns, `tolerance`,
-`ordered`, `columns_exact` and `null_as_zero` (NULL equals 0 in value columns). `expect` turns the task into a refusal
+`ordered`, `columns_exact`, `null_as_zero` (NULL equals 0 in value columns) and `extra_zero_rows` (an extra row for an
+empty group, all 0 or NULL, is ignored, for a question that asks after every group). `expect` turns the task into a refusal
 or warning task (one kind or a list), `uses_saved` names the saved SLayer definitions the prompt relies on, and `xfail`
 links an issue. Prompts must stay capability-neutral and must not hint at a pitfall (a test enforces a whole-word
 deny-list). `tests/test_task_proofs.py` runs every `slayer_query` and `naive_sql` on the built dataset. Then

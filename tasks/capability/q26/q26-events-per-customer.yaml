@@ -1,0 +1,11 @@
+id: q26-events-per-customer
+covers: [Q26]
+prompt: >-
+  On average, how many events were recorded per customer? Show the number of events, the number of customers and
+  the number of events per customer.
+truth_sql: |
+  select (select count(*) from events) as events, (select count(*) from customers) as customers,
+         (select count(*) from events) / (select count(*) from customers) as events_per_customer
+# events has no join path to customers; its aggregates attach to the customers population across a product hop.
+slayer_query: {"query": {"source_model": "customers", "measures": [{"formula": "count(events.id)", "name": "events"}, {"formula": "count(*)", "name": "customers"}, {"formula": "count(events.id) / count(*)", "name": "events_per_customer"}]}}
+compare: {values: [events, customers, events_per_customer]}

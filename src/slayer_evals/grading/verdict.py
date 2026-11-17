@@ -48,10 +48,11 @@ def _failed(reason: str, flags: TraceFlags) -> Verdict:
     )
 
 
-def _raw_sql_refusal(expect: Expectation, submission: Submission, flags: TraceFlags) -> Verdict:
-    """Raw SQL cannot produce SLayer's error or warning kinds: an empty answer naming the problem is the refusal."""
+def _declined(expect: Expectation, submission: Submission, flags: TraceFlags) -> Verdict:
+    """A message naming the problem (with an empty answer, for an expected error): the refusal when the trace has no
+    expected error or warning to show."""
     phrase = next((p for p in expect.message_any if p.lower() in submission.message.lower()), None)
-    ok = phrase is not None and not submission.rows
+    ok = phrase is not None and (expect.warning is not None or not submission.rows)
     reasons = [
         f"message mentions {phrase!r}" if phrase else f"message mentions none of {expect.message_any}",
         f"the answer has {len(submission.rows)} rows" if submission.rows else "the answer has no rows",
@@ -81,10 +82,12 @@ def grade(task: Task, truth: Table, submission: Submission | None, trace: Trace)
         )
     expect = task.expect
     if raw_sql:
-        return _raw_sql_refusal(expect, submission, flags)
+        return _declined(expect, submission, flags)
     kind = " or ".join(expect.kinds)
     phrase = next((p for p in expect.message_any if p.lower() in submission.message.lower()), None)
     hit = next((i for i, c in enumerate(calls, start=1) if produced(c, expect)), None)
+    if hit is None and expect.error is not None:
+        return _declined(expect, submission, flags)
     return Verdict(
         correct=phrase is not None and hit is not None,
         single_query=hit is not None,

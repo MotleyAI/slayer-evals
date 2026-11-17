@@ -45,6 +45,7 @@ class TrialResult(BaseModel):
     profile: Profile
     model: str
     trial: int
+    slayer_version: str
     verdict: Verdict | None
     end_reason: EndReason
     usage: Usage = Field(default_factory=Usage)

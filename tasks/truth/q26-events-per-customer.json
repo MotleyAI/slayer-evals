@@ -1,0 +1,14 @@
+{
+ "columns": [
+  "events",
+  "customers",
+  "events_per_customer"
+ ],
+ "rows": [
+  [
+   605,
+   202,
+   2.995049504950495
+  ]
+ ]
+}

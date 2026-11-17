@@ -1,0 +1,12 @@
+id: c-tier-credit-tags
+covers: [Q27, Q6]
+prompt: >-
+  For each customer tier, show the number of customers, the sum of their credit limits and how many different tags
+  the tier's customers carry between them.
+truth_sql: |
+  select tier, count(*) as customers, sum(credit) as total_credit,
+         len(list_distinct(list_filter(flatten(list(coalesce(tags, []))), x -> x is not null))) as distinct_tags
+  from customers
+  group by 1
+slayer_query: {"query": {"source_model": "customers", "dimensions": ["tier"], "measures": [{"formula": "count(*)", "name": "customers"}, {"formula": "sum(credit)", "name": "total_credit"}, {"formula": "count_distinct(tags.value)", "name": "distinct_tags"}]}}
+compare: {keys: [tier], values: [customers, total_credit, distinct_tags]}

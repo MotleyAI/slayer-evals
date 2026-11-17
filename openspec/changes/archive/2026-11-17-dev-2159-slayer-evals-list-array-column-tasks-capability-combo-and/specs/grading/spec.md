@@ -1,0 +1,137 @@
+## MODIFIED Requirements
+
+### Requirement: Table comparison
+Two tables SHALL match when, after column resolution, the key and value columns' rows are equal as multisets
+(or as sequences when `ordered`), with numeric values equal within `tolerance`, NULL equal only to NULL (or, when the
+task sets `null_as_zero`, NULL also equal to 0 in value columns), NaN treated as NULL, and dates and timestamps compared
+after normalization to ISO form. A list-valued cell SHALL compare as the set of its normalized non-NULL elements,
+ignoring element order and repeats, with numeric elements equal within `tolerance`; in a column whose truth cells are
+lists, a result cell holding JSON list text or comma-separated text SHALL compare as the set of its elements the same
+way, while text in any other column is compared as text. NULL SHALL NOT equal an empty list. Column resolution SHALL
+map each truth column to a result column by exact name, else by `.name` suffix, else by a flattened `a__b` form; a
+truth column that resolves by name to more than one column MUST make the match fail with a reason naming it. Truth
+columns that resolve by name to no column SHALL be matched by values: the tables match if some one-to-one assignment
+of those truth columns to the result columns not already used makes the rows match, preferring, when several do, the
+assignment whose result column names are closest to the truth names; if none does, the match fails with a reason
+naming those columns. A successful match SHALL record the column mapping it used, and the verdict SHALL carry the
+mappings of its correctness and single-query matches. Extra result columns SHALL be ignored unless `columns_exact`. The
+row counts MUST be equal, except that when the task sets `extra_zero_rows`, extra result rows whose key the truth does
+not hold and whose values are all 0 or NULL SHALL be ignored.
+
+#### Scenario: Order-insensitive match with tolerance
+- **WHEN** a result has the truth rows in a different order and a value off by 1e-9
+- **THEN** the tables match
+
+#### Scenario: Ambiguous column fails
+- **WHEN** truth column `name` matches both `customers.name` and `regions.name` in the result
+- **THEN** the match fails with a reason naming `name` as ambiguous
+
+#### Scenario: Columns matched by values
+- **WHEN** a result names its columns `orders.customers.regions.name` and `orders.rev` for truth columns `region` and `revenue`, with matching rows
+- **THEN** the tables match and the recorded mapping is `region` → `orders.customers.regions.name`, `revenue` → `orders.rev`
+
+#### Scenario: Truncated result fails
+- **WHEN** a result holds 20 of the truth's 25 rows
+- **THEN** the tables do not match and the reason gives both row counts
+
+#### Scenario: Ordered task
+- **WHEN** a task sets `ordered` and the result has the right rows in the wrong order
+- **THEN** the tables do not match
+
+#### Scenario: NULL as zero
+- **WHEN** the truth has NULL revenue for a month and the result has 0
+- **THEN** the tables match if the task sets `null_as_zero`, and do not match otherwise
+
+#### Scenario: List cells compare as sets
+- **WHEN** a truth cell is `['eu', 'vip']` and the result cell is `['vip', 'eu', 'vip']`, `['vip', 'eu', NULL]`, `'["vip","eu"]'` or `'vip, eu'`
+- **THEN** the cells are equal; and a result cell `['vip']` or NULL is not equal
+
+#### Scenario: Numeric list elements within tolerance
+- **WHEN** a truth cell is `[1.5, 2.0]` and the result cell is `[2.0000000001, 1.5]`, or `[1.5, 2.1]`
+- **THEN** the first is equal and the second is not
+
+#### Scenario: Text outside list columns stays text
+- **WHEN** a truth column holds the text `'vip, eu'` and the result holds `['vip', 'eu']`
+- **THEN** the cells are not equal
+
+#### Scenario: Extra zero row for an empty group
+- **WHEN** a task sets `extra_zero_rows`, the truth has rows for East and North, and the result has those rows plus `Arctic, 0`
+- **THEN** the tables match; they do not match if the extra row is `Arctic, 2` or `North, 0`, or if the task does not set `extra_zero_rows`
+
+### Requirement: Correctness criterion
+For a `match` task, `correct` SHALL be true iff the submitted table matches the truth. For an error or warning task in
+a SLayer or Motley profile, `correct` SHALL be true iff the submitted message contains at least one `message_any`
+phrase (case-insensitive) and either the trace contains a call that produced one of the expected error or warning kinds
+(exception class for errors, warning `kind` for warnings) or, for an error task, the submission has no rows. The
+exception class of an error result SHALL be read from either the `Error executing tool <tool>: <Class>: ...` form or a
+result that starts with `<Class>: ...` where the class name ends in `Error` or `Exception`. In `sql+python`, `correct`
+SHALL be true iff the message contains at least one `message_any` phrase and, for an error task, the submission has
+no rows.
+
+#### Scenario: Right answer
+- **WHEN** the submission equals the truth table
+- **THEN** `correct` is true
+
+#### Scenario: Refusal surfaced
+- **WHEN** a warning task's submission message mentions a `message_any` phrase and the trace has the warning
+- **THEN** `correct` is true
+
+#### Scenario: Refusal without the error
+- **WHEN** in `slayer` an error task's submission has no rows and its message mentions a `message_any` phrase, and no call produced the error
+- **THEN** `correct` is true, and it is false if the submission has rows
+
+#### Scenario: Raw-SQL refusal
+- **WHEN** in `sql+python` an error task's submission has no rows and its message mentions a `message_any` phrase
+- **THEN** `correct` is true, and it is false if the submission has rows
+
+#### Scenario: Raw-SQL warning answer
+- **WHEN** in `sql+python` a warning task's submission has rows and its message mentions a `message_any` phrase
+- **THEN** `correct` is true, and it is false if the message mentions none
+
+#### Scenario: Bare error class
+- **WHEN** in `motley` an error task expects `TimeDimensionColumnError`, a call failed with `TimeDimensionColumnError: A time dimension must reference ...`, and the message mentions a `message_any` phrase
+- **THEN** `correct` is true
+
+#### Scenario: Labelled text is not an error class
+- **WHEN** a failed call's result starts with `Invalid arguments: ...` or `SQL: ...`
+- **THEN** no exception class is read from it
+
+### Requirement: Single-query criterion
+For a `match` task, `single_query` SHALL be true iff some successful call to SLayer's or Motley's `query` tool or to
+the `sql` tool returns a result that itself matches the truth, so that the answer needed no combination of queries and
+no post-processing. Which DSL features or SQL constructs that call uses is not checked: a task forces its intended
+feature through its wording. For an error or warning task, `single_query` SHALL be true iff some call in the trace
+returned one of the expected kinds in a SLayer or Motley profile, or SHALL equal `correct` when no call did and the task
+expects an error, and SHALL equal `correct` in `sql+python`. Results SHALL be parsed from markdown, a bare JSON array, a
+JSON object with `data` and `warnings`, a JSON object with `columns` (names) and `rows` (lists), or a JSON object with
+`columns` (objects with a unique `name`) and `rows` (records keyed by exactly those names); a truncation flag or a
+truncation footer SHALL become a `truncated` warning. A JSON object matching none of these shapes SHALL not be parsed as
+a table.
+
+#### Scenario: One query returns the answer
+- **WHEN** a Q1 trace has a query whose result matches the truth
+- **THEN** `single_query` is true, whatever functions the query uses
+
+#### Scenario: One SQL statement returns the answer
+- **WHEN** a `sql+python` trace has a `sql` call whose result matches the truth
+- **THEN** `single_query` is true
+
+#### Scenario: One Motley query returns the answer
+- **WHEN** a `motley` trace has a `query` call whose JSON result, with column objects and records keyed `<model>.<column>`, matches the truth
+- **THEN** `single_query` is true
+
+#### Scenario: Answer combined from two queries
+- **WHEN** the agent pulls per-city totals and per-region totals in two queries and submits the correctly combined table
+- **THEN** `correct` is true and `single_query` is false
+
+#### Scenario: Result parsing in both formats
+- **WHEN** calls return markdown, a bare JSON array, a JSON object with `data` and `warnings`, a JSON object with `columns` and `rows`, Motley's JSON, or Motley's markdown with a SQL block, a footer and a trailing note
+- **THEN** each is parsed into the same columns and rows for comparison
+
+#### Scenario: Truncated Motley result
+- **WHEN** a Motley result is marked truncated, in JSON or by its markdown footer
+- **THEN** the parsed result carries a `truncated` warning
+
+#### Scenario: Malformed Motley result
+- **WHEN** a Motley JSON result has a column object without a name, two columns with one name, or a record missing a column's key
+- **THEN** it is not parsed as a table
