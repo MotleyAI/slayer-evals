@@ -4,7 +4,7 @@ prompt: >-
   What is the sum of the credit limits of the customers who carry the tag vip, the tag partner, or both?
 truth_sql: |
   select sum(credit) as total_credit from customers where list_has_any(list_filter(tags, x -> x is not null), ['vip', 'partner'])
-slayer_query: {"query": {"source_model": "customers", "measures": [{"formula": "sum(credit)", "name": "total_credit"}], "filters": ["tags.value in ('vip', 'partner')"]}}
+slayer_query: {"query": {"source_model": "customers", "measures": [{"formula": "sum(credit)", "name": "total_credit"}], "filters": ["contains_any(tags, ['vip', 'partner'])"]}}
 naive_sql: |
   select sum(c.credit) as total_credit
   from customers c, unnest(c.tags) as u(tag)
