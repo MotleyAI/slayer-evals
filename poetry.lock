@@ -771,13 +771,15 @@ files = [
 
 [[package]]
 name = "motley-slayer"
-version = "1.7.0"
+version = "1.8.5"
 description = "A lightweight, agent-first semantic layer for AI agents"
 optional = false
-python-versions = "^3.11"
+python-versions = ">=3.11"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "motley_slayer-1.8.5-py3-none-any.whl", hash = "sha256:8f4057ded628efbd8358e850390a62127d7b15e3d89dd40730efbd6b144b7510"},
+    {file = "motley_slayer-1.8.5.tar.gz", hash = "sha256:a9666779615809e6b1871fb5205716e551c09dad7c889cbf209c6bbedde9d933"},
+]
 
 [package.dependencies]
 duckdb = ">=1.1"
@@ -785,7 +787,7 @@ duckdb-engine = ">=0.13"
 esprima = ">=4.0"
 fastapi = ">=0.100"
 greenlet = ">=1"
-jafgen = "^0.4.14"
+jafgen = ">=0.4.14,<0.5.0"
 mcp = ">=1.19,<2"
 pydantic = ">=2.0"
 python-dateutil = ">=2.8"
@@ -793,7 +795,7 @@ pyyaml = ">=6.0"
 rank-bm25 = ">=0.2.2"
 sqlalchemy = ">=2.0,<2.1"
 sqlglot = {version = ">=30.17", extras = ["c"]}
-tantivy = "^0.26"
+tantivy = ">=0.26,<0.27"
 uvicorn = ">=0.20"
 
 [package.extras]
@@ -810,12 +812,6 @@ postgres = ["asyncpg (>=0.27)", "psycopg2-binary (>=2.9)", "psycopg[binary] (>=3
 snowflake = ["snowflake-connector-python (>=3.13)", "snowflake-sqlalchemy (>=1.7)"]
 sqlserver = ["pyodbc (>=5.0)"]
 trino = ["trino (>=0.340)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/MotleyAI/slayer.git"
-reference = "f85c8da24610b6c837840010b3e1272dd3103cde"
-resolved_reference = "f85c8da24610b6c837840010b3e1272dd3103cde"
 
 [[package]]
 name = "nodejs-wheel-binaries"
@@ -2068,4 +2064,4 @@ standard = ["httptools (>=0.8.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "4e56a30aa0d1f656a0f0dd7c1ffab05dd44ab2b56c0edea9cc1bba8f3a51a032"
+content-hash = "cf72c926d5ef8e48210a81398912af737163da9c60225978a04ccde4d38c658c"
