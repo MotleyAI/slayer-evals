@@ -14,4 +14,4 @@ naive_sql: |
   from customers c cross join unnest(c.tags) as u(tag) left join regions r on r.id = c.region_id
   where u.tag = 'vip' and u.tag = 'eu'
   group by 1
-compare: {keys: [region], values: [customers]}
+compare: {keys: [region], values: [customers], extra_zero_rows: true}

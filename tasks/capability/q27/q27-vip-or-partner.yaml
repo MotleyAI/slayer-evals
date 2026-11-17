@@ -9,4 +9,4 @@ truth_sql: |
   where list_has_any(list_filter(c.tags, x -> x is not null), ['vip', 'partner'])
   group by 1
 slayer_query: {"query": {"source_model": "customers", "dimensions": ["regions.name"], "measures": [{"formula": "count(*)", "name": "customers"}], "filters": ["contains_any(tags, ['vip', 'partner'])"]}}
-compare: {keys: [region], values: [customers]}
+compare: {keys: [region], values: [customers], extra_zero_rows: true}

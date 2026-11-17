@@ -314,7 +314,8 @@ compare: {keys: [region], values: [ordered, returned]}
 A Jaffle Shop task instead says `dataset: jaffle` and has no `covers`.
 `slayer_query` is the intended SLayer query, in the arguments of SLayer's MCP `query` tool; `naive_sql` (one statement
 or a list) is required on traps and forbidden elsewhere. `compare` sets the key and value columns, `tolerance`,
-`ordered`, `columns_exact` and `null_as_zero` (NULL equals 0 in value columns). `expect` turns the task into a refusal
+`ordered`, `columns_exact`, `null_as_zero` (NULL equals 0 in value columns) and `extra_zero_rows` (an extra row for an
+empty group, all 0 or NULL, is ignored, for a question that asks after every group). `expect` turns the task into a refusal
 or warning task (one kind or a list), `uses_saved` names the saved SLayer definitions the prompt relies on, and `xfail`
 links an issue. Prompts must stay capability-neutral and must not hint at a pitfall (a test enforces a whole-word
 deny-list). `tests/test_task_proofs.py` runs every `slayer_query` and `naive_sql` on the built dataset. Then

@@ -8,4 +8,4 @@ truth_sql: |
   where order_date >= date '2025-01-01' and order_date < date '2025-04-01'
   group by 1
 slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}], "filters": ["order_date in '2025-Q1'"]}}
-compare: {keys: [region], values: [revenue]}
+compare: {keys: [region], values: [revenue], extra_zero_rows: true}

@@ -13,4 +13,4 @@ naive_sql: |
   from customers c left join regions r on r.id = c.region_id
   where 'vip' <> all(c.tags)
   group by 1
-compare: {keys: [region], values: [customers]}
+compare: {keys: [region], values: [customers], extra_zero_rows: true}

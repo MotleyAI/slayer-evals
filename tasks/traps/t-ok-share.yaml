@@ -12,4 +12,4 @@ naive_sql: |
   select region, sum(amount) / (select sum(amount) from orders) as share
   from orders_flat where status = 'ok'
   group by 1
-compare: {keys: [region], values: [share]}
+compare: {keys: [region], values: [share], extra_zero_rows: true}

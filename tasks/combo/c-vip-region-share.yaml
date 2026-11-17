@@ -10,4 +10,4 @@ truth_sql: |
              where list_contains(list_filter(c.tags, x -> x is not null), 'vip') group by 1)
   select region, revenue, revenue / sum(revenue) over () as share_of_total from r
 slayer_query: {"query": {"source_model": "orders", "dimensions": ["customers.regions.name"], "measures": [{"formula": "sum(amount)", "name": "revenue"}, {"formula": "sum(amount) / sum(amount, partition_by=[])", "name": "share_of_total"}], "filters": ["contains(customers.tags, 'vip')"]}}
-compare: {keys: [region], values: [revenue, share_of_total]}
+compare: {keys: [region], values: [revenue, share_of_total], extra_zero_rows: true}

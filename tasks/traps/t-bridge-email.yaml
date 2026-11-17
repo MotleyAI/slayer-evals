@@ -21,4 +21,4 @@ naive_sql: |
   join campaigns ca on ca.id = cm.campaign_id
   where ca.channel = 'email'
   group by 1
-compare: {keys: [region], values: [revenue]}
+compare: {keys: [region], values: [revenue], extra_zero_rows: true}

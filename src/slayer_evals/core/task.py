@@ -64,6 +64,8 @@ class Compare(Strict):
     columns_exact: bool = False
     # NULL equals 0 in value columns (an empty period or a zero count).
     null_as_zero: bool = False
+    # Extra result rows with a key the truth lacks and only 0 or NULL values (an empty group) are ignored.
+    extra_zero_rows: bool = False
 
 
 class Expectation(Strict):

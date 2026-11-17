@@ -306,3 +306,45 @@ def test_second_assignment_tried_when_the_closest_names_fail():
     m = match_tables(truth, result, Compare(keys=["k"], values=["a", "b"]))
     assert m.ok, m.reason
     assert m.columns == {"k": "k", "a": "bb", "b": "aa"}
+
+
+ZERO_OK = Compare(keys=["region"], values=["customers"], extra_zero_rows=True)
+REGIONS = Table(columns=["region", "customers"], rows=[[None, 1], ["East", 10], ["North", 6]])
+
+
+@pytest.mark.parametrize("extra", [["Arctic", 0], ["Arctic", None], [None, 0]], ids=["zero", "null", "null-key"])
+def test_extra_zero_row_allowed_when_the_task_says_so(extra: list):
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    result = res(["region", "customers"], [["East", 10], extra, ["North", 6]])
+    m = match_tables(truth, result, ZERO_OK)
+    assert m.ok, m.reason
+    assert not match_tables(truth, result, Compare(keys=["region"], values=["customers"])).ok
+
+
+def test_extra_zero_row_with_renamed_columns():
+    result = res(["region", "customers_vip_and_eu"], [["East", 10], ["North", 6], ["Arctic", 0], [None, 1]])
+    m = match_tables(REGIONS, result, ZERO_OK)
+    assert m.ok, m.reason
+    assert m.columns == {"region": "region", "customers": "customers_vip_and_eu"}
+
+
+def test_extra_nonzero_row_still_fails():
+    result = res(["region", "customers"], [[None, 1], ["East", 10], ["North", 6], ["Arctic", 2]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_zero_row_cannot_repeat_a_truth_key():
+    result = res(["region", "customers"], [[None, 1], ["East", 10], ["North", 6], ["North", 0]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_missing_row_still_fails_with_extra_zero_rows():
+    result = res(["region", "customers"], [["East", 10], ["North", 6], ["Arctic", 0]])
+    assert not match_tables(REGIONS, result, ZERO_OK).ok
+
+
+def test_ordered_match_ignores_the_extra_zero_row():
+    cmp = Compare(keys=["region"], values=["customers"], ordered=True, extra_zero_rows=True)
+    truth = Table(columns=["region", "customers"], rows=[["East", 10], ["North", 6]])
+    assert match_tables(truth, res(["region", "customers"], [["East", 10], ["North", 6], ["Arctic", 0]]), cmp).ok
+    assert not match_tables(truth, res(["region", "customers"], [["North", 6], ["East", 10], ["Arctic", 0]]), cmp).ok
